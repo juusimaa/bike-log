@@ -1,5 +1,6 @@
 using Npgsql;
 namespace BikeLog.Integration.Tests.Fixtures;
+
 public sealed class PostgresFixture : IAsyncLifetime
 {
     public string ConnectionString { get; private set; } = "";
