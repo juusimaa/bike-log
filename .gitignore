@@ -73,3 +73,6 @@ pgdata/
 .azure/
 *.local.bicepparam
 *.local.parameters.json
+
+# Isolated implementation worktrees
+.worktrees/
