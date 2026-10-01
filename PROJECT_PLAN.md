@@ -2,7 +2,7 @@
 
 Draft date: 2026-10-01. Working name: BikeCare (name not yet selected).
 
-Overall design: see [the 2026-10-01 specification](docs/superpowers/specs/2026-10-01-bike-maintenance-design.md), which records the brainstorming decisions and awaits written-spec review. This roadmap follows those decisions.
+Overall design: see [the 2026-10-01 specification](docs/superpowers/specs/2026-10-01-bike-maintenance-design.md), approved by the owner on 2026-10-01. This roadmap follows those decisions.
 
 Confirmed scope: the owner requires a React Native mobile app alongside the Next.js web app. Backend implementation comes first and detailed UI design follows later; the mobile app remains a required delivery milestone.
 

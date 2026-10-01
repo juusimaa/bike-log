@@ -1,7 +1,7 @@
 # Bicycle maintenance tracker — overall design
 
 Date: 2026-10-01
-Status: Design sections approved in conversation; written specification awaiting owner review.
+Status: Written specification approved by the owner on 2026-10-01.
 Working name: BikeCare; final name remains a later choice.
 
 ## Intent and success
@@ -94,4 +94,4 @@ Framework versions, identity provider, first mobile platform/device, project nam
 
 The owner approved the balanced priority, individual-parts scope, modular synchronous API approach, core model, web/native release boundary, Docker PostgreSQL, Neon hosted PostgreSQL and final validation/recovery section in conversation on 2026-10-01.
 
-This written specification requires owner review. After written-spec approval, create the implementation plan for foundation and the first backend slice using the writing-plans skill. Later milestones receive their own detailed design and plan before implementation.
+The owner explicitly approved this written specification on 2026-10-01. Create the implementation plan for foundation and the first backend slice using the writing-plans skill. The implementation plan still requires review and selection of an execution method before implementation. Later milestones receive their own detailed design and plan before implementation.
