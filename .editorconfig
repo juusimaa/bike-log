@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{json,yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.cs]
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = false
+csharp_new_line_before_open_brace = all
+csharp_indent_case_contents = true
+csharp_indent_switch_labels = true
+csharp_preserve_single_line_blocks = false
+csharp_preserve_single_line_statements = false
+csharp_prefer_braces = true:warning
+# Included by the targeted formatter pass without making it a build warning.
+dotnet_diagnostic.IDE0005.severity = suggestion
+dotnet_diagnostic.IDE0011.severity = warning
+dotnet_diagnostic.IDE0055.severity = warning
+
+# EF owns these files; keep generated output outside style cleanup.
+[src/Infrastructure/Persistence/Migrations/*.cs]
+generated_code = true

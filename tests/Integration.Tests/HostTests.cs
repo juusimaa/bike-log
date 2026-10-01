@@ -18,15 +18,26 @@ public class HostTests : IClassFixture<PostgresFixture>
     [InlineData("Production", true)]
     [InlineData("Development", false)]
     public void RejectsProductionAndUnconfiguredSyntheticMode(string env, bool enabled)
-    { using var app = new ApiFactory(connection, env, enabled); Assert.Throws<InvalidOperationException>(() => app.CreateClient()); }
+    {
+        using var app = new ApiFactory(connection, env, enabled);
+        Assert.Throws<InvalidOperationException>(() => app.CreateClient());
+    }
     [Theory]
     [InlineData("http://0.0.0.0:5080")]
     [InlineData("http://192.168.1.10:5080")]
     public void RejectsNonLoopbackBinding(string urls)
-    { using var app = new ApiFactory(connection, urls: urls); Assert.Throws<InvalidOperationException>(() => app.CreateClient()); }
+    {
+        using var app = new ApiFactory(connection, urls: urls);
+        Assert.Throws<InvalidOperationException>(() => app.CreateClient());
+    }
     [Fact]
     public async Task OpenApiIsAvailableLocally()
-    { await using var app = new ApiFactory(connection); var r = await app.CreateClient().GetAsync("/openapi/v1.json"); Assert.Equal(HttpStatusCode.OK, r.StatusCode); Assert.Contains("openapi", await r.Content.ReadAsStringAsync()); }
+    {
+        await using var app = new ApiFactory(connection);
+        var r = await app.CreateClient().GetAsync("/openapi/v1.json");
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+        Assert.Contains("openapi", await r.Content.ReadAsStringAsync());
+    }
     [Fact]
     public async Task OpenApiDescribesCreatedRecordsAndConflicts()
     {

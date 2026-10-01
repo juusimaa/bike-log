@@ -1,9 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
-using BikeLog.Domain.Rides;
 using BikeLog.Domain.Maintenance;
+using BikeLog.Domain.Rides;
+using Microsoft.EntityFrameworkCore;
 namespace BikeLog.Infrastructure.Persistence;
 
 public sealed class BikeLogDbContext(DbContextOptions<BikeLogDbContext> options) : DbContext(options)

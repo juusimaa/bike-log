@@ -1,8 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using BikeLog.Infrastructure.Persistence;
 using BikeLog.Api.Development;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Bikes;
+using BikeLog.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace BikeLog.Api.Features.Bikes;
 
 public static class BikeEndpoints
@@ -16,7 +16,8 @@ public static class BikeEndpoints
         }).Produces<BikeResponse>(201).WithDescription("Create a synthetic bike. Owner is supplied by the local development host.");
         api.MapGet("/bikes/{id:guid}", async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
         {
-            var b = await db.Bikes.AsNoTracking().SingleOrDefaultAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct) ?? throw ApiInput.Missing(); return new BikeResponse(b.Id, b.Name, b.Version);
+            var b = await db.Bikes.AsNoTracking().SingleOrDefaultAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct) ?? throw ApiInput.Missing();
+            return new BikeResponse(b.Id, b.Name, b.Version);
         });
     }
 }

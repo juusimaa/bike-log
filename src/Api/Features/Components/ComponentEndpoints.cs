@@ -1,10 +1,10 @@
-using Microsoft.EntityFrameworkCore;
-using BikeLog.Infrastructure.Persistence;
+using System.Data;
 using BikeLog.Api.Development;
 using BikeLog.Api.Features.Errors;
-using BikeLog.Domain.Components;
 using BikeLog.Api.Features.Installations;
-using System.Data;
+using BikeLog.Domain.Components;
+using BikeLog.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 namespace BikeLog.Api.Features.Components;
 
 public static class ComponentEndpoints

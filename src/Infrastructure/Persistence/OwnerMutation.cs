@@ -10,8 +10,14 @@ public sealed class OwnerMutation(BikeLogDbContext db, UsageRebuilder rebuilder)
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var key = BinaryPrimitives.ReadInt64LittleEndian(SHA256.HashData(ownerId.ToByteArray()));
         await db.Database.ExecuteSqlInterpolatedAsync($"SELECT pg_advisory_xact_lock({key})", ct);
-        var result = await mutation(ct); await db.SaveChangesAsync(ct);
-        if (recalculate) await rebuilder.RebuildAsync(ownerId, ct);
-        await transaction.CommitAsync(ct); return result;
+        var result = await mutation(ct);
+        await db.SaveChangesAsync(ct);
+        if (recalculate)
+        {
+            await rebuilder.RebuildAsync(ownerId, ct);
+        }
+
+        await transaction.CommitAsync(ct);
+        return result;
     }
 }
