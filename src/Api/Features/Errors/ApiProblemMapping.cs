@@ -11,7 +11,7 @@ public sealed class ApiProblemMapping : IEndpointFilter
     {
         try { return await next(context); }
         catch (ApiException e) { return Problem(e.Status, e.Code, e.Message, e.CurrentVersion); }
-        catch (DomainValidationException e) { return Problem(e.Code == "installation_overlap" ? 409 : 400, e.Code, e.Message); }
+        catch (DomainValidationException e) { return Problem(e.Code is "installation_overlap" or "maintenance_history_conflict" ? 409 : 400, e.Code, e.Message); }
         catch (DbUpdateConcurrencyException) { return Problem(409, "stale_version", "The record changed. Reload it and retry your edit."); }
         catch (OverflowException) { return Problem(400, "usage_overflow", "The requested values exceed supported usage totals."); }
         catch (DbUpdateException) { return Problem(500, "persistence_failed", "The edit could not be saved. No changes were committed."); }

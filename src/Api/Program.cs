@@ -14,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDevelopmentOwner, DevelopmentOwner>();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
+builder.Services.ConfigureHttpJsonOptions(options => options.SerializerOptions.Converters.Add(new UtcInstantConverter()));
 builder.Services.AddDbContext<BikeLogDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<IConfiguration>().GetConnectionString("Postgres")));
 builder.Services.AddSingleton<IUsageCalculator, UsageCalculator>();
 builder.Services.AddScoped<UsageRebuilder>(); builder.Services.AddScoped<OwnerMutation>();
@@ -25,6 +27,7 @@ app.Use(async (context, next) =>
     if (context.Connection.RemoteIpAddress is { } ip && !System.Net.IPAddress.IsLoopback(ip)) { context.Response.StatusCode = 403; return; }
     await next(context);
 });
+app.UseMiddleware<RequestErrorMiddleware>();
 app.UseStatusCodePages();
 app.MapOpenApi();
 var api = app.MapGroup("/api").AddEndpointFilter<ApiProblemMapping>();

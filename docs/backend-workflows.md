@@ -10,7 +10,7 @@ The named `bikelog-local_postgres-data` volume survives `db-down`, restart and n
 
 ## API contract
 
-All routes start with `/api`. JSON uses camelCase. IDs are UUIDs; distances are integer metres, durations optional positive integer seconds, instants include an offset and are stored as UTC. Component and position values are `chain`; other parts follow later. Entity versions start at 1. Updates/replacement increment the edited entity version. A repeated creation POST creates another record; offline operation deduplication is deferred.
+All routes start with `/api`. JSON uses camelCase. IDs are UUIDs; distances are integer metres, durations optional positive integer seconds, instants require an explicit offset and whole-microsecond precision and are stored as UTC. Missing timestamp fields, unspecified offsets, infinity sentinel values and submicrosecond inputs return sanitized 400 errors. Component and position values are `chain`; other parts follow later. Entity versions start at 1. Updates/replacement increment the edited entity version. A repeated creation POST creates another record; offline operation deduplication is deferred.
 
 | Method / route | Request / result |
 | --- | --- |
@@ -32,9 +32,9 @@ All routes start with `/api`. JSON uses camelCase. IDs are UUIDs; distances are 
 | GET `/components/{id}/usage` | Lifetime and per-installation totals/history, duration completeness, zero initial estimate and calculation time |
 | GET `/bikes/{id}/usage` | Chain fitted at current time, current-installation/lifetime totals, allocation-gap ride IDs and calculation time |
 
-A component-specific maintenance record requires that component to be fitted to the selected bike at its performed instant. Cost/currency are supplied together: nonnegative decimal with at most two fractional digits (up to the database's 18-digit precision), and three uppercase currency letters. Bike-specific work need not name a component.
+A component-specific maintenance record requires that component to be fitted to the selected bike at its performed instant. Installation corrections/replacements that would invalidate existing work records are rejected with 409 `maintenance_history_conflict`; keep the dates consistent with recorded work. This slice has no maintenance-correction workflow. Cost/currency are supplied together: nonnegative decimal with at most two fractional digits (up to the database's 18-digit precision), and three uppercase currency letters. Bike-specific work need not name a component.
 
-Errors use ProblemDetails: 400 invalid input; 404 absent or other-owner record; 409 overlap or stale version; 500 failed persistence/calculation; 503 database unavailable. Stale responses include `currentVersion` after owner checks. The caller should preserve attempted edits, reload and resubmit after reviewing differences. Secrets and exception internals are not included in responses.
+Errors use ProblemDetails: 400 invalid input; 404 absent or other-owner record; 409 overlap, stale version or maintenance-history conflict; 500 failed persistence/calculation; 503 database unavailable. Stale responses include `currentVersion` after owner checks. The caller should preserve attempted edits, reload and resubmit after reviewing differences. Secrets and exception internals are not included in responses.
 
 ## Mileage explanation
 
@@ -66,10 +66,18 @@ Strava next action: perform a separately approved feasibility spike to clarify p
 ### Local verification on 2026-10-01
 
 - SDK 10.0.401 build: passed, zero warnings/errors.
-- Domain suite: 17 passed; PostgreSQL/API suite: 38 passed, using migrated isolated test databases.
+- Domain suite: 17 passed; PostgreSQL/API suite: 49 passed, using migrated isolated test databases.
 - Live `scripts/acceptance.sh`: passed against the loopback API and named-volume PostgreSQL, preserving the 65,000/10,000 m replacement workflow.
 - Repeating `scripts/dev.sh migrate`: no migrations applied on the second run.
 - Database stop: readiness returned 503. Restart with the same volume: readiness returned 200 and the acceptance bike's 10,000 m current-chain total persisted.
 - `git diff --check`: passed.
 
 No cloud resources, Neon project, authentication, personal records or mobile/web UI were created. This verifies the local foundation/backend milestone only.
+
+### Independent branch review
+
+A fresh reviewer checked the completed six-task branch. Four Important findings were reproduced with failing tests and fixed: required timestamp fields, sanitized binding errors, PostgreSQL timestamp precision and maintenance associations after historical edits. The final suite has 66 passing tests (17 domain, 49 PostgreSQL/API).
+
+One Minor remains deferred: ride DELETE returns 204 at runtime, while OpenAPI lacks an explicit 204 response declaration. Address that metadata before generating frontend clients. No Important finding remains open; no second review was requested after the regression-tested fix pass.
+
+After the review fixes, the rebuilt API passed live HTTP acceptance again. A malformed JSON request returned sanitized 400 ProblemDetails with `code=invalid_input` and no exception details. The task-started API and PostgreSQL container were stopped after checks; the named volume and synthetic acceptance records are retained.
