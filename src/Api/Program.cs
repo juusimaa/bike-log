@@ -1,8 +1,14 @@
+using Microsoft.EntityFrameworkCore;
+using BikeLog.Infrastructure.Persistence;
+using BikeLog.Domain.Usage;
 using BikeLog.Api.Development;
 using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<IDevelopmentOwner, DevelopmentOwner>();
 builder.Services.AddOpenApi();
+builder.Services.AddDbContext<BikeLogDbContext>((services, options) => options.UseNpgsql(services.GetRequiredService<IConfiguration>().GetConnectionString("Postgres")));
+builder.Services.AddSingleton<IUsageCalculator,UsageCalculator>();
+builder.Services.AddScoped<UsageRebuilder>();builder.Services.AddScoped<OwnerMutation>();
 var app = builder.Build();
 DevelopmentAccess.Validate(app.Environment, app.Configuration);
 var connection = app.Configuration.GetConnectionString("Postgres")!;
