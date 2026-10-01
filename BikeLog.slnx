@@ -1,1 +1,11 @@
-<Solution><Folder Name="/src/"><Project Path="src/Domain/BikeLog.Domain.csproj"/><Project Path="src/Infrastructure/BikeLog.Infrastructure.csproj"/><Project Path="src/Api/BikeLog.Api.csproj"/></Folder><Folder Name="/tests/"><Project Path="tests/Domain.Tests/BikeLog.Domain.Tests.csproj"/><Project Path="tests/Integration.Tests/BikeLog.Integration.Tests.csproj"/></Folder></Solution>
+<Solution>
+    <Folder Name="/src/">
+        <Project Path="src/Domain/BikeLog.Domain.csproj" />
+        <Project Path="src/Infrastructure/BikeLog.Infrastructure.csproj" />
+        <Project Path="src/Api/BikeLog.Api.csproj" />
+    </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/Domain.Tests/BikeLog.Domain.Tests.csproj" />
+        <Project Path="tests/Integration.Tests/BikeLog.Integration.Tests.csproj" />
+    </Folder>
+</Solution>

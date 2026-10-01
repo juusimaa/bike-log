@@ -23,10 +23,19 @@ public static class InstallationRules
                     continue;
                 }
 
-                var exclusive = x.ComponentId == y.ComponentId || (x.BikeId == y.BikeId && x.Position == y.Position);
-                if (exclusive && (!y.EndUtc.HasValue || x.StartUtc < y.EndUtc) && (!x.EndUtc.HasValue || y.StartUtc < x.EndUtc))
+                var exclusive =
+                    x.ComponentId == y.ComponentId
+                    || (x.BikeId == y.BikeId && x.Position == y.Position);
+                if (
+                    exclusive
+                    && (!y.EndUtc.HasValue || x.StartUtc < y.EndUtc)
+                    && (!x.EndUtc.HasValue || y.StartUtc < x.EndUtc)
+                )
                 {
-                    throw new DomainValidationException("A component or bike position already has an overlapping installation.", "installation_overlap");
+                    throw new DomainValidationException(
+                        "A component or bike position already has an overlapping installation.",
+                        "installation_overlap"
+                    );
                 }
             }
         }

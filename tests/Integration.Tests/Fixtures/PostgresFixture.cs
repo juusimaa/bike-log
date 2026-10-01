@@ -1,4 +1,5 @@
 using Npgsql;
+
 namespace BikeLog.Integration.Tests.Fixtures;
 
 public sealed class PostgresFixture : IAsyncLifetime
@@ -6,13 +7,18 @@ public sealed class PostgresFixture : IAsyncLifetime
     public string ConnectionString { get; private set; } = "";
     private string database = "";
     private string admin = "";
+
     public async Task InitializeAsync()
     {
-        admin = Environment.GetEnvironmentVariable("BIKELOG_TEST_ADMIN") ?? throw new InvalidOperationException("Run tests through scripts/dev.sh test.");
+        admin =
+            Environment.GetEnvironmentVariable("BIKELOG_TEST_ADMIN")
+            ?? throw new InvalidOperationException("Run tests through scripts/dev.sh test.");
         var b = new NpgsqlConnectionStringBuilder(admin);
         if (b.Host != "127.0.0.1" || b.Port != 54329 || b.Database != "postgres")
         {
-            throw new InvalidOperationException("Only the dedicated loopback test server is permitted.");
+            throw new InvalidOperationException(
+                "Only the dedicated loopback test server is permitted."
+            );
         }
 
         database = "bikelog_test_" + Guid.NewGuid().ToString("N");
@@ -23,6 +29,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         b.Database = database;
         ConnectionString = b.ConnectionString;
     }
+
     public async Task DisposeAsync()
     {
         NpgsqlConnection.ClearAllPools();

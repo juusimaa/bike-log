@@ -1,6 +1,7 @@
 using BikeLog.Domain.Bikes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 namespace BikeLog.Infrastructure.Persistence.Configurations;
 
 internal sealed class BikeConfiguration : IEntityTypeConfiguration<Bike>

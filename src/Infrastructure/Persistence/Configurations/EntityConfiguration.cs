@@ -1,10 +1,12 @@
 using BikeLog.Domain;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 namespace BikeLog.Infrastructure.Persistence.Configurations;
 
 internal static class EntityConfiguration
 {
-    public static void Common<T>(EntityTypeBuilder<T> b) where T : Entity
+    public static void Common<T>(EntityTypeBuilder<T> b)
+        where T : Entity
     {
         b.HasKey(x => x.Id);
         b.Property(x => x.Id).ValueGeneratedNever();
