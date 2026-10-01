@@ -19,4 +19,6 @@ API: http://127.0.0.1:5080; OpenAPI: `/openapi/v1.json`; readiness: `/health/rea
 ./scripts/dev.sh db-down
 ```
 
-`db-down` preserves the named Docker volume. `db-reset --confirm-delete-local-data` permanently deletes it. Tests create uniquely named `bikelog_test_*` databases on this dedicated container and drop only those databases. Migrations are explicit, never automatic at API startup. The migrate command becomes available with the persistence task.
+`db-down` preserves the named Docker volume. `db-reset --confirm-delete-local-data` permanently deletes it. Tests create uniquely named `bikelog_test_*` databases on this dedicated container and drop only those databases. Migrations are explicit, never automatic at API startup. See [backend workflows](docs/backend-workflows.md) for the API contract, acceptance script and verification evidence.
+
+With the API running, run `./scripts/acceptance.sh` to exercise the 65 km ride, maintenance and chain-replacement workflow. This also requires Python 3.
