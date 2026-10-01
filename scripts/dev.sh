@@ -6,13 +6,11 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 # Formatting and static analysis do not need local database credentials.
 case "${1:-}" in
   format)
-    "$sdk" format BikeLog.slnx --exclude src/Infrastructure/Persistence/Migrations
-    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 IDE0090 IDE0161 --severity info --exclude src/Infrastructure/Persistence/Migrations
+    "$sdk" tool run csharpier -- format .
     exit ;;
   lint)
-    "$sdk" format BikeLog.slnx --verify-no-changes --exclude src/Infrastructure/Persistence/Migrations
-    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 IDE0090 IDE0161 --severity info --verify-no-changes --exclude src/Infrastructure/Persistence/Migrations
-    "$sdk" build BikeLog.slnx --no-restore --warnaserror
+    "$sdk" tool run csharpier -- check .
+    "$sdk" build BikeLog.slnx --warnaserror
     exit ;;
 esac
 [ -f .env ] || { echo 'Copy .env.example to .env and set a local password.' >&2; exit 1; }

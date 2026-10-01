@@ -25,21 +25,31 @@ With the API running, run `./scripts/acceptance.sh` to exercise the 65 km ride, 
 
 ## Formatting and static analysis
 
-Use the formatter and analyzers included in the pinned .NET SDK:
+Use the pinned CSharpier local tool for formatting and .NET SDK analyzers for
+static analysis:
 
 ```sh
-./scripts/dev.sh format  # Apply formatting, syntax style fixes and unused-import cleanup.
-./scripts/dev.sh lint    # Check formatting, syntax style and unused imports; build with warnings as errors.
+dotnet tool restore
+./scripts/dev.sh format  # Apply CSharpier formatting.
+./scripts/dev.sh lint    # Check CSharpier formatting; build with warnings as errors.
 ```
 
 Both commands work without `.env` or PostgreSQL and respect `BIKELOG_DOTNET`.
-The shared `.editorconfig` defines whitespace and C# formatting for compatible
-editors. SDK analyzers and code-style checks run during builds; `lint` treats
-warnings as failures. Generated EF migrations are excluded from formatting.
-The targeted suggestion-level style pass removes unused `using` directives
-(`IDE0005`), prefers target-typed `new` when the type is apparent (`IDE0090`),
-and uses file-scoped namespaces (`IDE0161`). `lint` fails if that pass would
-change any files. Unused-import cleanup runs through the formatter without
-requiring XML documentation generation during builds. The language version
-continues to follow the target framework.
+CSharpier owns C# and supported XML formatting. `.csharpierignore` excludes
+generated EF migrations. SDK analyzers and code-style checks run during builds;
+`lint` treats warnings as failures. `.editorconfig` retains syntax preferences
+and unused-import suggestions for compatible editors. CSharpier does not apply
+those semantic fixes or remove unused imports. The language version continues
+to follow the target framework.
+
+To enable automatic formatting of staged C# files before committing:
+
+```sh
+brew install pre-commit
+pre-commit install
+```
+
+The hook uses the pinned local CSharpier tool and excludes generated migrations.
+If it changes files, review and stage those changes, then retry the commit.
+Each developer enables the hook after cloning.
 Run `lint` before committing; when CI is added, use the same command there.
