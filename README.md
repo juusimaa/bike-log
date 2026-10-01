@@ -1,5 +1,9 @@
 # Bike Log
 
+An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
+is available under `docs/ui-design`. Open it directly in your browser; see the
+[preview guide](docs/ui-design/README.md) for the supported demo flows.
+
 Local synthetic-data backend milestone. Sign-in, web/mobile clients and cloud deployment follow later. Do not enter personal records or expose this API remotely.
 
 Requires .NET SDK 10.0.401, Docker Desktop and Docker Compose. The SDK is pinned in global.json; packages and PostgreSQL image are pinned. Install the SDK from https://dotnet.microsoft.com/download/dotnet/10.0 or set `BIKELOG_DOTNET` to a compatible SDK's dotnet executable.
