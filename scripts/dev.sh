@@ -7,11 +7,11 @@ export DOTNET_CLI_TELEMETRY_OPTOUT=1
 case "${1:-}" in
   format)
     "$sdk" format BikeLog.slnx --exclude src/Infrastructure/Persistence/Migrations
-    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 --severity info --exclude src/Infrastructure/Persistence/Migrations
+    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 IDE0090 IDE0161 --severity info --exclude src/Infrastructure/Persistence/Migrations
     exit ;;
   lint)
     "$sdk" format BikeLog.slnx --verify-no-changes --exclude src/Infrastructure/Persistence/Migrations
-    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 --severity info --verify-no-changes --exclude src/Infrastructure/Persistence/Migrations
+    "$sdk" format style BikeLog.slnx --no-restore --diagnostics IDE0005 IDE0090 IDE0161 --severity info --verify-no-changes --exclude src/Infrastructure/Persistence/Migrations
     "$sdk" build BikeLog.slnx --no-restore --warnaserror
     exit ;;
 esac

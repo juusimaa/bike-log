@@ -28,15 +28,18 @@ With the API running, run `./scripts/acceptance.sh` to exercise the 65 km ride, 
 Use the formatter and analyzers included in the pinned .NET SDK:
 
 ```sh
-./scripts/dev.sh format  # Apply C# formatting, analyzer fixes and unused-import cleanup.
-./scripts/dev.sh lint    # Check formatting and unused imports, then build with warnings as errors.
+./scripts/dev.sh format  # Apply formatting, syntax style fixes and unused-import cleanup.
+./scripts/dev.sh lint    # Check formatting, syntax style and unused imports; build with warnings as errors.
 ```
 
 Both commands work without `.env` or PostgreSQL and respect `BIKELOG_DOTNET`.
 The shared `.editorconfig` defines whitespace and C# formatting for compatible
 editors. SDK analyzers and code-style checks run during builds; `lint` treats
 warnings as failures. Generated EF migrations are excluded from formatting.
-Unused `using` directives are removed by a targeted `IDE0005` formatter pass;
-`lint` fails if that pass would change any files. This rule runs through the
-formatter without requiring XML documentation generation during builds.
+The targeted suggestion-level style pass removes unused `using` directives
+(`IDE0005`), prefers target-typed `new` when the type is apparent (`IDE0090`),
+and uses file-scoped namespaces (`IDE0161`). `lint` fails if that pass would
+change any files. Unused-import cleanup runs through the formatter without
+requiring XML documentation generation during builds. The language version
+continues to follow the target framework.
 Run `lint` before committing; when CI is added, use the same command there.
