@@ -14,20 +14,24 @@ the sidebar's Reset button restores the fixtures immediately.
 Try these flows:
 
 - Switch between the gravel and road bikes and navigate all four views.
+- Edit each bike’s name from its overview. Leave the name blank to use make +
+  model (as shown by the road bike). Names appear in the selector and history.
 - Add a ride and inspect its allocation and updated component mileage.
 - Log chain lubrication and see the distance reminder update without resetting
   lifetime usage. The reminder interval is editable.
 - Open a component passport to see installation and maintenance history, with
   starting estimates separated from calculated mileage.
-- Replace a chain, then select **Include replaced parts** in Components. The old
-  chain retains its history; later rides accrue to the replacement.
+- Replace any fitted chain, cassette, front tyre, or rear tyre from its table
+  row or component passport, or use **Replace component** to choose a part.
+  **Include replaced parts** shows the old component with its history intact;
+  later rides accrue to the replacement.
 - Add a ride before 1 June 2026 to see the missing-chain-history notice.
 
 Rides allocate at their start using `[installation start, installation end)`.
-Maintenance validates the component's association at its performed time; chain
-replacement rejects dates that would invalidate existing chain maintenance.
+Maintenance validates the component's association at its performed time; component
+replacement rejects dates that would invalidate existing component maintenance.
 
-The preview explores planned cassette/tyre views, starting estimates, and
+The preview explores bike naming, cassette/tyre replacement, starting estimates, and
 user-defined reminders beyond the current chain-only backend slice. These are UI
 examples, not implemented API capabilities. The name, visual direction, and
 layouts remain proposals. Production ownership, persistence, editing conflicts,

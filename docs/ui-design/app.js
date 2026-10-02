@@ -11,8 +11,8 @@ const bikeSvg = (color, className = "") => `<svg class="${className}" style="--b
 
 function seedData() {
   const bikes = [
-    { id: "gravel", name: "The everyday escape", model: "Canyon Grizl 7", type: "Gravel", color: "#829c83", year: "2025", threshold: 150000 },
-    { id: "road", name: "The Sunday special", model: "Specialized Allez", type: "Road", color: "#859db5", year: "2023", threshold: 200000 },
+    { id: "gravel", name: "The everyday escape", make: "Canyon", model: "Grizl 7", type: "Gravel", color: "#829c83", year: "2025", threshold: 150000 },
+    { id: "road", name: "", make: "Specialized", model: "Allez", type: "Road", color: "#859db5", year: "2023", threshold: 200000 },
   ];
   const components = [];
   const installations = [];
@@ -60,6 +60,8 @@ let entryKind = "ride";
 let componentFilter = "current";
 let toastTimer;
 const bike = () => data.bikes.find((b) => b.id === selectedBike);
+const bikeModel = (b) => `${b.make} ${b.model}`;
+const bikeName = (b) => b.name.trim() || bikeModel(b);
 const bikeRides = () => data.rides.filter((r) => r.bikeId === selectedBike).sort((a, b) => b.start.localeCompare(a.start));
 const bikeMaintenance = () => data.maintenance.filter((m) => m.bikeId === selectedBike).sort((a, b) => b.performed.localeCompare(a.performed));
 const currentInstallations = () => data.installations.filter((i) => i.bikeId === selectedBike && !i.end);
@@ -97,7 +99,7 @@ function render() {
   });
   $("#nav-count").textContent = chainReminder().due ? "1" : "";
   $("#nav-count").hidden = !chainReminder().due;
-  $("#bike-selector").innerHTML = data.bikes.map((b) => `<button class="bike-choice ${b.id === selectedBike ? "active" : ""}" type="button" data-bike="${b.id}" aria-pressed="${b.id === selectedBike}">${bikeSvg(b.color)}<span><strong>${b.model}</strong><small>${b.type} · ${b.year}</small></span>${b.id === selectedBike ? '<span class="choice-dot"></span>' : ""}</button>`).join("");
+  $("#bike-selector").innerHTML = data.bikes.map((b) => `<button class="bike-choice ${b.id === selectedBike ? "active" : ""}" type="button" data-bike="${b.id}" aria-pressed="${b.id === selectedBike}">${bikeSvg(b.color)}<span><strong>${escapeHtml(bikeName(b))}</strong><small>${escapeHtml(bikeModel(b))} · ${b.type} · ${b.year}</small></span>${b.id === selectedBike ? '<span class="choice-dot"></span>' : ""}</button>`).join("");
   const gaps = bikeRides().filter(hasGap);
   const gapNotice = gaps.length ? `<div class="gap-notice">${gaps.length} ride${gaps.length === 1 ? " has" : "s have"} no chain installation at its start time. Those miles are recorded for the bike but not assigned to a chain.</div>` : "";
   $("#view-content").innerHTML = gapNotice + ({ overview: renderOverview, components: renderComponents, rides: renderRides, maintenance: renderMaintenance }[currentView])();
@@ -111,17 +113,17 @@ function renderStats() {
 function renderReminder() {
   const reminder = chainReminder();
   const remaining = Math.max(0, reminder.threshold - reminder.distance);
-  return `<aside class="card service-card"><div class="card-title"><h2>A little attention</h2><span class="count">${reminder.due ? "1 reminder" : "Up to date"}</span></div><div class="service-header"><span class="service-symbol">⌁</span><div><h3>Lubricate your chain</h3><small>${bike().model}</small></div></div><span class="status ${reminder.due ? "amber" : "green"}">${reminder.due ? "◷ Service reminder" : "✓ Looking good"}</span><div class="progress"><span style="width:${Math.min(100, reminder.distance / reminder.threshold * 100)}%"></span></div><div class="progress-labels"><span>${km(reminder.distance)} km since ${reminder.last ? "service" : "installation"}</span><span>${km(reminder.threshold)} km</span></div><button class="button secondary" data-action="lubricate">${reminder.due ? "Log chain lubrication" : "Log maintenance"}<span>↗</span></button><p class="service-footnote">${reminder.last ? `Last lubricated ${dateLabel(reminder.last.performed)}.` : "No lubrication logged for this chain."} ${remaining > 0 ? `${km(remaining)} km to your reminder.` : "Your distance threshold has been reached."}<br>Reminders follow your chosen interval.</p><button class="text-button" style="margin-top:10px" data-action="threshold">Edit reminder interval</button></aside>`;
+  return `<aside class="card service-card"><div class="card-title"><h2>A little attention</h2><span class="count">${reminder.due ? "1 reminder" : "Up to date"}</span></div><div class="service-header"><span class="service-symbol">⌁</span><div><h3>Lubricate your chain</h3><small>${escapeHtml(bikeName(bike()))}</small></div></div><span class="status ${reminder.due ? "amber" : "green"}">${reminder.due ? "◷ Service reminder" : "✓ Looking good"}</span><div class="progress"><span style="width:${Math.min(100, reminder.distance / reminder.threshold * 100)}%"></span></div><div class="progress-labels"><span>${km(reminder.distance)} km since ${reminder.last ? "service" : "installation"}</span><span>${km(reminder.threshold)} km</span></div><button class="button secondary" data-action="lubricate">${reminder.due ? "Log chain lubrication" : "Log maintenance"}<span>↗</span></button><p class="service-footnote">${reminder.last ? `Last lubricated ${dateLabel(reminder.last.performed)}.` : "No lubrication logged for this chain."} ${remaining > 0 ? `${km(remaining)} km to your reminder.` : "Your distance threshold has been reached."}<br>Reminders follow your chosen interval.</p><button class="text-button" style="margin-top:10px" data-action="threshold">Edit reminder interval</button></aside>`;
 }
 function renderOverview() {
   const b = bike();
-  return `<div class="dashboard-grid"><section class="card hero"><div class="hero-top"><div><h2>${b.name}</h2><p>${b.model} · ${b.type} · ${b.year}</p></div><span class="label-pill">YOUR ${b.type.toUpperCase()} BIKE</span></div>${bikeSvg(b.color)}<div class="hero-bottom"><span>● ${currentInstallations().length} components fitted</span><button data-go="components">Explore components ↗</button></div></section>${renderReminder()}</div>${renderStats()}<div class="content-grid"><section class="card table-card"><div class="card-title"><h2>Currently on your bike</h2><a href="#components">View all ↗</a></div>${componentTable(currentInstallations())}</section><aside class="card activity-card"><div class="card-title"><h2>The latest chapter</h2><span class="count">RECENT ACTIVITY</span></div><div class="activity-list">${recentActivity()}</div></aside></div>`;
+  return `<div class="dashboard-grid"><section class="card hero"><div class="hero-top"><div><h2>${escapeHtml(bikeName(b))}</h2><p>${escapeHtml(bikeModel(b))} · ${b.type} · ${b.year}</p></div><div class="hero-actions"><span class="label-pill">YOUR ${b.type.toUpperCase()} BIKE</span><button class="text-button" data-action="bike-name">Edit bike name</button></div></div>${bikeSvg(b.color)}<div class="hero-bottom"><span>● ${currentInstallations().length} components fitted</span><button data-go="components">Explore components ↗</button></div></section>${renderReminder()}</div>${renderStats()}<div class="content-grid"><section class="card table-card"><div class="card-title"><h2>Currently on your bike</h2><a href="#components">View all ↗</a></div>${componentTable(currentInstallations())}</section><aside class="card activity-card"><div class="card-title"><h2>The latest chapter</h2><span class="count">RECENT ACTIVITY</span></div><div class="activity-list">${recentActivity()}</div></aside></div>`;
 }
 function componentTable(installations) {
-  return `<div class="table-wrap"><table><thead><tr><th>Component</th><th>Lifetime</th><th>Status</th><th><span class="visually-hidden">Details</span></th></tr></thead><tbody>${installations.map((i) => {
+  return `<div class="table-wrap"><table><thead><tr><th>Component</th><th>Lifetime</th><th>Status</th><th><span class="visually-hidden">Actions</span></th></tr></thead><tbody>${installations.map((i) => {
     const c = component(i.componentId);
     const due = !i.end && c.position === "chain" && chainReminder().due;
-    return `<tr><td><div class="item-name"><span class="part-icon">${c.position === "chain" ? "⌁" : c.position === "cassette" ? "⚙" : "◯"}</span><span><strong>${c.category}</strong><small>${escapeHtml(c.name)}</small></span></div></td><td class="number">${km(usage(c.id) + c.estimate)} km${c.estimate ? '<small class="estimate-label">Includes estimate</small>' : ""}</td><td><span class="status ${i.end ? "gray" : due ? "amber" : "green"}">${i.end ? "Archived" : due ? "Service reminder" : "Fitted"}</span></td><td><button class="row-button" data-component="${c.id}" aria-label="View ${c.category.toLowerCase()} history">↗</button></td></tr>`;
+    return `<tr><td><div class="item-name"><span class="part-icon">${c.position === "chain" ? "⌁" : c.position === "cassette" ? "⚙" : "◯"}</span><span><strong>${c.category}</strong><small>${escapeHtml(c.name)}</small></span></div></td><td class="number">${km(usage(c.id) + c.estimate)} km${c.estimate ? '<small class="estimate-label">Includes estimate</small>' : ""}</td><td><span class="status ${i.end ? "gray" : due ? "amber" : "green"}">${i.end ? "Archived" : due ? "Service reminder" : "Fitted"}</span></td><td><div class="component-actions">${!i.end ? `<button class="text-button" data-action="replace" data-replace-component="${c.id}" aria-label="Replace ${c.category.toLowerCase()}">Replace</button>` : ""}<button class="row-button" data-component="${c.id}" aria-label="View ${c.category.toLowerCase()} history">↗</button></div></td></tr>`;
   }).join("")}</tbody></table></div>`;
 }
 function recentActivity() {
@@ -130,7 +132,7 @@ function recentActivity() {
 }
 function renderComponents() {
   const installations = data.installations.filter((i) => i.bikeId === selectedBike && (componentFilter === "all" || !i.end));
-  return `${renderStats()}<section class="card table-card"><div class="card-title"><h2>Component collection</h2><button class="button secondary" data-action="replace">Replace chain ↗</button></div><div class="section-intro"><p>Lifetime mileage stays with the component.<br>Open a component to see calculated usage and installation history.</p><select class="filter" id="component-filter" aria-label="Filter components"><option value="current" ${componentFilter === "current" ? "selected" : ""}>Currently fitted</option><option value="all" ${componentFilter === "all" ? "selected" : ""}>Include replaced parts</option></select></div>${componentTable(installations)}</section>`;
+  return `${renderStats()}<section class="card table-card"><div class="card-title"><h2>Component collection</h2><button class="button secondary" data-action="replace">Replace component ↗</button></div><div class="section-intro"><p>Lifetime mileage stays with the component.<br>Open a component to see calculated usage and installation history.</p><select class="filter" id="component-filter" aria-label="Filter components"><option value="current" ${componentFilter === "current" ? "selected" : ""}>Currently fitted</option><option value="all" ${componentFilter === "all" ? "selected" : ""}>Include replaced parts</option></select></div>${componentTable(installations)}</section>`;
 }
 function renderRides() {
   return `${renderStats()}<section class="card table-card"><div class="card-title"><h2>Your ride log</h2><span class="count">${bikeRides().length} RIDES</span></div><div class="section-intro"><p>Each ride belongs to the components fitted at its start.<br>Times are shown in your browser’s local timezone.</p></div><div class="table-wrap"><table class="full-table"><thead><tr><th>Ride</th><th>Date</th><th>Distance</th><th>Duration</th><th>Allocation</th></tr></thead><tbody>${bikeRides().map((r) => `<tr><td><strong>${escapeHtml(r.name)}</strong></td><td>${dateLabel(r.start)}</td><td>${km(r.metres)} km</td><td>${r.seconds === null ? "Not recorded" : `${Math.round(r.seconds / 60)} min`}</td><td><span class="status ${hasGap(r) ? "amber" : "green"}">${hasGap(r) ? "Chain history gap" : "Allocated"}</span></td></tr>`).join("")}</tbody></table></div></section>`;
@@ -144,10 +146,10 @@ function localDateTime(iso = DEMO_TIME) {
   return new Date(date.getTime() - offset * 60000).toISOString().slice(0, 16);
 }
 const field = (label, content, hint = "") => `<label class="field">${label}${content}${hint ? `<small>${hint}</small>` : ""}</label>`;
-function openEntry(kind) {
+function openEntry(kind, componentId = null) {
   entryKind = kind;
   $("#form-error").textContent = "";
-  $("#dialog-eyebrow").textContent = bike().model;
+  $("#dialog-eyebrow").textContent = bikeName(bike());
   const timeField = field(kind === "replace" ? "Replacement time" : "Date and time", `<input name="instant" type="datetime-local" value="${localDateTime()}" required>`, "Displayed in your local timezone.");
   if (kind === "ride") {
     $("#dialog-title").textContent = "A few more miles.";
@@ -160,9 +162,18 @@ function openEntry(kind) {
     const options = currentInstallations().map((i) => `<option value="${i.componentId}" ${kind === "lubricate" && i.componentId === chain ? "selected" : ""}>${component(i.componentId).category} · ${escapeHtml(component(i.componentId).name)}</option>`).join("");
     $("#form-fields").innerHTML = field("Task", `<select name="task"><option>Lubricate chain</option><option>Clean drivetrain</option><option>Inspect chain</option><option>Check tyre pressure</option><option ${kind === "service" ? "selected" : ""}>General inspection</option></select>`) + field("For", `<select name="componentId"><option value="">Whole bike</option>${options}</select>`) + timeField + field("Notes", '<textarea name="notes" rows="2" maxlength="500" placeholder="What did you do?"></textarea>') + field("Cost · EUR", '<input name="cost" type="number" min="0" max="100000" step="0.01" placeholder="Optional">');
   } else if (kind === "replace") {
-    $("#dialog-title").textContent = "New chain. Next chapter.";
-    $("#submit-entry").textContent = "Replace chain";
-    $("#form-fields").innerHTML = '<p class="dialog-description">The current chain moves into history with its mileage intact. The new chain starts at zero calculated kilometres.</p>' + field("New chain model", '<input name="model" value="Shimano CN-HG601" maxlength="100" required>') + timeField + field("Cost · EUR", '<input name="cost" type="number" min="0" max="100000" step="0.01" placeholder="Optional">');
+    $("#dialog-title").textContent = "New part. Next chapter.";
+    $("#submit-entry").textContent = "Replace component";
+    const selectedId = componentId || chainInstallation().componentId;
+    const options = currentInstallations().map((i) => {
+      const c = component(i.componentId);
+      return `<option value="${c.id}" ${c.id === selectedId ? "selected" : ""}>${c.category} · ${escapeHtml(c.name)}</option>`;
+    }).join("");
+    $("#form-fields").innerHTML = '<p class="dialog-description">The selected component moves into history with its mileage intact. The new part starts at zero calculated kilometres.</p>' + field("Component to replace", `<select name="componentId">${options}</select>`) + field("New component model", '<input name="model" placeholder="Make and model of the new part" maxlength="100" required>') + timeField + field("Cost · EUR", '<input name="cost" type="number" min="0" max="100000" step="0.01" placeholder="Optional">');
+  } else if (kind === "bike-name") {
+    $("#dialog-title").textContent = "Make it your own.";
+    $("#submit-entry").textContent = "Save bike name";
+    $("#form-fields").innerHTML = field("Bike name", `<input name="name" value="${escapeHtml(bike().name)}" placeholder="${escapeHtml(bikeModel(bike()))}" maxlength="100">`, `Leave blank to use ${escapeHtml(bikeModel(bike()))}.`);
   } else {
     $("#dialog-title").textContent = "Your reminder, your rhythm.";
     $("#submit-entry").textContent = "Save interval";
@@ -187,16 +198,21 @@ function saveEntry(event) {
     data.maintenance.push({ id, bikeId: selectedBike, componentId: values.componentId || null, task: values.task, performed: instant, notes: values.notes.trim(), cost: Number(values.cost || 0) });
     message = "Maintenance saved. Lifetime mileage preserved.";
   } else if (entryKind === "replace") {
-    const old = chainInstallation();
-    if (!values.model.trim()) return fail("Enter the new chain model.");
-    if (instant <= old.start) return fail("The replacement must be after the current chain was installed.");
-    if (data.maintenance.some((m) => m.componentId === old.componentId && m.performed >= instant)) return fail("Existing maintenance belongs to this chain after that time. Choose a later replacement time.");
+    const old = currentInstallations().find((i) => i.componentId === values.componentId);
+    if (!old) return fail("Choose a currently fitted component to replace.");
+    const previous = component(old.componentId);
+    if (!values.model.trim()) return fail("Enter the new component model.");
+    if (instant <= old.start) return fail("The replacement must be after this component was installed.");
+    if (data.maintenance.some((m) => m.componentId === old.componentId && m.performed >= instant)) return fail("Existing maintenance belongs to this component after that time. Choose a later replacement time.");
     old.end = instant;
-    data.components.push({ id, name: values.model.trim(), category: "Chain", position: "chain", estimate: 0 });
+    data.components.push({ id, name: values.model.trim(), category: previous.category, position: previous.position, estimate: 0 });
     data.installations.push({ id: `install-${id}`, componentId: id, bikeId: selectedBike, start: instant, end: null });
-    data.maintenance.push({ id: `service-${id}`, bikeId: selectedBike, componentId: id, task: "Replace chain", performed: instant, notes: "New chain fitted. Previous chain retained in history.", cost: Number(values.cost || 0) });
+    data.maintenance.push({ id: `service-${id}`, bikeId: selectedBike, componentId: id, task: `Replace ${previous.category.toLowerCase()}`, performed: instant, notes: "New component fitted. Previous component retained in history.", cost: Number(values.cost || 0) });
     componentFilter = "all";
-    message = "Chain replaced. The previous chain is in history.";
+    message = `${previous.category} replaced. The previous component is in history.`;
+  } else if (entryKind === "bike-name") {
+    bike().name = values.name.trim();
+    message = "Bike name updated.";
   } else {
     bike().threshold = Number(values.threshold) * 1000;
     message = "Reminder interval updated.";
@@ -211,7 +227,7 @@ function openComponent(id) {
   const current = installs.find((i) => !i.end);
   $("#component-title").textContent = c.name;
   const services = data.maintenance.filter((m) => m.componentId === id).sort((a, b) => b.performed.localeCompare(a.performed));
-  $("#component-details").innerHTML = `<p class="dialog-description">${c.category} · ${current ? "Currently fitted" : "Retained in component history"}</p><div class="detail-stats"><div><span>Calculated lifetime</span><strong>${km(usage(id))} <small>km</small></strong></div><div><span>${current ? "Current installation" : "Last installation"}</span><strong>${km(usage(id, (current || installs.at(-1)).id))} <small>km</small></strong></div></div>${c.estimate ? `<p class="dialog-description">Starting estimate: ${km(c.estimate)} km, entered separately from calculated mileage. Combined total: ${km(usage(id) + c.estimate)} km.</p>` : ""}<div class="detail-section"><h3>Installation history</h3>${installs.map((i) => `<p><strong>${data.bikes.find((b) => b.id === i.bikeId).model}</strong><br>${dateLabel(i.start)} ${new Date(i.start).getFullYear()} → ${i.end ? `${dateLabel(i.end)} ${new Date(i.end).getFullYear()}` : "Present"} · ${km(usage(id, i.id))} km</p>`).join("")}</div><div class="detail-section"><h3>Maintenance history</h3>${services.length ? services.map((m) => `<p><strong>${escapeHtml(m.task)}</strong> · ${dateLabel(m.performed)}<br>${escapeHtml(m.notes || "No notes")}</p>`).join("") : '<p>No maintenance recorded for this component.</p>'}</div>${current && c.position === "chain" ? '<div class="dialog-actions"><button class="button secondary" data-action="replace">Replace this chain ↗</button></div>' : ""}`;
+  $("#component-details").innerHTML = `<p class="dialog-description">${c.category} · ${current ? "Currently fitted" : "Retained in component history"}</p><div class="detail-stats"><div><span>Calculated lifetime</span><strong>${km(usage(id))} <small>km</small></strong></div><div><span>${current ? "Current installation" : "Last installation"}</span><strong>${km(usage(id, (current || installs.at(-1)).id))} <small>km</small></strong></div></div>${c.estimate ? `<p class="dialog-description">Starting estimate: ${km(c.estimate)} km, entered separately from calculated mileage. Combined total: ${km(usage(id) + c.estimate)} km.</p>` : ""}<div class="detail-section"><h3>Installation history</h3>${installs.map((i) => `<p><strong>${escapeHtml(bikeName(data.bikes.find((b) => b.id === i.bikeId)))}</strong><br>${dateLabel(i.start)} ${new Date(i.start).getFullYear()} → ${i.end ? `${dateLabel(i.end)} ${new Date(i.end).getFullYear()}` : "Present"} · ${km(usage(id, i.id))} km</p>`).join("")}</div><div class="detail-section"><h3>Maintenance history</h3>${services.length ? services.map((m) => `<p><strong>${escapeHtml(m.task)}</strong> · ${dateLabel(m.performed)}<br>${escapeHtml(m.notes || "No notes")}</p>`).join("") : '<p>No maintenance recorded for this component.</p>'}</div>${current ? `<div class="dialog-actions"><button class="button secondary" data-action="replace" data-replace-component="${c.id}">Replace this ${c.category.toLowerCase()} ↗</button></div>` : ""}`;
   $("#component-dialog").showModal();
 }
 function setViewFromHash() {
@@ -226,7 +242,7 @@ document.addEventListener("click", (event) => {
   if (target.dataset.bike) { selectedBike = target.dataset.bike; render(); }
   if (target.dataset.go) location.hash = target.dataset.go;
   if (target.dataset.component) openComponent(target.dataset.component);
-  if (target.dataset.action) { $("#component-dialog").close(); openEntry(target.dataset.action); }
+  if (target.dataset.action) { $("#component-dialog").close(); openEntry(target.dataset.action, target.dataset.replaceComponent); }
   if (target.id === "reset-demo" || target.hasAttribute("data-reset")) { data = seedData(); selectedBike = "gravel"; componentFilter = "current"; render(); showToast("Demo restored to its original data."); }
 });
 document.addEventListener("change", (event) => { if (event.target.id === "component-filter") { componentFilter = event.target.value; render(); } });

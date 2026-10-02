@@ -9,3 +9,5 @@
 @media(max-width:950px){.service-card{display:block}}
 @media(max-width:650px){.hero-top{flex-wrap:wrap;gap:10px}.hero svg{margin-top:8px}.hero{min-height:285px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+.hero-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px}.hero h2{overflow-wrap:anywhere}.hero-top>div:first-child{min-width:0}.component-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px}.bike-choice strong{overflow-wrap:anywhere}
