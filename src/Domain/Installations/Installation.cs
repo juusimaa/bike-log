@@ -12,4 +12,7 @@ public sealed class Installation : Entity
 public enum InstallationPosition
 {
     Chain,
+    Cassette,
+    FrontTyre,
+    RearTyre,
 }

@@ -15,7 +15,7 @@ public sealed class UsageCalculator : IUsageCalculator
             x => x.Id,
             x => new InstallationUsage(x.Id, 0, 0, false)
         );
-        var gaps = new List<Guid>();
+        var gaps = new List<AllocationGap>();
         foreach (var ride in rides)
         {
             if (ride.DistanceMetres <= 0 || ride.DurationSeconds is <= 0)
@@ -33,9 +33,12 @@ public sealed class UsageCalculator : IUsageCalculator
                     && (!x.EndUtc.HasValue || ride.StartUtc < x.EndUtc)
                 )
                 .ToArray();
-            if (matches.Length == 0)
+            foreach (var position in Enum.GetValues<InstallationPosition>())
             {
-                gaps.Add(ride.Id);
+                if (!matches.Any(x => x.Position == position))
+                {
+                    gaps.Add(new(ride.Id, position));
+                }
             }
 
             foreach (var i in matches)
@@ -71,7 +74,11 @@ public sealed class UsageCalculator : IUsageCalculator
         return new(
             components,
             totals.Values.OrderBy(x => x.InstallationId).ToArray(),
-            gaps.Order().ToArray()
+            gaps.Where(x => x.Position == InstallationPosition.Chain)
+                .Select(x => x.RideId)
+                .Order()
+                .ToArray(),
+            gaps.OrderBy(x => x.RideId).ThenBy(x => x.Position).ToArray()
         );
     }
 }

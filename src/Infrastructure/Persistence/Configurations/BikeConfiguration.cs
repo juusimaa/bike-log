@@ -9,6 +9,7 @@ internal sealed class BikeConfiguration : IEntityTypeConfiguration<Bike>
     public void Configure(EntityTypeBuilder<Bike> b)
     {
         EntityConfiguration.Common(b);
-        b.Property(x => x.Name).IsRequired();
+        b.Property(x => x.Name);
+        b.Property(x => x.Kind).HasConversion<string>();
     }
 }

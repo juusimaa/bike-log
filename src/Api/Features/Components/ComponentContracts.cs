@@ -12,5 +12,21 @@ public sealed record ComponentResponse(
     string Type,
     string Model,
     long Version,
-    IReadOnlyList<InstallationResponse> Installations
+    IReadOnlyList<InstallationResponse> Installations,
+    long InitialUsageEstimateMetres
+);
+
+public sealed record EditComponentEstimate(
+    [property: System.Text.Json.Serialization.JsonRequired] long InitialUsageEstimateMetres,
+    [property: System.Text.Json.Serialization.JsonRequired] long ExpectedVersion
+);
+
+public sealed record ComponentEstimateResponse(
+    Guid Id,
+    string Type,
+    string Model,
+    long Version,
+    long CalculatedLifetimeMetres,
+    long InitialUsageEstimateMetres,
+    long CombinedLifetimeMetres
 );

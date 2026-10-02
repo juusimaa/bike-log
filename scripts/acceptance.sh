@@ -8,11 +8,15 @@ try: loopback=ipaddress.ip_address(u.hostname).is_loopback
 except ValueError: loopback=False
 if u.scheme!='http' or not loopback or u.username or u.password or u.path or u.query or u.fragment:
     raise SystemExit('Acceptance only permits an explicit loopback HTTP API URL.')
+class RefuseRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+opener=urllib.request.build_opener(RefuseRedirect())
 def request(method,path,body=None,status=200):
     data=None if body is None else json.dumps(body).encode()
     r=urllib.request.Request(base+path,data=data,method=method,headers={'Content-Type':'application/json'})
     try:
-        with urllib.request.urlopen(r,timeout=15) as response:
+        with opener.open(r,timeout=15) as response:
             assert response.status==status, f'{method} {path}: unexpected status'
             raw=response.read()
             return json.loads(raw) if raw else None
@@ -22,7 +26,7 @@ start=datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(days=3)
 time=lambda delta:(start+datetime.timedelta(hours=delta)).isoformat()
 request('GET','/health/ready')
 request('GET','/openapi/v1.json')
-bike=request('POST','/api/bikes',{'name':'Acceptance synthetic '+uuid.uuid4().hex[:8]},201)['id']
+bike=request('POST','/api/bikes',{'name':'Acceptance synthetic '+uuid.uuid4().hex[:8], 'make':'Synthetic', 'model':'Test', 'kind':'gravel', 'year':2026},201)['id']
 a=request('POST','/api/components',{'type':'chain','model':'Acceptance synthetic chain A'},201)['id']
 b=request('POST','/api/components',{'type':'chain','model':'Acceptance synthetic chain B'},201)['id']
 i=request('POST','/api/installations',{'bikeId':bike,'componentId':a,'position':'chain','startUtc':time(0)},201)['id']

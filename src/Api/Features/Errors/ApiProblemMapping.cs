@@ -100,6 +100,16 @@ public sealed class ApiProblemMapping : IEndpointFilter
 
 public static class ApiInput
 {
+    public static string? OptionalName(string? name)
+    {
+        var normalized = string.IsNullOrWhiteSpace(name) ? null : name.Trim();
+        ApiInput.Require(
+            normalized == null || normalized.Length <= 100,
+            "Name must be at most 100 characters."
+        );
+        return normalized;
+    }
+
     public static void Require(bool valid, string message)
     {
         if (!valid)

@@ -11,3 +11,6 @@ The execution environment's global SDK was older. A temporary SDK was installed 
 All relevant writes acquire a transaction-scoped PostgreSQL advisory lock derived from the SHA-256 of the owner ID. It serializes small per-owner workloads across API processes so overlap checks and projection rebuilding see current history. Hash collisions would only serialize unrelated owners. Replace this approach when measured workloads justify a narrower lock strategy; do not remove serialization without preserving allocation/overlap correctness.
 
 EF Core Relational is pinned explicitly to 10.0.12, matching EF Core and EF tooling. The provider's lower compatible transitive version caused assembly-version build warnings until this alignment.
+
+
+2026-10-02 UI-backend support extends the same synchronous architecture to four positions, metadata, paged discovery, complete replacement, separate estimates and oil/wax rules. The foundation's chain-only and zero-estimate restrictions are historical. Additive migrations and explicit `rebuild-usage` preserve local data; each owner's projections commit atomically under the existing lock. Startup performs neither. After upgrade, roll back only to application code compatible with new types and nullable legacy/custom names. No database reset, cloud deployment or client integration is part of this milestone.

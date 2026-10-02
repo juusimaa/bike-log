@@ -48,7 +48,19 @@ public class EquipmentApiTests
     public async Task ConcurrentInstallsYieldOneSuccessAndOne409()
     {
         await using var s = await ApiScenario.Open();
-        var bike = ApiScenario.Id(await s.Create("/api/bikes", new { name = "Concurrent" }));
+        var bike = ApiScenario.Id(
+            await s.Create(
+                "/api/bikes",
+                new
+                {
+                    name = "Concurrent",
+                    make = "Synthetic",
+                    model = "Test",
+                    kind = "gravel",
+                    year = 2026,
+                }
+            )
+        );
         var a = await s.Chain();
         var b = await s.Chain();
         var r = await Task.WhenAll(

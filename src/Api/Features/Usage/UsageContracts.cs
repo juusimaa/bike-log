@@ -16,7 +16,8 @@ public sealed record ComponentUsageResponse(
     bool HasUnknownDuration,
     long InitialUsageEstimateMetres,
     IReadOnlyList<InstallationUsageResponse> Installations,
-    DateTimeOffset? CalculatedAtUtc
+    DateTimeOffset? CalculatedAtUtc,
+    long CombinedLifetimeMetres
 );
 
 public sealed record CurrentChainUsage(
@@ -28,12 +29,31 @@ public sealed record CurrentChainUsage(
     long LifetimeMetres,
     long LifetimeSeconds,
     bool LifetimeHasUnknownDuration,
-    long InitialUsageEstimateMetres
+    long InitialUsageEstimateMetres,
+    long CombinedLifetimeMetres
 );
+
+public sealed record CurrentComponentUsage(
+    Guid ComponentId,
+    Guid InstallationId,
+    string Position,
+    long CurrentInstallationMetres,
+    long CurrentInstallationSeconds,
+    bool CurrentInstallationHasUnknownDuration,
+    long LifetimeMetres,
+    long LifetimeSeconds,
+    bool LifetimeHasUnknownDuration,
+    long InitialUsageEstimateMetres,
+    long CombinedLifetimeMetres
+);
+
+public sealed record AllocationGapResponse(Guid RideId, string Position);
 
 public sealed record BikeUsageResponse(
     Guid BikeId,
     CurrentChainUsage? CurrentChain,
     IReadOnlyList<Guid> UnallocatedRideIds,
-    DateTimeOffset? CalculatedAtUtc
+    DateTimeOffset? CalculatedAtUtc,
+    IReadOnlyList<CurrentComponentUsage> CurrentComponents,
+    IReadOnlyList<AllocationGapResponse> AllocationGaps
 );

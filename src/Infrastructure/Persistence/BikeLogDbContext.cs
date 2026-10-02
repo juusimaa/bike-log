@@ -2,6 +2,7 @@ using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
 using BikeLog.Domain.Maintenance;
+using BikeLog.Domain.Reminders;
 using BikeLog.Domain.Rides;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,6 +11,7 @@ namespace BikeLog.Infrastructure.Persistence;
 public sealed class BikeLogDbContext(DbContextOptions<BikeLogDbContext> options)
     : DbContext(options)
 {
+    public DbSet<ChainLubricationRule> ChainLubricationRules => Set<ChainLubricationRule>();
     public DbSet<Bike> Bikes => Set<Bike>();
     public DbSet<Component> Components => Set<Component>();
     public DbSet<Installation> Installations => Set<Installation>();

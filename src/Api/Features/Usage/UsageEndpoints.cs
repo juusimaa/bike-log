@@ -1,7 +1,9 @@
 using System.Data;
 using BikeLog.Api.Development;
+using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Installations;
+using BikeLog.Domain.Installations;
 using BikeLog.Domain.Usage;
 using BikeLog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -25,15 +27,11 @@ public static class UsageEndpoints
                         IsolationLevel.RepeatableRead,
                         ct
                     );
-                    if (
-                        !await db.Components.AnyAsync(
-                            x => x.OwnerId == owner.OwnerId && x.Id == id,
-                            ct
-                        )
-                    )
-                    {
-                        throw ApiInput.Missing();
-                    }
+                    var component =
+                        await db
+                            .Components.AsNoTracking()
+                            .SingleOrDefaultAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct)
+                        ?? throw ApiInput.Missing();
 
                     var usage = await db
                         .ComponentUsages.AsNoTracking()
@@ -67,14 +65,18 @@ public static class UsageEndpoints
                         usage?.LifetimeMetres ?? 0,
                         usage?.LifetimeSeconds ?? 0,
                         usage?.HasUnknownDuration ?? false,
-                        0,
+                        component.InitialUsageEstimateMetres,
                         items,
-                        usage?.CalculatedAtUtc
+                        usage?.CalculatedAtUtc,
+                        UsageEstimate.Combined(
+                            usage?.LifetimeMetres ?? 0,
+                            component.InitialUsageEstimateMetres
+                        )
                     );
                 }
             )
             .WithDescription(
-                "Lifetime and per-installation usage. Seconds include only known durations; hasUnknownDuration flags incomplete hours. Initial estimates are zero in this slice."
+                "Lifetime and per-installation usage. Seconds include only known durations; hasUnknownDuration flags incomplete hours. Estimates are separate from calculated usage."
             );
         api.MapGet(
                 "/bikes/{id:guid}/usage",
@@ -82,7 +84,8 @@ public static class UsageEndpoints
                     Guid id,
                     BikeLogDbContext db,
                     IDevelopmentOwner owner,
-                    IUsageCalculator calculator,
+                    BikeUsageReader reader,
+                    TimeProvider clock,
                     CancellationToken ct
                 ) =>
                 {
@@ -90,65 +93,11 @@ public static class UsageEndpoints
                         IsolationLevel.RepeatableRead,
                         ct
                     );
-                    if (!await db.Bikes.AnyAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct))
-                    {
-                        throw ApiInput.Missing();
-                    }
-
-                    var rides = await db
-                        .Rides.AsNoTracking()
-                        .Where(x => x.OwnerId == owner.OwnerId && x.BikeId == id)
-                        .ToListAsync(ct);
-                    var installations = await db
-                        .Installations.AsNoTracking()
-                        .Where(x => x.OwnerId == owner.OwnerId && x.BikeId == id)
-                        .ToListAsync(ct);
-                    var gaps = calculator.Calculate(rides, installations).UnallocatedRideIds;
-                    var now = DateTimeOffset.UtcNow;
-                    var current = installations.SingleOrDefault(x =>
-                        x.StartUtc <= now && (!x.EndUtc.HasValue || now < x.EndUtc)
-                    );
-                    CurrentChainUsage? chain = null;
-                    if (current != null)
-                    {
-                        var lifetime = await db
-                            .ComponentUsages.AsNoTracking()
-                            .SingleAsync(
-                                x =>
-                                    x.OwnerId == owner.OwnerId
-                                    && x.ComponentId == current.ComponentId,
-                                ct
-                            );
-                        var u = await db
-                            .InstallationUsages.AsNoTracking()
-                            .SingleAsync(
-                                x => x.OwnerId == owner.OwnerId && x.InstallationId == current.Id,
-                                ct
-                            );
-                        chain = new(
-                            current.ComponentId,
-                            current.Id,
-                            u.Metres,
-                            u.Seconds,
-                            u.HasUnknownDuration,
-                            lifetime.LifetimeMetres,
-                            lifetime.LifetimeSeconds,
-                            lifetime.HasUnknownDuration,
-                            0
-                        );
-                    }
-                    var calculated = await db
-                        .InstallationUsages.Where(x =>
-                            x.OwnerId == owner.OwnerId
-                            && installations.Select(i => i.Id).Contains(x.InstallationId)
-                        )
-                        .Select(x => (DateTimeOffset?)x.CalculatedAtUtc)
-                        .MinAsync(ct);
-                    return new BikeUsageResponse(id, chain, gaps, calculated);
+                    return await reader.ReadAsync(owner.OwnerId, id, clock.GetUtcNow(), ct);
                 }
             )
             .WithDescription(
-                "Current chain as of now, explained totals and rides with missing chain installation history. Allocation gaps are not guessed."
+                "Current components as of now, explained totals and missing installation history by position. Allocation gaps are not guessed."
             );
     }
 }

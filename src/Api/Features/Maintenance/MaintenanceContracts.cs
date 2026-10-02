@@ -9,7 +9,8 @@ public sealed record CreateMaintenance(
     [property: System.Text.Json.Serialization.JsonRequired] DateTimeOffset PerformedUtc,
     string? Notes,
     decimal? Cost,
-    string? Currency
+    string? Currency,
+    string? TaskKey = null
 );
 
 public sealed record MaintenanceResponse(
@@ -21,7 +22,8 @@ public sealed record MaintenanceResponse(
     string? Notes,
     decimal? Cost,
     string? Currency,
-    long Version
+    long Version,
+    string? TaskKey
 )
 {
     public static MaintenanceResponse From(MaintenanceRecord r) =>
@@ -34,6 +36,7 @@ public sealed record MaintenanceResponse(
             r.Notes,
             r.Cost,
             r.Currency,
-            r.Version
+            r.Version,
+            r.TaskKey
         );
 }

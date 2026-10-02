@@ -13,6 +13,21 @@ public sealed class UsageRebuilder(BikeLogDbContext db, IUsageCalculator calcula
             .Where(x => x.OwnerId == ownerId)
             .ToListAsync(ct);
         var result = calculator.Calculate(rides, installations);
+        var calculated = result.ComponentUsages.ToDictionary(
+            x => x.ComponentId,
+            x => x.LifetimeMetres
+        );
+        var components = await db
+            .Components.AsNoTracking()
+            .Where(x => x.OwnerId == ownerId)
+            .ToListAsync(ct);
+        foreach (var component in components)
+        {
+            UsageEstimate.Combined(
+                calculated.GetValueOrDefault(component.Id),
+                component.InitialUsageEstimateMetres
+            );
+        }
         var now = DateTimeOffset.UtcNow;
         await db.ComponentUsages.Where(x => x.OwnerId == ownerId).ExecuteDeleteAsync(ct);
         await db.InstallationUsages.Where(x => x.OwnerId == ownerId).ExecuteDeleteAsync(ct);

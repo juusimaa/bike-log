@@ -1,19 +1,31 @@
 using BikeLog.Api.Development;
 using BikeLog.Api.Features.Bikes;
+using BikeLog.Api.Features.Collections;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Installations;
 using BikeLog.Api.Features.Maintenance;
+using BikeLog.Api.Features.Reminders;
 using BikeLog.Api.Features.Rides;
 using BikeLog.Api.Features.Usage;
+using BikeLog.Domain.Reminders;
 using BikeLog.Domain.Usage;
 using BikeLog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+if (args.Contains("--rebuild-usage"))
+{
+    builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
+}
 builder.Services.AddSingleton<IDevelopmentOwner, DevelopmentOwner>();
-builder.Services.AddOpenApi();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddOpenApi(options =>
+    options
+        .AddSchemaTransformer(ApiContractSchema.Describe)
+        .AddOperationTransformer(CollectionEndpoints.DescribeParameters)
+);
 builder.Services.AddProblemDetails();
 builder.Services.Configure<RouteHandlerOptions>(options => options.ThrowOnBadRequest = true);
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -28,8 +40,16 @@ builder.Services.AddDbContext<BikeLogDbContext>(
 builder.Services.AddSingleton<IUsageCalculator, UsageCalculator>();
 builder.Services.AddScoped<UsageRebuilder>();
 builder.Services.AddScoped<OwnerMutation>();
+builder.Services.AddSingleton<IReminderCalculator, ReminderCalculator>();
+builder.Services.AddScoped<ReminderReader>();
+builder.Services.AddScoped<BikeUsageReader>();
 var app = builder.Build();
 DevelopmentAccess.Validate(app.Environment, app.Configuration);
+if (args.Contains("--rebuild-usage"))
+{
+    await ProjectionUpgrade.RebuildAllAsync(app.Services, CancellationToken.None);
+    return;
+}
 var connection = app.Configuration.GetConnectionString("Postgres")!;
 app.Use(
     async (context, next) =>
@@ -57,10 +77,15 @@ foreach (var status in new[] { 400, 404, 409, 500, 503 })
     );
 }
 
+api.MapCollections();
 api.MapBikes();
+api.MapBikeOverview();
 api.MapComponents();
+api.MapComponentEstimates();
 api.MapInstallations();
+api.MapReplacementWithService();
 api.MapMaintenance();
+api.MapReminders();
 api.MapRides();
 api.MapUsage();
 app.MapGet(

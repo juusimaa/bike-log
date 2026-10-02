@@ -1,4 +1,5 @@
 using BikeLog.Api.Development;
+using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Installations;
 using BikeLog.Infrastructure.Persistence;
@@ -20,10 +21,7 @@ public static class InstallationEndpoints
                     CancellationToken ct
                 ) =>
                 {
-                    ApiInput.Require(
-                        request.Position == "chain",
-                        "Only position 'chain' is supported in this slice."
-                    );
+                    var position = ComponentValues.ParsePosition(request.Position);
                     var i = await mutation.ExecuteAsync(
                         owner.OwnerId,
                         async token =>
@@ -42,11 +40,17 @@ public static class InstallationEndpoints
                                 throw ApiInput.Missing();
                             }
 
+                            var component = await db.Components.SingleAsync(
+                                x => x.OwnerId == owner.OwnerId && x.Id == request.ComponentId,
+                                token
+                            );
+                            ComponentCompatibility.Validate(component.Type, position);
                             var i = new Installation
                             {
                                 OwnerId = owner.OwnerId,
                                 BikeId = request.BikeId,
                                 ComponentId = request.ComponentId,
+                                Position = position,
                                 StartUtc = request.StartUtc.ToUniversalTime(),
                                 EndUtc = request.EndUtc?.ToUniversalTime(),
                             };
@@ -69,7 +73,7 @@ public static class InstallationEndpoints
             )
             .Produces<InstallationResponse>(201)
             .WithDescription(
-                "Install a chain using [startUtc,endUtc) UTC intervals. Whole rides allocate by start instant."
+                "Install a compatible component using [startUtc,endUtc) UTC intervals. Whole rides allocate by start instant."
             );
         api.MapGet(
             "/installations/{id:guid}",
@@ -155,12 +159,17 @@ public static class InstallationEndpoints
                             throw ApiInput.Missing();
                         }
 
+                        var component = await db.Components.SingleAsync(
+                            x => x.OwnerId == owner.OwnerId && x.Id == request.NewComponentId,
+                            token
+                        );
+                        ComponentCompatibility.Validate(component.Type, old.Position);
                         var at = request.ReplacedAtUtc.ToUniversalTime();
                         ApiInput.Require(
                             old.EndUtc == null
                                 && at > old.StartUtc
                                 && request.NewComponentId != old.ComponentId,
-                            "Replacement requires an open interval, a later instant and a different chain."
+                            "Replacement requires an open interval, a later instant and a different component."
                         );
                         old.EndUtc = at;
                         old.Version = checked(old.Version + 1);
@@ -169,6 +178,7 @@ public static class InstallationEndpoints
                             OwnerId = owner.OwnerId,
                             BikeId = old.BikeId,
                             ComponentId = request.NewComponentId,
+                            Position = old.Position,
                             StartUtc = at,
                         };
                         var all = await db
@@ -190,7 +200,7 @@ public static class InstallationEndpoints
         );
     }
 
-    private static async Task ValidateHistory(
+    internal static async Task ValidateHistory(
         IReadOnlyList<Installation> proposed,
         BikeLogDbContext db,
         Guid owner,

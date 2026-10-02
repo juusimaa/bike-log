@@ -37,6 +37,7 @@ public static class RideEndpoints
 
                             var r = new Ride
                             {
+                                Name = ApiInput.OptionalName(request.Name),
                                 OwnerId = owner.OwnerId,
                                 BikeId = request.BikeId,
                                 StartUtc = request.StartUtc.ToUniversalTime(),
@@ -98,6 +99,7 @@ public static class RideEndpoints
                                 throw ApiInput.Missing();
                             }
 
+                            r.Name = ApiInput.OptionalName(request.Name);
                             r.BikeId = request.BikeId;
                             r.StartUtc = request.StartUtc.ToUniversalTime();
                             r.DistanceMetres = request.DistanceMetres;
@@ -115,35 +117,36 @@ public static class RideEndpoints
                 "Correct a ride with expectedVersion; its history and rebuilt usage commit together."
             );
         api.MapDelete(
-            "/rides/{id:guid}",
-            async (
-                Guid id,
-                long expectedVersion,
-                BikeLogDbContext db,
-                OwnerMutation mutation,
-                IDevelopmentOwner owner,
-                CancellationToken ct
-            ) =>
-            {
-                await mutation.ExecuteAsync(
-                    owner.OwnerId,
-                    async token =>
-                    {
-                        var r =
-                            await db.Rides.SingleOrDefaultAsync(
-                                x => x.Id == id && x.OwnerId == owner.OwnerId,
-                                token
-                            ) ?? throw ApiInput.Missing();
-                        ApiInput.Version(expectedVersion, r.Version);
-                        db.Rides.Remove(r);
-                        return 0;
-                    },
-                    true,
-                    ct
-                );
-                return Results.NoContent();
-            }
-        );
+                "/rides/{id:guid}",
+                async (
+                    Guid id,
+                    long expectedVersion,
+                    BikeLogDbContext db,
+                    OwnerMutation mutation,
+                    IDevelopmentOwner owner,
+                    CancellationToken ct
+                ) =>
+                {
+                    await mutation.ExecuteAsync(
+                        owner.OwnerId,
+                        async token =>
+                        {
+                            var r =
+                                await db.Rides.SingleOrDefaultAsync(
+                                    x => x.Id == id && x.OwnerId == owner.OwnerId,
+                                    token
+                                ) ?? throw ApiInput.Missing();
+                            ApiInput.Version(expectedVersion, r.Version);
+                            db.Rides.Remove(r);
+                            return 0;
+                        },
+                        true,
+                        ct
+                    );
+                    return Results.NoContent();
+                }
+            )
+            .Produces(204);
     }
 
     private static void Validate(long metres, long? seconds) =>

@@ -50,7 +50,19 @@ public class TimestampPrecisionTests
     public async Task CollapsedPrecisionIntervalReturns400WithoutSaving()
     {
         await using var s = await ApiScenario.Open();
-        var bike = ApiScenario.Id(await s.Create("/api/bikes", new { name = "Precision" }));
+        var bike = ApiScenario.Id(
+            await s.Create(
+                "/api/bikes",
+                new
+                {
+                    name = "Precision",
+                    make = "Synthetic",
+                    model = "Test",
+                    kind = "gravel",
+                    year = 2026,
+                }
+            )
+        );
         var chain = await s.Chain();
         var r = await s.Client.PostAsJsonAsync(
             "/api/installations",

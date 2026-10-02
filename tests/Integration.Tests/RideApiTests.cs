@@ -73,7 +73,19 @@ public class RideApiTests
     public async Task UnfittedRideProducesVisibleGap()
     {
         await using var s = await ApiScenario.Open();
-        var bike = ApiScenario.Id(await s.Create("/api/bikes", new { name = "Unfitted" }));
+        var bike = ApiScenario.Id(
+            await s.Create(
+                "/api/bikes",
+                new
+                {
+                    name = "Unfitted",
+                    make = "Synthetic",
+                    model = "Test",
+                    kind = "gravel",
+                    year = 2026,
+                }
+            )
+        );
         var ride = ApiScenario.Id(
             await s.Create(
                 "/api/rides",

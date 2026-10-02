@@ -13,6 +13,7 @@ cp .env.example .env
 # Set POSTGRES_PASSWORD in .env to a local password (shell-safe alphanumeric).
 ./scripts/dev.sh db-up
 ./scripts/dev.sh migrate
+./scripts/dev.sh rebuild-usage
 ./scripts/dev.sh run
 ```
 
@@ -23,9 +24,9 @@ API: http://127.0.0.1:5080; OpenAPI: `/openapi/v1.json`; readiness: `/health/rea
 ./scripts/dev.sh db-down
 ```
 
-`db-down` preserves the named Docker volume. `db-reset --confirm-delete-local-data` permanently deletes it. Tests create uniquely named `bikelog_test_*` databases on this dedicated container and drop only those databases. Migrations are explicit, never automatic at API startup. See [backend workflows](docs/backend-workflows.md) for the API contract, acceptance script and verification evidence.
+`db-down` preserves the named Docker volume. `db-reset --confirm-delete-local-data` permanently deletes it. Tests create uniquely named `bikelog_test_*` databases on this dedicated container and drop only those databases. Migrations and owner-atomic usage rebuilds are explicit, never automatic at API startup. Re-run `rebuild-usage` after upgrades; preserve the named volume. See [backend workflows](docs/backend-workflows.md) for the API contract, acceptance script and verification evidence.
 
-With the API running, run `./scripts/acceptance.sh` to exercise the 65 km ride, maintenance and chain-replacement workflow. This also requires Python 3.
+With the API running, run `./scripts/acceptance.sh` to exercise the 65 km ride, maintenance and chain-replacement workflow. Run `./scripts/acceptance-ui-backend.sh` for paginated two-bike/four-position, replacement, estimate and oil/wax coverage. Both require Python 3 and retain uniquely marked synthetic records.
 
 ## Formatting and static analysis
 

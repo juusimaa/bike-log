@@ -10,12 +10,17 @@ public class ApiFactory(
     string environment = "Development",
     bool enabled = true,
     string urls = "http://127.0.0.1:5080",
-    Action<IServiceCollection>? configure = null
+    Action<IServiceCollection>? configure = null,
+    TimeProvider? timeProvider = null
 ) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(environment);
+        if (timeProvider is not null)
+        {
+            builder.ConfigureServices(services => services.AddSingleton(timeProvider));
+        }
         if (configure != null)
         {
             builder.ConfigureServices(configure);

@@ -1,6 +1,7 @@
-using System.Text.RegularExpressions;
 using BikeLog.Api.Development;
 using BikeLog.Api.Features.Errors;
+using BikeLog.Domain.Components;
+using BikeLog.Domain.Installations;
 using BikeLog.Domain.Maintenance;
 using BikeLog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -21,16 +22,7 @@ public static class MaintenanceEndpoints
                     CancellationToken ct
                 ) =>
                 {
-                    ApiInput.Require(
-                        (request.Cost == null && request.Currency == null)
-                            || (
-                                request.Cost is >= 0 and <= 9999999999999999.99m
-                                && decimal.Round(request.Cost.Value, 2) == request.Cost
-                                && request.Currency != null
-                                && Regex.IsMatch(request.Currency, "^[A-Z]{3}$")
-                            ),
-                        "Cost must be nonnegative with up to two decimals and a three-letter uppercase currency, supplied together."
-                    );
+                    MaintenanceInput.ValidateCost(request.Cost, request.Currency);
                     var r = await mutation.ExecuteAsync(
                         owner.OwnerId,
                         async token =>
@@ -45,6 +37,47 @@ public static class MaintenanceEndpoints
                                 throw ApiInput.Missing();
                             }
 
+                            ApiInput.Require(
+                                request.TaskKey
+                                    is null
+                                        or MaintenanceRecord.ChainLubricationTaskKey,
+                                "Unknown maintenance task key."
+                            );
+                            if (request.TaskKey is not null)
+                            {
+                                ApiInput.Require(
+                                    request.ComponentId.HasValue,
+                                    "Chain lubrication requires a chain association."
+                                );
+                                var chainComponent =
+                                    await db
+                                        .Components.AsNoTracking()
+                                        .SingleOrDefaultAsync(
+                                            x =>
+                                                x.OwnerId == owner.OwnerId
+                                                && x.Id == request.ComponentId,
+                                            token
+                                        )
+                                    ?? throw ApiInput.Missing();
+                                ApiInput.Require(
+                                    chainComponent.Type == ComponentType.Chain,
+                                    "Chain lubrication requires a chain association."
+                                );
+                                var performed = request.PerformedUtc.ToUniversalTime();
+                                ApiInput.Require(
+                                    await db.Installations.AnyAsync(
+                                        x =>
+                                            x.OwnerId == owner.OwnerId
+                                            && x.BikeId == request.BikeId
+                                            && x.ComponentId == chainComponent.Id
+                                            && x.Position == InstallationPosition.Chain
+                                            && x.StartUtc <= performed
+                                            && (!x.EndUtc.HasValue || performed < x.EndUtc),
+                                        token
+                                    ),
+                                    "The chain must be fitted at the maintenance instant."
+                                );
+                            }
                             var at = request.PerformedUtc.ToUniversalTime();
                             if (request.ComponentId is { } component)
                             {
@@ -76,6 +109,7 @@ public static class MaintenanceEndpoints
                                 OwnerId = owner.OwnerId,
                                 BikeId = request.BikeId,
                                 ComponentId = request.ComponentId,
+                                TaskKey = request.TaskKey,
                                 Task = ApiInput.Text(request.Task, "task"),
                                 PerformedUtc = at,
                                 Notes = request.Notes,

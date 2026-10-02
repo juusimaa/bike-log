@@ -27,8 +27,19 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Color")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Kind")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Make")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Model")
+                        .HasColumnType("text");
+
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("OwnerId")
@@ -37,6 +48,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
+
+                    b.Property<int?>("Year")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -49,6 +63,11 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid");
+
+                    b.Property<long>("InitialUsageEstimateMetres")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(0L);
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -71,7 +90,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
 
                     b.ToTable("Components", null, t =>
                         {
-                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" = 'Chain'");
+                            t.HasCheckConstraint("CK_Component_InitialUsageEstimate", "\"InitialUsageEstimateMetres\" >= 0");
+
+                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" IN ('Chain', 'Cassette', 'Tyre')");
                         });
                 });
 
@@ -115,7 +136,7 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Installation_Interval", "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\"");
 
-                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" = 'Chain'");
+                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" IN ('Chain', 'Cassette', 'FrontTyre', 'RearTyre')");
                         });
                 });
 
@@ -150,6 +171,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("TaskKey")
+                        .HasColumnType("text");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
@@ -170,6 +194,52 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("BikeLog.Domain.Reminders.ChainLubricationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BikeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Method")
+                        .HasColumnType("text");
+
+                    b.Property<long?>("OilThresholdMetres")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("WaxThresholdMetres")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OwnerId", "Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("OwnerId", "BikeId")
+                        .IsUnique();
+
+                    b.ToTable("ChainLubricationRules", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Reminder_Enabled", "NOT \"Enabled\" OR (\"Method\" IS NOT NULL AND \"OilThresholdMetres\" IS NOT NULL AND \"WaxThresholdMetres\" IS NOT NULL)");
+
+                            t.HasCheckConstraint("CK_Reminder_Method", "\"Method\" IS NULL OR \"Method\" IN ('Oil','Wax')");
+
+                            t.HasCheckConstraint("CK_Reminder_Thresholds", "(\"OilThresholdMetres\" IS NULL OR \"OilThresholdMetres\" BETWEEN 1000 AND 10000000) AND (\"WaxThresholdMetres\" IS NULL OR \"WaxThresholdMetres\" BETWEEN 1000 AND 10000000)");
+                        });
+                });
+
             modelBuilder.Entity("BikeLog.Domain.Rides.Ride", b =>
                 {
                     b.Property<Guid>("Id")
@@ -183,6 +253,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
 
                     b.Property<long?>("DurationSeconds")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
@@ -297,6 +370,16 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         .HasForeignKey("OwnerId", "ComponentId")
                         .HasPrincipalKey("OwnerId", "Id")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("BikeLog.Domain.Reminders.ChainLubricationRule", b =>
+                {
+                    b.HasOne("BikeLog.Domain.Bikes.Bike", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId", "BikeId")
+                        .HasPrincipalKey("OwnerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("BikeLog.Domain.Rides.Ride", b =>

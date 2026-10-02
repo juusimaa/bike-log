@@ -36,7 +36,10 @@ internal sealed class InstallationConfiguration : IEntityTypeConfiguration<Insta
                     "CK_Installation_Interval",
                     "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\""
                 );
-                t.HasCheckConstraint("CK_Installation_Position", "\"Position\" = 'Chain'");
+                t.HasCheckConstraint(
+                    "CK_Installation_Position",
+                    "\"Position\" IN ('Chain', 'Cassette', 'FrontTyre', 'RearTyre')"
+                );
             }
         );
     }

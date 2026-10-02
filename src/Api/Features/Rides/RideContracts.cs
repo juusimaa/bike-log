@@ -6,7 +6,8 @@ public sealed record CreateRide(
     [property: System.Text.Json.Serialization.JsonRequired] Guid BikeId,
     [property: System.Text.Json.Serialization.JsonRequired] DateTimeOffset StartUtc,
     [property: System.Text.Json.Serialization.JsonRequired] long DistanceMetres,
-    long? DurationSeconds
+    long? DurationSeconds,
+    string? Name = null
 );
 
 public sealed record CorrectRide(
@@ -14,7 +15,8 @@ public sealed record CorrectRide(
     [property: System.Text.Json.Serialization.JsonRequired] DateTimeOffset StartUtc,
     [property: System.Text.Json.Serialization.JsonRequired] long DistanceMetres,
     long? DurationSeconds,
-    [property: System.Text.Json.Serialization.JsonRequired] long ExpectedVersion
+    [property: System.Text.Json.Serialization.JsonRequired] long ExpectedVersion,
+    string? Name = null
 );
 
 public sealed record RideResponse(
@@ -23,9 +25,10 @@ public sealed record RideResponse(
     DateTimeOffset StartUtc,
     long DistanceMetres,
     long? DurationSeconds,
-    long Version
+    long Version,
+    string? Name = null
 )
 {
     public static RideResponse From(Ride r) =>
-        new(r.Id, r.BikeId, r.StartUtc, r.DistanceMetres, r.DurationSeconds, r.Version);
+        new(r.Id, r.BikeId, r.StartUtc, r.DistanceMetres, r.DurationSeconds, r.Version, r.Name);
 }

@@ -37,7 +37,19 @@ public sealed class ApiScenario : IAsyncDisposable
 
     public async Task<(Guid Bike, Guid Chain, Guid Installation)> Equipment()
     {
-        var bike = Id(await Create("/api/bikes", new { name = "Synthetic gravel" }));
+        var bike = Id(
+            await Create(
+                "/api/bikes",
+                new
+                {
+                    name = "Synthetic gravel",
+                    make = "Synthetic",
+                    model = "Test",
+                    kind = "gravel",
+                    year = 2026,
+                }
+            )
+        );
         var chain = Id(
             await Create("/api/components", new { type = "chain", model = "Synthetic A" })
         );

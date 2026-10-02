@@ -30,7 +30,8 @@ case "${1:-}" in
     echo 'Deleting the local PostgreSQL volume and its records.' >&2
     docker compose down --volumes ;;
   migrate) "$sdk" tool restore; "$sdk" ef database update --project src/Infrastructure --startup-project src/Api ;;
+  rebuild-usage) "$sdk" run --project src/Api --no-launch-profile -- --rebuild-usage ;;
   run) "$sdk" run --project src/Api --no-launch-profile ;;
   test) shift; "$sdk" test BikeLog.slnx "$@" ;;
-  *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|db-reset --confirm-delete-local-data|migrate|run|test}' >&2; exit 2 ;;
+  *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|db-reset --confirm-delete-local-data|migrate|rebuild-usage|run|test}' >&2; exit 2 ;;
 esac

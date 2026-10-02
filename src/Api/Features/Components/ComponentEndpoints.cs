@@ -22,10 +22,7 @@ public static class ComponentEndpoints
                     CancellationToken ct
                 ) =>
                 {
-                    ApiInput.Require(
-                        request.Type == "chain",
-                        "Only type 'chain' is supported in this slice."
-                    );
+                    var type = ComponentValues.ParseType(request.Type);
                     var c = await mutation.ExecuteAsync(
                         owner.OwnerId,
                         _ =>
@@ -33,6 +30,7 @@ public static class ComponentEndpoints
                             var c = new Component
                             {
                                 OwnerId = owner.OwnerId,
+                                Type = type,
                                 Model = ApiInput.Text(request.Model, "model"),
                             };
                             db.Components.Add(c);
@@ -43,7 +41,14 @@ public static class ComponentEndpoints
                     );
                     return Results.Created(
                         $"/api/components/{c.Id}",
-                        new ComponentResponse(c.Id, "chain", c.Model, c.Version, [])
+                        new ComponentResponse(
+                            c.Id,
+                            ComponentValues.Type(c.Type),
+                            c.Model,
+                            c.Version,
+                            [],
+                            c.InitialUsageEstimateMetres
+                        )
                     );
                 }
             )
@@ -68,10 +73,11 @@ public static class ComponentEndpoints
                     .ToListAsync(ct);
                 return new ComponentResponse(
                     c.Id,
-                    "chain",
+                    ComponentValues.Type(c.Type),
                     c.Model,
                     c.Version,
-                    history.Select(InstallationResponse.From).ToArray()
+                    history.Select(InstallationResponse.From).ToArray(),
+                    c.InitialUsageEstimateMetres
                 );
             }
         );

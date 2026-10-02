@@ -1,3 +1,4 @@
+using BikeLog.Api.Features.Components;
 using BikeLog.Domain.Installations;
 
 namespace BikeLog.Api.Features.Installations;
@@ -33,5 +34,13 @@ public sealed record InstallationResponse(
 )
 {
     public static InstallationResponse From(Installation i) =>
-        new(i.Id, i.BikeId, i.ComponentId, "chain", i.StartUtc, i.EndUtc, i.Version);
+        new(
+            i.Id,
+            i.BikeId,
+            i.ComponentId,
+            ComponentValues.Position(i.Position),
+            i.StartUtc,
+            i.EndUtc,
+            i.Version
+        );
 }

@@ -9,11 +9,24 @@ internal sealed class ComponentConfiguration : IEntityTypeConfiguration<Componen
     public void Configure(EntityTypeBuilder<Component> b)
     {
         EntityConfiguration.Common(b);
+        b.Property(x => x.InitialUsageEstimateMetres).HasDefaultValue(0L);
+        b.ToTable(
+            "Components",
+            t =>
+                t.HasCheckConstraint(
+                    "CK_Component_InitialUsageEstimate",
+                    "\"InitialUsageEstimateMetres\" >= 0"
+                )
+        );
         b.Property(x => x.Model).IsRequired();
         b.Property(x => x.Type).HasConversion<string>();
         b.ToTable(
             "Components",
-            t => t.HasCheckConstraint("CK_Component_Type", "\"Type\" = 'Chain'")
+            t =>
+                t.HasCheckConstraint(
+                    "CK_Component_Type",
+                    "\"Type\" IN ('Chain', 'Cassette', 'Tyre')"
+                )
         );
     }
 }
