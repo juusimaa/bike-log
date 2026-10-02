@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "status": "approved visual and interaction baseline",
+  "approvedOn": "2026-10-02",
+  "approval": "Owner requested: Mark draft as first approved version.",
+  "files": {
+    "index.html": "7ff74c803a482d6d7dca48dc97279e0e2fc017d1bfc71d6ffd6ec30245b5091f",
+    "styles.css": "df3a48aeb9f3ea75494f55b0d0c7fb58a15688157668349de97a881e05c4e4c1",
+    "app.js": "b9a6c034495ad64cf4c8b2ad36535b587da0ed3df70b256eb8f1db383ca5c5e7"
+  }
+}

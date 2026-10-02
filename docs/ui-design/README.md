@@ -1,4 +1,12 @@
-# Bike Log UI preview
+# Bike Log UI preview — approved version 1.0
+
+Status: **First approved visual and interaction baseline**, approved by the owner
+on 2026-10-02. The unchanged archived version is [versions/v1](versions/v1/README.md),
+with an asset checksum manifest. Current assets match this approved version.
+
+Frontend planning: [web UI design](../superpowers/specs/2026-10-02-web-ui-design.md)
+and [implementation plan](../superpowers/plans/2026-10-02-web-ui.md).
+
 
 Open `index.html` directly in a modern browser. No build, API, database, network
 connection, or third-party assets are required. Alternatively, from the repository
@@ -31,8 +39,13 @@ Rides allocate at their start using `[installation start, installation end)`.
 Maintenance validates the component's association at its performed time; component
 replacement rejects dates that would invalidate existing component maintenance.
 
-The preview explores bike naming, cassette/tyre replacement, starting estimates, and
-user-defined reminders beyond the current chain-only backend slice. These are UI
-examples, not implemented API capabilities. The name, visual direction, and
-layouts remain proposals. Production ownership, persistence, editing conflicts,
-and full domain validation still belong to the eventual client/backend work.
+The approved visual baseline covers bike naming, cassette/tyre replacement,
+starting estimates and the demonstrated reminder layout. The completed backend
+now supports these domain workflows plus oil/wax selection and independent
+intervals. The archived draft still uses a single fixture interval and calculates
+its own synthetic totals; those calculations must not enter the connected client.
+
+Visual and demonstrated interaction approval is distinct from approval of the new
+frontend technical design/plan. Production authentication, real personal use,
+React Native, deployment and backup/recovery remain separate milestones. This
+prototype is not evidence of backend-connected UI behavior.
