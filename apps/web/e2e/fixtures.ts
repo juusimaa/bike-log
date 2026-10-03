@@ -45,11 +45,12 @@ export const rows = positions.map((position, i) => {
         component: {
             id: componentId,
             type: position.includes('tyre') ? 'tyre' : position,
+            make: ['Shimano', 'Shimano', 'Schwalbe', 'Schwalbe'][i],
             model: [
-                'Shimano CN-HG601',
-                'Shimano 105 · 11–34T',
-                'Schwalbe G-One · 45 mm',
-                'Schwalbe G-One · 45 mm',
+                'CN-HG601',
+                '105 · 11–34T',
+                'G-One · 45 mm',
+                'G-One · 45 mm',
             ][i],
             version: 1,
             initialUsageEstimateMetres: i > 1 ? 120000 : 0,

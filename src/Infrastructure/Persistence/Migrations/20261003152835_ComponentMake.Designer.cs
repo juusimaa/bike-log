@@ -3,6 +3,7 @@ using System;
 using BikeLog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BikeLog.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(BikeLogDbContext))]
-    partial class BikeLogDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003152835_ComponentMake")]
+    partial class ComponentMake
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

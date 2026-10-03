@@ -234,7 +234,15 @@ public class ReminderApiTests
         await using var s = await ApiScenario.Open();
         var e = await s.Equipment();
         var cassette = ApiScenario.Id(
-            await s.Create("/api/components", new { type = "cassette", model = "Synthetic" })
+            await s.Create(
+                "/api/components",
+                new
+                {
+                    type = "cassette",
+                    make = "Synthetic",
+                    model = "Synthetic",
+                }
+            )
         );
         await s.Create(
             "/api/installations",
@@ -348,7 +356,15 @@ public class ReminderApiTests
         await using var s = await ApiScenario.Open();
         var e = await s.Equipment();
         var cassette = ApiScenario.Id(
-            await s.Create("/api/components", new { type = "cassette", model = "Legacy" })
+            await s.Create(
+                "/api/components",
+                new
+                {
+                    type = "cassette",
+                    make = "Synthetic",
+                    model = "Legacy",
+                }
+            )
         );
         await using var db = TestDatabase.Open(s.ConnectionString);
         var rows = new[]

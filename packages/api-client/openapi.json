@@ -2676,6 +2676,7 @@
         "required": [
           "id",
           "type",
+          "make",
           "model",
           "version",
           "calculatedLifetimeMetres",
@@ -2694,6 +2695,9 @@
               "cassette",
               "tyre"
             ],
+            "type": "string"
+          },
+          "make": {
             "type": "string"
           },
           "model": {
@@ -2740,6 +2744,7 @@
         "required": [
           "id",
           "type",
+          "make",
           "model",
           "version",
           "installations",
@@ -2757,6 +2762,9 @@
               "cassette",
               "tyre"
             ],
+            "type": "string"
+          },
+          "make": {
             "type": "string"
           },
           "model": {
@@ -2984,6 +2992,7 @@
       "CreateComponent": {
         "required": [
           "type",
+          "make",
           "model"
         ],
         "type": "object",
@@ -2995,6 +3004,12 @@
               "tyre"
             ],
             "type": "string"
+          },
+          "make": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "model": {
             "type": [
@@ -4011,12 +4026,19 @@
       },
       "ReplaceWithService": {
         "required": [
+          "newMake",
           "newModel",
           "replacedAtUtc",
           "expectedInstallationVersion"
         ],
         "type": "object",
         "properties": {
+          "newMake": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
           "newModel": {
             "type": [
               "null",

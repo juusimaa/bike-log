@@ -148,8 +148,7 @@ export function Overview({
                                                     {!usage
                                                         ? 'Not fitted'
                                                         : identity
-                                                          ? identity.component.model?.trim() ||
-                                                            'Model not provided'
+                                                          ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
                                                           : 'Loading component identity…'}
                                                 </small>
                                             </td>

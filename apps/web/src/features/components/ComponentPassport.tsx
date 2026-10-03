@@ -63,11 +63,7 @@ export function ComponentPassport({
     return (
         <Dialog
             open
-            title={
-                c
-                    ? `${c.model ?? 'Model not provided'} passport`
-                    : 'Component passport'
-            }
+            title={c ? `${c.make} ${c.model} passport` : 'Component passport'}
             onCancel={onClose}
         >
             {detail.isPending && <p>Loading component…</p>}
@@ -83,6 +79,8 @@ export function ComponentPassport({
                 <>
                     <p>Component identity: {c.id}</p>
                     <p>Type: {c.type}</p>
+                    <p>Make: {c.make}</p>
+                    <p>Model: {c.model}</p>
                     <p>
                         Starting estimate:{' '}
                         {formatKilometres(c.initialUsageEstimateMetres)} km

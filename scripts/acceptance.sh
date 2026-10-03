@@ -27,8 +27,8 @@ time=lambda delta:(start+datetime.timedelta(hours=delta)).isoformat()
 request('GET','/health/ready')
 request('GET','/openapi/v1.json')
 bike=request('POST','/api/bikes',{'name':'Acceptance synthetic '+uuid.uuid4().hex[:8], 'make':'Synthetic', 'model':'Test', 'kind':'gravel', 'year':2026},201)['id']
-a=request('POST','/api/components',{'type':'chain','model':'Acceptance synthetic chain A'},201)['id']
-b=request('POST','/api/components',{'type':'chain','model':'Acceptance synthetic chain B'},201)['id']
+a=request('POST','/api/components',{'make':'Synthetic','type':'chain','model':'Acceptance synthetic chain A'},201)['id']
+b=request('POST','/api/components',{'make':'Synthetic','type':'chain','model':'Acceptance synthetic chain B'},201)['id']
 i=request('POST','/api/installations',{'bikeId':bike,'componentId':a,'position':'chain','startUtc':time(0)},201)['id']
 request('POST','/api/rides',{'bikeId':bike,'startUtc':time(1),'distanceMetres':65000,'durationSeconds':3600},201)
 assert request('GET',f'/api/components/{a}/usage')['lifetimeMetres']==65000

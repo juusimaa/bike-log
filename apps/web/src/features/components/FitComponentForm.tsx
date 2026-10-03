@@ -31,6 +31,7 @@ export function FitComponentForm({
     onBusyChange?: (v: boolean) => void;
 }) {
     const [destination] = useState({ bikeId, position });
+    const [make, setMake] = useState('');
     const [model, setModel] = useState('');
     const [wall, setWall] = useState(() =>
         formatLocal(new Date().toISOString()),
@@ -39,6 +40,7 @@ export function FitComponentForm({
     const [offset, setOffset] = useState('');
     const [existing, setExisting] = useState('');
     const [createdComponentId, setCreated] = useState<string>();
+    const [createdMake, setCreatedMake] = useState<string | null>();
     const [createdModel, setCreatedModel] = useState<string | null>();
     const [phase, setPhase] = useState<
         'creating' | 'fitting' | 'incomplete' | 'saved' | 'idle'
@@ -90,13 +92,15 @@ export function FitComponentForm({
     }, []);
     useEffect(() => {
         onDirtyChange?.(
-            !!model ||
+            !!make ||
+                !!model ||
                 wall !== initial ||
                 !!existing ||
                 !!createdComponentId ||
                 !!uncertain,
         );
     }, [
+        make,
         model,
         wall,
         initial,
@@ -126,6 +130,14 @@ export function FitComponentForm({
         let componentId = createdComponentId || existing;
         try {
             if (!componentId) {
+                if (!make.trim()) {
+                    setFieldErrors({
+                        make: 'Enter a make or select an unused component',
+                    });
+                    throw new Error(
+                        'Enter a make or select an unused component',
+                    );
+                }
                 if (!model.trim()) {
                     setFieldErrors({
                         model: 'Enter a model or select an unused component',
@@ -137,10 +149,12 @@ export function FitComponentForm({
                 setPhase('creating');
                 const part = await getApi().createComponent({
                     type,
+                    make: make.trim(),
                     model: model.trim(),
                 });
                 componentId = part.id;
                 setCreated(part.id);
+                setCreatedMake(part.make);
                 setCreatedModel(part.model);
                 // Creation persists independently of the subsequent fitting request.
                 const createdKeys = [
@@ -219,7 +233,7 @@ export function FitComponentForm({
                             <option value="">Create new component</option>
                             {compatible.map((p) => (
                                 <option key={p.id} value={p.id}>
-                                    {p.model} · {p.id}
+                                    {p.make} {p.model} · {p.id}
                                 </option>
                             ))}
                         </select>
@@ -228,6 +242,15 @@ export function FitComponentForm({
                 <fieldset disabled={busy || !!uncertain}>
                     <PartFields
                         errors={fieldErrors}
+                        make={
+                            createdComponentId
+                                ? (createdMake ?? '')
+                                : existing
+                                  ? (parts.find((p) => p.id === existing)
+                                        ?.make ?? '')
+                                  : make
+                        }
+                        setMake={setMake}
                         model={
                             createdComponentId
                                 ? (createdModel ?? 'Model not provided')
@@ -278,7 +301,7 @@ export function FitComponentForm({
                             <ul>
                                 {parts.map((p) => (
                                     <li key={p.id}>
-                                        {p.model} · {p.id} ·{' '}
+                                        {p.make} {p.model} · {p.id} ·{' '}
                                         {p.installations.length} chapters{' '}
                                         {p.installations.map((i) => (
                                             <p key={i.id}>
@@ -296,6 +319,7 @@ export function FitComponentForm({
                                                     onClick={() => {
                                                         setExisting(p.id);
                                                         setCreated(p.id);
+                                                        setCreatedMake(p.make);
                                                         setCreatedModel(
                                                             p.model,
                                                         );

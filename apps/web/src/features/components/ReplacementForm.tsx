@@ -36,6 +36,7 @@ export function ReplacementForm({
     const [instant] = useState(() => new Date().toISOString());
     const [initial] = useState(() => formatLocal(instant));
     const [wall, setWall] = useState(initial);
+    const [make, setMake] = useState('');
     const [model, setModel] = useState('');
     const [cost, setCost] = useState('');
     const [offset, setOffset] = useState('');
@@ -65,8 +66,10 @@ export function ReplacementForm({
     const busy = save.state.phase === 'saving' || save.state.refreshing;
     const recovery = ['conflict', 'uncertain'].includes(save.state.phase);
     useEffect(() => {
-        onDirtyChange?.(!!model || wall !== initial || !!cost || recovery);
-    }, [model, wall, initial, cost, recovery, onDirtyChange]);
+        onDirtyChange?.(
+            !!make || !!model || wall !== initial || !!cost || recovery,
+        );
+    }, [make, model, wall, initial, cost, recovery, onDirtyChange]);
     useEffect(() => {
         onBusyChange?.(busy);
     }, [busy, onBusyChange]);
@@ -105,13 +108,16 @@ export function ReplacementForm({
         setValidationAttempt((n) => n + 1);
         setFieldErrors({});
         setErrors([]);
-        let field = 'model';
+        let field = 'make';
         try {
+            if (!make.trim()) throw new Error('Enter a make');
+            field = 'model';
             if (!model.trim()) throw new Error('Enter a model');
             field = 'cost';
             const amount = parseEuroCost(cost);
             field = 'date';
             const input = {
+                newMake: make.trim(),
                 newModel: model.trim(),
                 replacedAtUtc: preserveOrConvertInstant(
                     instant,
@@ -153,8 +159,8 @@ export function ReplacementForm({
             }}
         >
             <p>
-                Old component {oldPart.model} · {oldPart.id}. The new component
-                starts with a zero starting estimate.
+                Old component {oldPart.make} {oldPart.model} · {oldPart.id}. The
+                new component starts with a zero starting estimate.
             </p>
             <form
                 onSubmit={(e) => {
@@ -175,6 +181,8 @@ export function ReplacementForm({
                 <fieldset disabled={busy || recovery}>
                     <PartFields
                         errors={fieldErrors}
+                        make={make}
+                        setMake={setMake}
                         model={model}
                         setModel={setModel}
                         wall={wall}
@@ -198,8 +206,9 @@ export function ReplacementForm({
                             : 'This installation changed before your save.'}
                     </p>
                     <p>
-                        Your attempted changes: {save.state.attempted?.newModel}{' '}
-                        · installation {original.id} · version{' '}
+                        Your attempted changes: {save.state.attempted?.newMake}{' '}
+                        {save.state.attempted?.newModel} · installation{' '}
+                        {original.id} · version{' '}
                         {save.state.attempted?.expectedInstallationVersion} ·{' '}
                         {save.state.attempted?.replacedAtUtc}
                     </p>

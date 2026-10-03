@@ -34,11 +34,8 @@ public static class ReplacementEndpoints
                                     token
                                 ) ?? throw ApiInput.Missing();
                             ApiInput.Version(request.ExpectedInstallationVersion, old.Version);
-                            var model = ApiInput.Text(request.NewModel, "newModel");
-                            ApiInput.Require(
-                                model.Length <= 100,
-                                "newModel must be at most 100 characters."
-                            );
+                            var make = ComponentValues.IdentityText(request.NewMake, "newMake");
+                            var model = ComponentValues.IdentityText(request.NewModel, "newModel");
                             MaintenanceInput.ValidateCost(request.Cost, request.Currency);
                             var at = request.ReplacedAtUtc.ToUniversalTime();
                             ApiInput.Require(
@@ -55,6 +52,7 @@ public static class ReplacementEndpoints
                             {
                                 OwnerId = owner.OwnerId,
                                 Type = previous.Type,
+                                Make = make,
                                 Model = model,
                             };
                             old.EndUtc = at;
@@ -102,6 +100,7 @@ public static class ReplacementEndpoints
                                 new ComponentResponse(
                                     component.Id,
                                     ComponentValues.Type(component.Type),
+                                    component.Make,
                                     component.Model,
                                     component.Version,
                                     [nextResponse],

@@ -117,6 +117,7 @@ export function Components({
                                         disabled={disabled}
                                         onClick={() => onPassport?.(c.id)}
                                     >
+                                        {c.make}{' '}
                                         {c.model?.trim() ||
                                             'Model not provided'}
                                     </button>
@@ -195,7 +196,7 @@ export function Components({
                         disabled={disabled}
                         onClick={() => onPassport?.(c.id)}
                     >
-                        {c.model?.trim() || 'Model not provided'}
+                        {c.make} {c.model?.trim() || 'Model not provided'}
                     </button>
                     {c.installations.length === 0 && <span> Never fitted</span>}
                 </article>

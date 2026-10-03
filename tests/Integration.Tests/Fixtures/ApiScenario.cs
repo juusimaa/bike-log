@@ -51,7 +51,15 @@ public sealed class ApiScenario : IAsyncDisposable
             )
         );
         var chain = Id(
-            await Create("/api/components", new { type = "chain", model = "Synthetic A" })
+            await Create(
+                "/api/components",
+                new
+                {
+                    type = "chain",
+                    make = "Synthetic",
+                    model = "Synthetic A",
+                }
+            )
         );
         var install = Id(
             await Create(
@@ -69,7 +77,17 @@ public sealed class ApiScenario : IAsyncDisposable
     }
 
     public async Task<Guid> Chain() =>
-        Id(await Create("/api/components", new { type = "chain", model = "Synthetic B" }));
+        Id(
+            await Create(
+                "/api/components",
+                new
+                {
+                    type = "chain",
+                    make = "Synthetic",
+                    model = "Synthetic B",
+                }
+            )
+        );
 
     public async Task<JsonElement> Read(string path)
     {
