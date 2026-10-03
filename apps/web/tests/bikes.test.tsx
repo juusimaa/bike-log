@@ -101,6 +101,26 @@ it('createsBikeWithoutInventedParts', async () => {
     );
     expect(api.listInstallations).not.toHaveBeenCalled();
 });
+it.each([false, true])(
+    'savesColorNameOnCreateAndEdit (edit=%s)',
+    async (editing) => {
+        mount(editing ? bike : undefined);
+        if (!editing) fill();
+        change('Color', ' Hazy IPA ');
+        fireEvent.click(screen.getByRole('button', { name: 'Save bike' }));
+        await waitFor(() => {
+            if (editing)
+                expect(api.editBike).toHaveBeenCalledWith(
+                    a,
+                    expect.objectContaining({ color: 'Hazy IPA' }),
+                );
+            else
+                expect(api.createBike).toHaveBeenCalledWith(
+                    expect.objectContaining({ color: 'Hazy IPA' }),
+                );
+        });
+    },
+);
 it('clearingNameUsesServerFallback', async () => {
     mount(bike);
     change('Bike name', ' ');
@@ -176,11 +196,11 @@ it('uncertainWriteRequiresRefreshAndExplicitResubmit', async () => {
     fireEvent.click(retry);
     await waitFor(() => expect(api.editBike).toHaveBeenCalledTimes(2));
 });
-it('invalidYearAndHexColorNeverWrite', async () => {
+it('invalidYearAndOverlongColorNeverWrite', async () => {
     mount();
     fill();
     change('Year', '2020.5');
-    change('Color', 'green');
+    change('Color', 'x'.repeat(101));
     fireEvent.click(screen.getByRole('button', { name: 'Save bike' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Year');
     expect(screen.getByRole('alert')).toHaveTextContent('Color');

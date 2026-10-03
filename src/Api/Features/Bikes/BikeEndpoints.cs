@@ -127,16 +127,16 @@ public static class BikeEndpoints
             _ => throw new ApiException(400, "invalid_input", "Unsupported bike kind."),
         };
         ApiInput.Require(year is >= 1900 and <= 9999, "Year must be between 1900 and 9999.");
+        var normalizedColor = string.IsNullOrWhiteSpace(color) ? null : color.Trim();
         ApiInput.Require(
-            color == null
-                || System.Text.RegularExpressions.Regex.IsMatch(color, "\\A#[0-9a-fA-F]{6}\\z"),
-            "Color must be # followed by six hexadecimal digits."
+            normalizedColor == null || normalizedColor.Length <= 100,
+            "Color must be at most 100 characters."
         );
         b.Name = normalizedName;
         b.Make = normalizedMake;
         b.Model = normalizedModel;
         b.Kind = parsedKind;
         b.Year = year;
-        b.Color = color;
+        b.Color = normalizedColor;
     }
 }

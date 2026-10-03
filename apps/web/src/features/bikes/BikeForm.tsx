@@ -78,12 +78,8 @@ export function BikeForm({
             Number(values.year) > 9999
         )
             problems.year = 'Year must be a whole year from 1900 to 9999.';
-        if (
-            values.color.trim() &&
-            !/^#[0-9a-fA-F]{6}$/.test(values.color.trim())
-        )
-            problems.color =
-                'Color must be a six-digit hex color such as #aabbcc.';
+        if (values.color.trim().length > 100)
+            problems.color = 'Color must be at most 100 characters.';
         setFieldErrors(problems);
         setErrors(Object.values(problems));
         setAttemptCount((n) => n + 1);
@@ -217,7 +213,7 @@ export function BikeForm({
                                     key === 'name'
                                         ? 'Optional. Leave blank to use the server name from make and model.'
                                         : key === 'color'
-                                          ? 'Optional six-digit hex color, e.g. #aabbcc.'
+                                          ? 'Optional color name, e.g. Hazy IPA (up to 100 characters).'
                                           : undefined
                                 }
                             >
@@ -230,13 +226,7 @@ export function BikeForm({
                                             [key]: e.target.value,
                                         })
                                     }
-                                    maxLength={
-                                        key === 'year'
-                                            ? 4
-                                            : key === 'color'
-                                              ? 7
-                                              : 100
-                                    }
+                                    maxLength={key === 'year' ? 4 : 100}
                                     inputMode={
                                         key === 'year' ? 'numeric' : undefined
                                     }
