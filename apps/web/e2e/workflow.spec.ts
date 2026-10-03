@@ -49,6 +49,46 @@ async function configure(page: Page, method: string, wax: string) {
     await page.getByRole('button', { name: 'Save reminder' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
 }
+test('color names persist through bike creation, editing and clearing', async ({
+    page,
+    request,
+}, info) => {
+    const marker = `${process.env.BIKELOG_E2E_RUN ?? 'color'}-${info.project.name}-${Date.now()}`;
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Create bike' }).click();
+    for (const [label, value] of [
+        ['Bike name', marker],
+        ['Make', 'Canyon'],
+        ['Model', 'Grizl 7'],
+        ['Year', '2026'],
+    ])
+        await page.getByLabel(label, { exact: true }).fill(value);
+    await page.getByLabel('Kind', { exact: true }).selectOption('gravel');
+    await page
+        .getByLabel('Color', { exact: true })
+        .pressSequentially('Hazy IPA');
+    await expect(page.getByLabel('Color', { exact: true })).toHaveValue(
+        'Hazy IPA',
+    );
+    await page.getByRole('button', { name: 'Save bike' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    const id = new URL(page.url()).searchParams.get('bike')!;
+    expect((await apiRead(request, `bikes/${id}`)).color).toBe('Hazy IPA');
+    await page.reload();
+    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await expect(page.getByLabel('Color', { exact: true })).toHaveValue(
+        'Hazy IPA',
+    );
+    await page.getByLabel('Color', { exact: true }).fill('Stealth Black');
+    await page.getByRole('button', { name: 'Save bike' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect((await apiRead(request, `bikes/${id}`)).color).toBe('Stealth Black');
+    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await page.getByLabel('Color', { exact: true }).fill('');
+    await page.getByRole('button', { name: 'Save bike' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect((await apiRead(request, `bikes/${id}`)).color).toBeNull();
+});
 test('real adapter persistence: two bikes, all positions, estimates, atomic replacement, fresh discovery, correction and deletion', async ({
     page,
     request,

@@ -86,7 +86,7 @@ After the review fixes, the rebuilt API passed live HTTP acceptance again. A mal
 
 ## UI backend contract additions (2026-10-02)
 
-New bikes require trimmed make/model (1–100 characters), kind (`gravel|road|mountain|hybrid|other`) and year 1900–9999. Optional custom name is trimmed (maximum 100); blank normalizes to null and displayName falls back to make/model. Optional color is `#` plus six hex digits. Legacy absent metadata stays readable. Ride creation/correction accepts optional name. Full PUT supplies all required fields and expectedVersion.
+New bikes require trimmed make/model (1–100 characters), kind (`gravel|road|mountain|hybrid|other`) and year 1900–9999. Optional custom name is trimmed (maximum 100); blank normalizes to null and displayName falls back to make/model. Optional color is free text (maximum 100 characters), for example `Hazy IPA`; surrounding whitespace is trimmed and blank normalizes to null. Existing hex values remain valid. Legacy absent metadata stays readable. Ride creation/correction accepts optional name. Full PUT supplies all required fields and expectedVersion.
 
 | Method / route | Request / result |
 | --- | --- |

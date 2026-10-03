@@ -7,7 +7,11 @@ namespace BikeLog.Integration.Tests;
 
 public class BikeMetadataTests
 {
-    public static object Metadata(string? name = null, long expectedVersion = 1) =>
+    public static object Metadata(
+        string? name = null,
+        long expectedVersion = 1,
+        string? color = "#aAbB01"
+    ) =>
         new
         {
             name,
@@ -15,7 +19,7 @@ public class BikeMetadataTests
             model = " Grizl 7 ",
             kind = "gravel",
             year = 2026,
-            color = "#aAbB01",
+            color,
             expectedVersion,
         };
 
@@ -36,6 +40,35 @@ public class BikeMetadataTests
         Assert.Equal("gravel", read.GetProperty("kind").GetString());
         Assert.Equal(2026, read.GetProperty("year").GetInt32());
         Assert.Equal("#aAbB01", read.GetProperty("color").GetString());
+    }
+
+    [Theory]
+    [InlineData(" Hazy IPA ", "Hazy IPA")]
+    [InlineData("#aAbB01", "#aAbB01")]
+    [InlineData(" ", null)]
+    [InlineData(null, null)]
+    public async Task ColorTextRoundTripsOnCreateAndEdit(string? input, string? expected)
+    {
+        await using var s = await ApiScenario.Open();
+        var bike = await s.Create("/api/bikes", Metadata(color: input));
+        var id = ApiScenario.Id(bike);
+        Assert.Equal(expected, bike.GetProperty("color").GetString());
+        Assert.Equal(expected, (await s.Read($"/api/bikes/{id}")).GetProperty("color").GetString());
+        var response = await s.Client.PutAsJsonAsync(
+            $"/api/bikes/{id}",
+            Metadata(color: " Stealth Black ")
+        );
+        Assert.Equal(200, (int)response.StatusCode);
+        Assert.Equal(
+            "Stealth Black",
+            (await s.Read($"/api/bikes/{id}")).GetProperty("color").GetString()
+        );
+        response = await s.Client.PutAsJsonAsync(
+            $"/api/bikes/{id}",
+            Metadata(expectedVersion: 2, color: input)
+        );
+        Assert.Equal(200, (int)response.StatusCode);
+        Assert.Equal(expected, (await s.Read($"/api/bikes/{id}")).GetProperty("color").GetString());
     }
 
     [Fact]
@@ -102,7 +135,6 @@ public class BikeMetadataTests
             foreach (
                 var value in field == "year" ? new object[] { 1899, 10000 }
                 : field == "kind" ? new object[] { "invalid" }
-                : field == "color" ? new object[] { "abcdef", "#zzzzzz" }
                 : new object[] { new string('x', 101) }
             )
             {
