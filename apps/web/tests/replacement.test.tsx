@@ -24,6 +24,7 @@ const installation = {
 const component = {
     id: 'c1',
     type: 'tyre' as const,
+    make: 'Campagnolo',
     model: 'Old',
     initialUsageEstimateMetres: 0,
     version: 1,
@@ -43,6 +44,9 @@ function mount(node: React.ReactNode) {
     );
 }
 function fill() {
+    fireEvent.change(screen.getByLabelText('Make'), {
+        target: { value: ' Campagnolo ' },
+    });
     fireEvent.change(screen.getByLabelText('Model'), {
         target: { value: 'New' },
     });
@@ -91,6 +95,7 @@ it('replacementUsesExactlyOneCompositeRequest', async () => {
     expect(api.replaceWithService).toHaveBeenCalledWith(
         'i1',
         expect.objectContaining({
+            newMake: 'Campagnolo',
             newModel: 'New',
             expectedInstallationVersion: 7,
             cost: 0,
@@ -160,6 +165,7 @@ it('fitFailureRetainsCreatedPartForRetry', async () => {
     expect(api.createComponent).toHaveBeenCalledTimes(1);
     expect(api.createComponent).toHaveBeenCalledWith({
         type: 'tyre',
+        make: 'Campagnolo',
         model: 'New',
     });
 });
@@ -220,6 +226,7 @@ it('uncertainCreationRequiresPagedOwnerReviewBeforeExplicitResubmit', async () =
                     ...component,
                     id: 'discovered',
                     type: 'chain',
+                    make: 'Synthetic',
                     model: 'New',
                     installations: [],
                 },
@@ -460,10 +467,12 @@ it('existing identity shows authoritative readonly model', async () => {
     fireEvent.change(screen.getByLabelText('Existing unused component'), {
         target: { value: 'unused' },
     });
+    expect(screen.getByLabelText('Make')).toHaveValue('Campagnolo');
+    expect(screen.getByLabelText('Make')).toHaveAttribute('readonly');
     expect(screen.getByLabelText('Model')).toHaveValue('Old');
     expect(screen.getByLabelText('Model')).toHaveAttribute('readonly');
 });
-it('repeated replacement validation refocuses summary and identifies model', () => {
+it('repeated replacement validation refocuses summary and identifies make', () => {
     mount(
         <ReplacementForm
             installation={installation}
@@ -476,9 +485,47 @@ it('repeated replacement validation refocuses summary and identifies model', () 
         screen.getByText('Replace component').focus();
         fireEvent.click(screen.getByText('Replace component'));
         expect(screen.getByRole('alert')).toHaveFocus();
-        expect(screen.getByLabelText('Model')).toHaveAttribute(
+        expect(screen.getByLabelText('Make')).toHaveAttribute(
             'aria-invalid',
             'true',
         );
     }
 });
+
+it.each(['fit', 'replacement'])(
+    'blank make blocks %s without writes',
+    (flow) => {
+        mount(
+            flow === 'fit' ? (
+                <FitComponentForm
+                    bikeId="b1"
+                    position="chain"
+                    onSaved={() => {}}
+                    onCancel={() => {}}
+                />
+            ) : (
+                <ReplacementForm
+                    installation={installation}
+                    component={component}
+                    onSaved={() => {}}
+                    onCancel={() => {}}
+                />
+            ),
+        );
+        fill();
+        fireEvent.change(screen.getByLabelText('Make'), {
+            target: { value: '   ' },
+        });
+        fireEvent.click(
+            screen.getByText(
+                flow === 'fit' ? 'Fit component' : 'Replace component',
+            ),
+        );
+        expect(screen.getByLabelText('Make')).toHaveAttribute(
+            'aria-invalid',
+            'true',
+        );
+        expect(api.createComponent).not.toHaveBeenCalled();
+        expect(api.replaceWithService).not.toHaveBeenCalled();
+    },
+);

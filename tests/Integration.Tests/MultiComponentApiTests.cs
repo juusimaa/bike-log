@@ -8,7 +8,17 @@ namespace BikeLog.Integration.Tests;
 public class MultiComponentApiTests
 {
     private static async Task<Guid> Component(ApiScenario s, string type) =>
-        ApiScenario.Id(await s.Create("/api/components", new { type, model = "Synthetic part" }));
+        ApiScenario.Id(
+            await s.Create(
+                "/api/components",
+                new
+                {
+                    type,
+                    make = "Synthetic",
+                    model = "Synthetic part",
+                }
+            )
+        );
 
     private static async Task<JsonElement> Install(
         ApiScenario s,

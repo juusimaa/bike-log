@@ -26,6 +26,7 @@ const chapter = {
 const component = {
     id: 'c1',
     type: 'chain' as const,
+    make: 'Synthetic',
     model: 'Retained chain',
     version: 7,
     initialUsageEstimateMetres: 120000,
@@ -117,7 +118,7 @@ it('historicalRowsRetainIdentityAcrossPages', async () => {
     fireEvent.click(screen.getByText('Load more installations'));
     await waitFor(() =>
         expect(
-            screen.getAllByText('Retained chain').length,
+            screen.getAllByText('Synthetic Retained chain').length,
         ).toBeGreaterThanOrEqual(2),
     );
     expect(screen.queryByText('Currently fitted')).not.toBeInTheDocument();
@@ -363,9 +364,9 @@ it('returningToAllFilterStartsFreshFirstPage', async () => {
     });
     mount(<Components bikeId="b1" />);
     fireEvent.click(screen.getByText('All installations'));
-    await screen.findByText('First snapshot 1');
+    await screen.findByText('Synthetic First snapshot 1');
     fireEvent.click(screen.getByText('Load more installations'));
-    await screen.findByText('Old second chapter');
+    await screen.findByText('Synthetic Old second chapter');
     fireEvent.click(screen.getByText('Current installations'));
     await waitFor(() =>
         expect(screen.getByText('Current installations')).toHaveAttribute(
@@ -374,8 +375,10 @@ it('returningToAllFilterStartsFreshFirstPage', async () => {
         ),
     );
     fireEvent.click(screen.getByText('All installations'));
-    await screen.findByText('First snapshot 2');
-    expect(screen.queryByText('Old second chapter')).not.toBeInTheDocument();
+    await screen.findByText('Synthetic First snapshot 2');
+    expect(
+        screen.queryByText('Synthetic Old second chapter'),
+    ).not.toBeInTheDocument();
     const allReads = api.listInstallations.mock.calls.filter(
         (call) => call[1] === 'all',
     );
@@ -429,8 +432,8 @@ it('repeated invalid estimate focuses summary and associates quantity error', ()
         );
     }
 });
-it('nullable passport model and prose durations have explicit labels', async () => {
-    api.getComponent.mockResolvedValue({ ...component, model: null });
+it('passport displays make and model alongside prose durations', async () => {
+    api.getComponent.mockResolvedValue(component);
     api.getComponentUsage.mockResolvedValue({
         componentId: 'c1',
         lifetimeMetres: 0,
@@ -449,8 +452,10 @@ it('nullable passport model and prose durations have explicit labels', async () 
     );
     expect(
         await screen.findByRole('dialog', {
-            name: 'Model not provided passport',
+            name: 'Synthetic Retained chain passport',
         }),
     ).toBeVisible();
+    expect(screen.getByText('Make: Synthetic')).toBeVisible();
+    expect(screen.getByText('Model: Retained chain')).toBeVisible();
     expect(await screen.findByText('Recorded duration: 1.5 min')).toBeVisible();
 });

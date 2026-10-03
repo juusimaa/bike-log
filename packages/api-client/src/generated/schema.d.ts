@@ -2351,6 +2351,7 @@ export interface components {
             id: string;
             /** @enum {string} */
             type: "chain" | "cassette" | "tyre";
+            make: string;
             model: string;
             /** Format: int64 */
             version: number | string;
@@ -2375,6 +2376,7 @@ export interface components {
             id: string;
             /** @enum {string} */
             type: "chain" | "cassette" | "tyre";
+            make: string;
             model: string;
             /** Format: int64 */
             version: number | string;
@@ -2453,6 +2455,7 @@ export interface components {
         CreateComponent: {
             /** @enum {string} */
             type: "chain" | "cassette" | "tyre";
+            make: null | string;
             model: null | string;
         };
         CreateInstallation: {
@@ -2766,6 +2769,7 @@ export interface components {
             maintenance: components["schemas"]["MaintenanceResponse"];
         };
         ReplaceWithService: {
+            newMake: null | string;
             newModel: null | string;
             /** Format: date-time */
             replacedAtUtc: string;

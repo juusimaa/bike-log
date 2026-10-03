@@ -311,7 +311,7 @@ export function MaintenanceForm({
                                     <option key={p} value={p} disabled={!fit}>
                                         {p}
                                         {fit
-                                            ? ` · ${component?.model ?? fit.componentId} · ${fit.componentId}`
+                                            ? ` · ${component ? `${component.make} ${component.model}` : fit.componentId} · ${fit.componentId}`
                                             : ' · no component at this time'}
                                     </option>
                                 );

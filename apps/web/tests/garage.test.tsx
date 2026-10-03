@@ -165,6 +165,56 @@ describe('garage', () => {
             screen.getByRole('button', { name: 'Create bike' }),
         ).toBeEnabled();
     });
+    it('overviewShowsSeparateComponentMakeAndModel', async () => {
+        reset();
+        api.getOverview.mockImplementation(async (id) => ({
+            ...snapshot(id),
+            currentComponents: [
+                {
+                    componentId: 'c1',
+                    installationId: 'i1',
+                    position: 'chain',
+                    currentInstallationMetres: 0,
+                    currentInstallationSeconds: 0,
+                    currentInstallationHasUnknownDuration: false,
+                    initialUsageEstimateMetres: 0,
+                    lifetimeMetres: 0,
+                    lifetimeSeconds: 0,
+                    lifetimeHasUnknownDuration: false,
+                    combinedLifetimeMetres: 0,
+                },
+            ],
+        }));
+        api.listInstallations.mockResolvedValue({
+            items: [
+                {
+                    installation: {
+                        id: 'i1',
+                        componentId: 'c1',
+                        bikeId: a,
+                        position: 'chain',
+                        startUtc: '2026-09-01T00:00:00Z',
+                        endUtc: null,
+                        version: 1,
+                    },
+                    component: {
+                        id: 'c1',
+                        type: 'chain',
+                        make: 'Campagnolo',
+                        model: 'Ekar C13 C-Link 13-speed',
+                        version: 1,
+                        initialUsageEstimateMetres: 0,
+                        installations: [],
+                    },
+                },
+            ],
+            nextCursor: null,
+        });
+        mount();
+        expect(
+            await screen.findByText('Campagnolo Ekar C13 C-Link 13-speed'),
+        ).toBeVisible();
+    });
     it('overviewUsesSnapshotNotPageSums', async () => {
         reset();
         mount();

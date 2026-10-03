@@ -17,7 +17,7 @@ All routes start with `/api`. JSON uses camelCase. IDs are UUIDs; distances are 
 | POST `/bikes` | `{name?,make,model,kind,year,color?}` → identity, metadata, displayName/version, 201 |
 | PUT `/bikes/{id}` | Full metadata plus `expectedVersion`; nullable name/color can be cleared |
 | GET `/bikes/{id}` | Bike ID/name/version |
-| POST `/components` | `{type:"chain",model}` → chain identity/version, 201 |
+| POST `/components` | `{type:"chain",make,model}` → chain identity/version, 201 |
 | GET `/components/{id}` | Identity plus dated installation history |
 | POST `/installations` | `{bikeId,componentId,position:"chain",startUtc,endUtc?}` → installation, 201 |
 | GET `/installations/{id}` | Installation and version |
@@ -94,10 +94,12 @@ New bikes require trimmed make/model (1–100 characters), kind (`gravel|road|mo
 | GET `/bikes/{id}/rides` | Named ride page |
 | GET `/bikes/{id}/installations` | Installation page; `status=current|all`, default current |
 | GET `/components/{id}/maintenance` | Component service page |
-| POST `/installations/{id}/replacement-with-service` | `{newModel,replacedAtUtc,expectedInstallationVersion,cost?,currency?}`; 200 with new component, closed/open installations and service, atomically |
+| POST `/installations/{id}/replacement-with-service` | `{newMake,newModel,replacedAtUtc,expectedInstallationVersion,cost?,currency?}`; 200 with new component, closed/open installations and service, atomically |
 | PUT `/components/{id}/estimate` | `{initialUsageEstimateMetres,expectedVersion}`; 200 updated component |
 | GET/PUT `/bikes/{id}/reminder` | Backend evaluated rule; PUT `{enabled,method?,oilThresholdMetres?,waxThresholdMetres?,expectedVersion}` |
 | GET `/bikes/{id}/overview` | Metadata, full stats, current positions, gaps, currency-separated spend, recent activity and reminder in one snapshot |
+
+Components require separate trimmed make and model (1–100 characters each) for every type: chain, cassette and tyre. For example, `make: "Campagnolo"` and `model: "Ekar C13 C-Link 13-speed"`. Creation requires `make`; replacement requires `newMake`. Component detail, collection, installation and estimate responses include both fields. Apply the `ComponentMake` migration before using the updated API; missing or blank make is rejected for new components and replacements.
 
 Pages return `{items,nextCursor}`. `pageSize` defaults to 50 and ranges 1–200. Follow opaque nextCursor on the same route/parent/filter; malformed, oversized (over 2048 characters) or mismatched cursors return 400. These pages are not one shared snapshot across requests: refresh collection pages after mutation and do not reuse cursors under a different filter. Current installations exclude future starts. Existing bike maintenance remains unpaged for compatibility.
 

@@ -121,6 +121,7 @@ public static class CollectionEndpoints
             x => new ComponentResponse(
                 x.Id,
                 ComponentValues.Type(x.Type),
+                x.Make,
                 x.Model,
                 x.Version,
                 history

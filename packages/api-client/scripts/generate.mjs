@@ -1,11 +1,16 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import openapiTS, { astToString } from 'openapi-typescript';
-const response = await fetch('http://127.0.0.1:5080/openapi/v1.json', {
-    redirect: 'error',
-    cache: 'no-store',
-});
+const response = await fetch(
+    process.env.BIKELOG_OPENAPI_URL ?? 'http://127.0.0.1:5080/openapi/v1.json',
+    {
+        redirect: 'error',
+        cache: 'no-store',
+    },
+);
 if (!response.ok) throw new Error(`OpenAPI fetch failed: ${response.status}`);
 const schema = await response.json();
+// Keep snapshots stable when verification runs on an alternate local port.
+schema.servers = [{ url: 'http://127.0.0.1:5080/' }];
 // ASP.NET format-only DateTimeOffset: ISO strings, preserving nullable wire fields.
 const nullableDates = new Set(['endUtc', 'calculatedAtUtc', 'baselineUtc']);
 const typeSchema = structuredClone(schema);

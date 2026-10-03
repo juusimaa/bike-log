@@ -115,6 +115,7 @@ public class BikeOverviewTests
                 $"/api/installations/{install}/replacement-with-service",
                 new
                 {
+                    newMake = " Synthetic ",
                     newModel = "New chain",
                     replacedAtUtc = ApiScenario.Start.AddDays(2),
                     expectedInstallationVersion = 1,

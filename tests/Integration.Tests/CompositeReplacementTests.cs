@@ -14,10 +14,12 @@ public class CompositeReplacementTests
     private static object Request(
         string? model = " New tyre ",
         decimal? cost = 24.90m,
-        string? currency = "EUR"
+        string? currency = "EUR",
+        string? make = " Synthetic "
     ) =>
         new
         {
+            newMake = make,
             newModel = model,
             replacedAtUtc = ApiScenario.Start.AddDays(2),
             expectedInstallationVersion = 1,
@@ -71,7 +73,17 @@ public class CompositeReplacementTests
         var installation = e.Installation;
         if (type != "chain")
         {
-            part = ApiScenario.Id(await s.Create("/api/components", new { type, model = "Old" }));
+            part = ApiScenario.Id(
+                await s.Create(
+                    "/api/components",
+                    new
+                    {
+                        type,
+                        make = "Synthetic",
+                        model = "Old",
+                    }
+                )
+            );
             installation = ApiScenario.Id(
                 await s.Create(
                     "/api/installations",
@@ -110,6 +122,7 @@ public class CompositeReplacementTests
         var next = response.GetProperty("newInstallation");
         var old = response.GetProperty("oldInstallation");
         var maintenance = response.GetProperty("maintenance");
+        Assert.Equal("Synthetic", component.GetProperty("make").GetString());
         Assert.Equal("New tyre", component.GetProperty("model").GetString());
         Assert.Equal(type, component.GetProperty("type").GetString());
         Assert.Equal(position, next.GetProperty("position").GetString());
@@ -243,6 +256,26 @@ public class CompositeReplacementTests
                     )
                 ).StatusCode
         );
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("  ")]
+    public async Task InvalidMakeCreatesNothing(string? make)
+    {
+        await using var s = await ApiScenario.Open();
+        var e = await s.Equipment();
+        var before = await Snapshot(s);
+        foreach (var value in new[] { make, new string('x', 101) })
+        {
+            var response = await s.Client.PostAsJsonAsync(
+                Route(e.Installation),
+                Request(make: value)
+            );
+            Assert.Equal(400, (int)response.StatusCode);
+            Assert.Equal(before, await Snapshot(s));
+        }
     }
 
     [Fact]

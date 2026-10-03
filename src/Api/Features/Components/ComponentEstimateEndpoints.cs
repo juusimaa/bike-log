@@ -47,6 +47,7 @@ public static class ComponentEstimateEndpoints
                             return new ComponentEstimateResponse(
                                 component.Id,
                                 ComponentValues.Type(component.Type),
+                                component.Make,
                                 component.Model,
                                 component.Version,
                                 calculated,

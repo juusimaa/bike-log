@@ -37,7 +37,7 @@ request('GET','/health/ready')
 for n in range(2):
     bike=request('POST','/api/bikes',{'name':mark+str(n),'make':'Synthetic','model':'Gravel','kind':'gravel','year':2026,'color':'#12AB34'},201)
     for position,kind in [('chain','chain'),('cassette','cassette'),('front-tyre','tyre'),('rear-tyre','tyre')]:
-        part=request('POST','/api/components',{'type':kind,'model':mark+str(n)+position},201)
+        part=request('POST','/api/components',{'make':'Synthetic','type':kind,'model':mark+str(n)+position},201)
         request('POST','/api/installations',{'bikeId':bike['id'],'componentId':part['id'],'position':position,'startUtc':time(0)},201)
     request('POST','/api/rides',{'bikeId':bike['id'],'name':mark+' ride '+str(n),'startUtc':time(1),'distanceMetres':65000,'durationSeconds':3600},201)
 # Reload every identity through public pages; no POST-returned IDs survive this boundary.
@@ -54,7 +54,7 @@ rear=next(x for x in parts if x['model']==mark+'0rear-tyre')
 chain=next(x for x in parts if x['model']==mark+'0chain')
 old=next(x['installation'] for x in installations if x['installation']['componentId']==rear['id'])
 assert request('GET','/api/components/'+rear['id']+'/usage')['lifetimeMetres']==65000
-replacement=request('POST','/api/installations/'+old['id']+'/replacement-with-service',{'newModel':mark+' replacement rear','replacedAtUtc':time(24),'expectedInstallationVersion':old['version'],'cost':25,'currency':'EUR'})
+replacement=request('POST','/api/installations/'+old['id']+'/replacement-with-service',{'newMake':'Synthetic','newModel':mark+' replacement rear','replacedAtUtc':time(24),'expectedInstallationVersion':old['version'],'cost':25,'currency':'EUR'})
 request('POST','/api/maintenance',{'bikeId':bike['id'],'componentId':chain['id'],'task':'Lubricate chain','taskKey':'chain-lubrication','performedUtc':time(24),'cost':5,'currency':'EUR','notes':mark+' lubrication notes'},201)
 request('POST','/api/rides',{'bikeId':bike['id'],'name':mark+' after replacement','startUtc':time(25),'distanceMetres':10000},201)
 allparts=pages('/api/components')
@@ -76,7 +76,7 @@ assert request('GET','/api/bikes/'+bike['id']+'/reminder')['method']=='wax'
 assert any(x['notes']==mark+' lubrication notes' for x in pages('/api/components/'+chain['id']+'/maintenance'))
 other=next(x for x in bikes if x['id']!=bike['id'])
 otherinst=pages('/api/bikes/'+other['id']+'/installations?status=all')[0]['installation']
-withoutcost=request('POST','/api/installations/'+otherinst['id']+'/replacement-with-service',{'newModel':mark+' no cost','replacedAtUtc':time(24),'expectedInstallationVersion':otherinst['version']})
+withoutcost=request('POST','/api/installations/'+otherinst['id']+'/replacement-with-service',{'newMake':'Synthetic','newModel':mark+' no cost','replacedAtUtc':time(24),'expectedInstallationVersion':otherinst['version']})
 assert withoutcost['maintenance']['cost'] is None and withoutcost['maintenance']['currency'] is None
 print('UI backend acceptance PASS: paged reload, eight parts, retained replacement, 65000/10000 m, 185000 m estimate, EUR stats, oil/wax baseline.')
 PY

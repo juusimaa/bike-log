@@ -106,6 +106,7 @@ it('rejects malformed successful DTOs and missing replacement fields', async () 
     );
     await expect(
         api.replaceWithService(id, {
+            newMake: 'Synthetic',
             newModel: 'Chain',
             replacedAtUtc: '2026-10-02T12:00:00Z',
             expectedInstallationVersion: 1,
@@ -226,6 +227,7 @@ it('preserves all four replacement result members and rejects each absent member
     const component = {
         id,
         type: 'chain',
+        make: 'Synthetic',
         model: 'Chain',
         version: 1,
         installations: [],
@@ -259,6 +261,7 @@ it('preserves all four replacement result members and rejects each absent member
         maintenance,
     };
     const input = {
+        newMake: 'Synthetic',
         newModel: 'Chain',
         replacedAtUtc: '2026-10-02T12:00:00Z',
         expectedInstallationVersion: 1,
@@ -360,6 +363,7 @@ it('uses documented methods, resource paths and pagination for every remaining w
         endUtc: null,
     };
     const replacement = {
+        newMake: 'Synthetic',
         newModel: 'New chain',
         replacedAtUtc: instant,
         expectedInstallationVersion: 1,
@@ -404,10 +408,15 @@ it('uses documented methods, resource paths and pagination for every remaining w
             `/api/components/${id}/maintenance?pageSize=50`,
         ],
         [
-            () => api.createComponent({ type: 'chain', model: 'Chain' }),
+            () =>
+                api.createComponent({
+                    type: 'chain',
+                    make: 'Synthetic',
+                    model: 'Chain',
+                }),
             'POST',
             '/api/components',
-            { type: 'chain', model: 'Chain' },
+            { type: 'chain', make: 'Synthetic', model: 'Chain' },
         ],
         [
             () => api.createInstallation(fitInput),

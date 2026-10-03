@@ -116,8 +116,8 @@ export function EstimateForm({
             }}
         >
             <p>
-                {original.model} · component {original.id} · version{' '}
-                {original.version}
+                {original.make} {original.model} · component {original.id} ·
+                version {original.version}
             </p>
             <p>
                 The estimate stays separate from calculated ride usage and

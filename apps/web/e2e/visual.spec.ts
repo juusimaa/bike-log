@@ -259,7 +259,7 @@ test('blank component model has explicit label and fit validation refocuses ever
     });
     await page.goto(`/?bike=${bikeId}`);
     await expect(
-        page.getByText('Model not provided', { exact: true }),
+        page.getByText('Shimano Model not provided', { exact: true }),
     ).toBeVisible();
     await page.route('**/api/bikes/*/installations**', async (route) => {
         await route.fulfill({

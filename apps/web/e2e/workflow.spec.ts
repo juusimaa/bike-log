@@ -104,6 +104,7 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
         await page
             .getByRole('button', { name: `Fit ${position}`, exact: true })
             .click();
+        await page.getByLabel('Make', { exact: true }).fill('Synthetic');
         await page
             .getByLabel('Model', { exact: true })
             .fill(`${marker}-${position}`);
@@ -147,7 +148,10 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
     await page
         .getByRole('row')
         .filter({ hasText: `${marker}-rear-tyre` })
-        .getByRole('button', { name: `${marker}-rear-tyre`, exact: true })
+        .getByRole('button', {
+            name: `Synthetic ${marker}-rear-tyre`,
+            exact: true,
+        })
         .click();
     await page.getByRole('button', { name: 'Edit starting estimate' }).click();
     await page
@@ -164,6 +168,7 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
         .filter({ hasText: `${marker}-rear-tyre` })
         .getByRole('button', { name: 'Replace', exact: true })
         .click();
+    await page.getByLabel('Make', { exact: true }).fill('Synthetic');
     await page.getByLabel('Model', { exact: true }).fill(marker + '-new-rear');
     await page
         .getByLabel('Date and time', { exact: true })
@@ -213,7 +218,10 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
     await reload
         .getByRole('row')
         .filter({ hasText: `${marker}-rear-tyre` })
-        .getByRole('button', { name: `${marker}-rear-tyre`, exact: true })
+        .getByRole('button', {
+            name: `Synthetic ${marker}-rear-tyre`,
+            exact: true,
+        })
         .click();
     await expect(
         reload.getByText(`Component identity: ${old.component.id}`, {
@@ -314,6 +322,7 @@ test('separate 160km reminder fixture: methods preserve baseline and lifetime, a
     const id = await create(page, marker);
     await page.getByRole('link', { name: 'Components', exact: true }).click();
     await page.getByRole('button', { name: 'Fit chain', exact: true }).click();
+    await page.getByLabel('Make', { exact: true }).fill('Synthetic');
     await page.getByLabel('Model', { exact: true }).fill(marker + '-chain');
     await page
         .getByLabel('Date and time', { exact: true })

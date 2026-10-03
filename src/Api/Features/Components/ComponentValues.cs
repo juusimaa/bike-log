@@ -1,3 +1,4 @@
+using BikeLog.Api.Features.Errors;
 using BikeLog.Domain;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
@@ -6,6 +7,13 @@ namespace BikeLog.Api.Features.Components;
 
 public static class ComponentValues
 {
+    public static string IdentityText(string? value, string field)
+    {
+        var text = ApiInput.Text(value, field);
+        ApiInput.Require(text.Length <= 100, $"{field} must be at most 100 characters.");
+        return text;
+    }
+
     public static ComponentType ParseType(string? value) =>
         value switch
         {

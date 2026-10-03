@@ -18,6 +18,7 @@ internal sealed class ComponentConfiguration : IEntityTypeConfiguration<Componen
                     "\"InitialUsageEstimateMetres\" >= 0"
                 )
         );
+        b.Property(x => x.Make).IsRequired();
         b.Property(x => x.Model).IsRequired();
         b.Property(x => x.Type).HasConversion<string>();
         b.ToTable(

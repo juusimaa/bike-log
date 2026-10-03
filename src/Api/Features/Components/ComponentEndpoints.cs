@@ -31,7 +31,8 @@ public static class ComponentEndpoints
                             {
                                 OwnerId = owner.OwnerId,
                                 Type = type,
-                                Model = ApiInput.Text(request.Model, "model"),
+                                Make = ComponentValues.IdentityText(request.Make, "make"),
+                                Model = ComponentValues.IdentityText(request.Model, "model"),
                             };
                             db.Components.Add(c);
                             return Task.FromResult(c);
@@ -44,6 +45,7 @@ public static class ComponentEndpoints
                         new ComponentResponse(
                             c.Id,
                             ComponentValues.Type(c.Type),
+                            c.Make,
                             c.Model,
                             c.Version,
                             [],
@@ -74,6 +76,7 @@ public static class ComponentEndpoints
                 return new ComponentResponse(
                     c.Id,
                     ComponentValues.Type(c.Type),
+                    c.Make,
                     c.Model,
                     c.Version,
                     history.Select(InstallationResponse.From).ToArray(),

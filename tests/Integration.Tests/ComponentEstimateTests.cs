@@ -73,7 +73,15 @@ public class ComponentEstimateTests
         if (type != "chain")
         {
             var part = ApiScenario.Id(
-                await s.Create("/api/components", new { type, model = "Estimated part" })
+                await s.Create(
+                    "/api/components",
+                    new
+                    {
+                        type,
+                        make = "Synthetic",
+                        model = "Estimated part",
+                    }
+                )
             );
             var installation = ApiScenario.Id(
                 await s.Create(
@@ -370,7 +378,15 @@ public class ComponentEstimateTests
     public async Task UnusedComponentHasZeroCalculatedUsageAndPersistedEstimate()
     {
         await using var s = await ApiScenario.Open();
-        var created = await s.Create("/api/components", new { type = "tyre", model = "Unused" });
+        var created = await s.Create(
+            "/api/components",
+            new
+            {
+                type = "tyre",
+                make = "Synthetic",
+                model = "Unused",
+            }
+        );
         var id = ApiScenario.Id(created);
         Assert.Equal(0, created.GetProperty("initialUsageEstimateMetres").GetInt64());
         var usage = await s.Read($"/api/components/{id}/usage");

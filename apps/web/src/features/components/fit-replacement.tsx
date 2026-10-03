@@ -3,6 +3,8 @@ import { useId } from 'react';
 import { Field } from '../../components/Field';
 import { validOffsets, LOCAL_TIME_ZONE } from '../../lib/dates';
 export function PartFields({
+    make,
+    setMake,
     model,
     setModel,
     wall,
@@ -16,6 +18,8 @@ export function PartFields({
 }: {
     modelReadOnly?: boolean;
     errors?: Record<string, string>;
+    make: string;
+    setMake: (v: string) => void;
     model: string;
     setModel: (v: string) => void;
     wall: string;
@@ -41,10 +45,20 @@ export function PartFields({
             'This local time does not exist because the clocks move forward.';
     return (
         <>
+            <Field id={id + 'make'} label="Make" error={errors.make}>
+                <input
+                    id={id + 'make'}
+                    value={make}
+                    readOnly={modelReadOnly}
+                    maxLength={100}
+                    onChange={(e) => setMake(e.target.value)}
+                />
+            </Field>
             <Field id={id + 'model'} label="Model" error={errors.model}>
                 <input
                     id={id + 'model'}
                     value={model}
+                    maxLength={100}
                     readOnly={modelReadOnly}
                     onChange={(e) => setModel(e.target.value)}
                 />
