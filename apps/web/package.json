@@ -1,0 +1,38 @@
+{
+  "name": "@bikelog/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1 --port 3000",
+    "start": "next start --hostname 127.0.0.1 --port 3000",
+    "build": "next build",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@bikelog/api-client": "0.0.0",
+    "@js-temporal/polyfill": "0.5.1",
+    "@tanstack/react-query": "5.104.1",
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/compat": "2.1.1",
+    "@playwright/test": "1.63.0",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/node": "24.19.1",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "eslint": "10.11.0",
+    "eslint-config-next": "16.3.8",
+    "jsdom": "30.1.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  }
+}

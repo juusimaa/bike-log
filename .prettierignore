@@ -1,0 +1,5 @@
+node_modules
+.next
+.local
+packages/api-client/openapi.json
+packages/api-client/src/generated

@@ -76,3 +76,7 @@ pgdata/
 
 # Isolated implementation worktrees
 .worktrees/
+
+# Browser artifacts
+playwright-report/
+test-results/

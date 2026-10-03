@@ -1,0 +1,26 @@
+{
+  "name": "bikelog",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "api:generate": "npm run generate --workspace @bikelog/api-client",
+    "api:check": "npm run check --workspace @bikelog/api-client",
+    "test": "npm run test --workspaces --if-present",
+    "web:dev": "npm run dev --workspace @bikelog/web",
+    "web:build": "npm run build --workspace @bikelog/web",
+    "web:lint": "npm run lint --workspace @bikelog/web",
+    "web:typecheck": "npm run typecheck --workspace @bikelog/web",
+    "web:test": "npm run test --workspace @bikelog/web",
+    "web:e2e": "npm run e2e --workspace @bikelog/web --",
+    "web:start": "npm run start --workspace @bikelog/web"
+  },
+  "devDependencies": {
+    "prettier": "3.9.9"
+  }
+}

@@ -4,7 +4,9 @@ An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
 is available under `docs/ui-design`. Open it directly in your browser; see the
 [preview guide](docs/ui-design/README.md) for the supported demo flows.
 
-Local synthetic-data backend milestone. Sign-in, web/mobile clients and cloud deployment follow later. Do not enter personal records or expose this API remotely.
+Local synthetic-data API and connected web milestone. Authentication, React Native and cloud deployment follow later. Do not enter personal records or expose the API/web remotely.
+
+The connected web UI runs at http://127.0.0.1:3000 with Node 24: run `npm ci` then `npm run web:dev` in a second terminal after starting the API below. See [web workflows](docs/web-workflows.md) for exact units/time handling, recovery, production-build smoke and Chromium/WebKit verification. `./scripts/web-e2e.sh` starts only its own API/web processes, refuses occupied ports and preserves every database record/volume.
 
 Requires .NET SDK 10.0.401, Docker Desktop and Docker Compose. The SDK is pinned in global.json; packages and PostgreSQL image are pinned. Install the SDK from https://dotnet.microsoft.com/download/dotnet/10.0 or set `BIKELOG_DOTNET` to a compatible SDK's dotnet executable.
 
