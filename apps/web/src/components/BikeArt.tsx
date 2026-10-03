@@ -1,4 +1,4 @@
-export function BikeArt() {
+export function BikeArt({ color }: { color?: string | null }) {
     return (
         <svg viewBox="0 0 600 300" aria-hidden="true">
             <ellipse
@@ -20,7 +20,7 @@ export function BikeArt() {
                     <path d="M130 115v140m-70-70h140m-120-50 100 100m-100 0 100-100M470 115v140m-70-70h140m-120-50 100 100m-100 0 100-100" />
                 </g>
                 <g
-                    stroke="var(--bike-color, #789b8c)"
+                    stroke={color || '#789b8c'}
                     strokeWidth="13"
                     strokeLinejoin="round"
                 >

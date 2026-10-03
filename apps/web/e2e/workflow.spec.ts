@@ -33,7 +33,7 @@ async function logRide(
     distance: string,
     time: string,
 ) {
-    await page.getByRole('button', { name: 'Log ride', exact: true }).click();
+    await page.getByRole('button', { name: 'Add a ride', exact: true }).click();
     await page.getByLabel('Ride name', { exact: true }).fill(name);
     await page.getByLabel('Start time', { exact: true }).fill(time);
     await page.getByLabel('Distance (km)', { exact: true }).fill(distance);
@@ -75,7 +75,7 @@ test('color names persist through bike creation, editing and clearing', async ({
     const id = new URL(page.url()).searchParams.get('bike')!;
     expect((await apiRead(request, `bikes/${id}`)).color).toBe('Hazy IPA');
     await page.reload();
-    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await page.getByRole('button', { name: 'Edit bike' }).click();
     await expect(page.getByLabel('Color', { exact: true })).toHaveValue(
         'Hazy IPA',
     );
@@ -83,7 +83,7 @@ test('color names persist through bike creation, editing and clearing', async ({
     await page.getByRole('button', { name: 'Save bike' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect((await apiRead(request, `bikes/${id}`)).color).toBe('Stealth Black');
-    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await page.getByRole('button', { name: 'Edit bike' }).click();
     await page.getByLabel('Color', { exact: true }).fill('');
     await page.getByRole('button', { name: 'Save bike' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -213,8 +213,8 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
     expect(found).toBe(id);
     await reload.getByRole('link', { name: 'Components', exact: true }).click();
     await reload
-        .getByRole('button', { name: 'All installations', exact: true })
-        .click();
+        .getByRole('combobox', { name: 'Filter components' })
+        .selectOption('all');
     await reload
         .getByRole('row')
         .filter({ hasText: `${marker}-rear-tyre` })

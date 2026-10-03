@@ -53,3 +53,11 @@ export function usePassport(componentId: string) {
     });
     return { detail, usage, maintenance };
 }
+
+export function useComponentUsage(componentId: string) {
+    return useQuery({
+        queryKey: queryKeys.componentUsage(componentId),
+        queryFn: ({ signal }) =>
+            getApi().getComponentUsage(componentId, signal),
+    });
+}

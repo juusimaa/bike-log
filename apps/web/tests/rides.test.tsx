@@ -328,7 +328,7 @@ it('overviewFailureDoesNotClaimGapFreeHistory', async () => {
 });
 it('workspaceConnectsRideAndPreservesMountedDirtyInput', async () => {
     mount(<Workspace />);
-    const log = await screen.findByRole('button', { name: 'Log ride' });
+    const log = await screen.findByRole('button', { name: 'Add a ride' });
     await waitFor(() => expect(log).toBeEnabled());
     fireEvent.click(log);
     change('Ride name', 'Draft');

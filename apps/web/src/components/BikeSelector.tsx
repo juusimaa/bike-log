@@ -2,6 +2,7 @@ import type { BikeResponse, Validated, Uuid } from '@bikelog/api-client';
 import { BikeArt } from './BikeArt';
 export function BikeSelector({
     bikes,
+    onCreate,
     bikeId,
     onSelect,
     hasMore,
@@ -9,6 +10,7 @@ export function BikeSelector({
     onLoadMore,
     disabled = false,
 }: {
+    onCreate?: () => void;
     bikes: Validated<BikeResponse>[];
     bikeId: Uuid | null;
     onSelect: (id: Uuid) => void;
@@ -18,7 +20,7 @@ export function BikeSelector({
     disabled?: boolean;
 }) {
     return (
-        <div className="bike-selector" aria-label="Garage bikes">
+        <div className="bike-selector" role="group" aria-label="Garage bikes">
             {bikes.map((b) => (
                 <button
                     key={b.id}
@@ -27,17 +29,31 @@ export function BikeSelector({
                     aria-pressed={b.id === bikeId}
                     onClick={() => onSelect(b.id)}
                 >
-                    <BikeArt />
+                    <BikeArt color={b.color} />
                     <span>
                         <strong>{b.displayName}</strong>
                         <small>
-                            {[b.make, b.model, b.kind]
+                            {[
+                                [b.make, b.model].filter(Boolean).join(' '),
+                                b.kind,
+                                b.year,
+                            ]
                                 .filter(Boolean)
                                 .join(' · ') || 'Metadata not provided'}
                         </small>
                     </span>
+                    {b.id === bikeId && <span className="choice-dot" />}
                 </button>
             ))}
+            {onCreate && (
+                <button
+                    className="text-button create-bike"
+                    disabled={disabled}
+                    onClick={onCreate}
+                >
+                    <span aria-hidden="true">＋</span> Create bike
+                </button>
+            )}
             {hasMore && (
                 <button
                     className="button secondary"

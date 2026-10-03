@@ -266,13 +266,26 @@ export function FitComponentForm({
                         offset={offset}
                         setOffset={setOffset}
                     />
-                    {!createdComponentId && (
-                        <button type="submit">Fit component</button>
-                    )}
                 </fieldset>
-                <button type="button" disabled={busy} onClick={onCancel}>
-                    Cancel
-                </button>
+                <div className="dialog-actions">
+                    <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
+                    {!createdComponentId && (
+                        <button
+                            className="button primary"
+                            type="submit"
+                            disabled={busy || !!uncertain}
+                        >
+                            Fit component
+                        </button>
+                    )}
+                </div>
             </form>
             {createdComponentId && (
                 <p>

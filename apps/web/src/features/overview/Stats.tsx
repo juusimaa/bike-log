@@ -11,23 +11,35 @@ export function Stats({
     return (
         <section className="stats" aria-label="Bike statistics">
             <div className="card stat">
-                <p className="stat-label">Recorded distance</p>
+                <p className="stat-label">
+                    Recorded distance <span aria-hidden="true">↗</span>
+                </p>
                 <p className="stat-value">
-                    {formatKilometres(s.recordedDistanceMetres)} km
+                    {formatKilometres(s.recordedDistanceMetres)}{' '}
+                    <small>km</small>
                 </p>
                 <p className="stat-caption">{s.rideCount} recorded rides</p>
             </div>
             <div className="card stat">
-                <p className="stat-label">Current chain</p>
+                <p className="stat-label">
+                    Current chain <span aria-hidden="true">⌁</span>
+                </p>
                 <p className="stat-value">
-                    {chain
-                        ? `${formatKilometres(chain.lifetimeMetres)} km`
-                        : 'Not fitted'}
+                    {chain ? (
+                        <>
+                            {formatKilometres(chain.lifetimeMetres)}{' '}
+                            <small>km</small>
+                        </>
+                    ) : (
+                        'Not fitted'
+                    )}
                 </p>
                 <p className="stat-caption">Calculated lifetime distance</p>
             </div>
             <div className="card stat">
-                <p className="stat-label">Maintenance spend</p>
+                <p className="stat-label">
+                    Maintenance spend <span aria-hidden="true">€</span>
+                </p>
                 {s.spendingByCurrency.map((c) => (
                     <p key={c.currency} className="stat-value">
                         {c.currency === 'EUR'
@@ -40,10 +52,15 @@ export function Stats({
                 )}
                 <p className="stat-caption">
                     {s.maintenanceRecordCount} service records
-                    <br />
-                    <span>
-                        {s.unknownCostRecordCount} records with unknown cost
-                    </span>
+                    {s.unknownCostRecordCount > 0 && (
+                        <>
+                            <br />
+                            <span>
+                                {s.unknownCostRecordCount} records with unknown
+                                cost
+                            </span>
+                        </>
+                    )}
                 </p>
             </div>
         </section>

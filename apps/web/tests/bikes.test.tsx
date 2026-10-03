@@ -225,7 +225,7 @@ it('dirtyBikeSwitchRequiresChoice', async () => {
     });
     api.listInstallations.mockResolvedValue({ items: [], nextCursor: null });
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
     fireEvent.click(screen.getByRole('button', { name: /Other/ }));
     await screen.findByRole('dialog', { name: 'Discard unsaved changes?' });
@@ -268,7 +268,7 @@ it('pendingWriteCannotNavigateOrReplaceCapturedDestination', async () => {
             }),
     );
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
     fireEvent.click(screen.getByRole('button', { name: 'Save bike' }));
     await waitFor(() =>
@@ -309,7 +309,7 @@ it('successfulCreationSelectsReturnedIdAfterInvalidation', async () => {
 it('newActionRetainsDirtyEditorUntilExplicitChoice', async () => {
     garageFixture();
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
     fireEvent.click(screen.getByRole('button', { name: 'Create bike' }));
     expect(screen.getByLabelText('Bike name')).toHaveValue('Attempt');
@@ -323,7 +323,7 @@ it('newActionRetainsDirtyEditorUntilExplicitChoice', async () => {
 it('cancelRetainsFormUntilExplicitDiscard', async () => {
     garageFixture();
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(screen.getByLabelText('Bike name')).toHaveValue('Attempt');
@@ -358,7 +358,7 @@ it('serverDisplayNameReplacesCardsAndHeroAfterEdit', async () => {
         return saved;
     });
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike →' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', '');
     fireEvent.click(screen.getByRole('button', { name: 'Save bike' }));
     expect(

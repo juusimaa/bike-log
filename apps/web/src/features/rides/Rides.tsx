@@ -38,18 +38,27 @@ export function Rides({
         <section className="card table-card rides-card">
             <div className="card-title">
                 <h2>Your ride log</h2>
-                <button
-                    disabled={disabled || pages.isFetching}
-                    onClick={() => void refresh()}
-                >
-                    Refresh rides
-                </button>
+                <div className="table-tools">
+                    <span className="count">
+                        {rides.length}
+                        {pages.hasNextPage ? '+' : ''} RIDES
+                    </span>
+                    <button
+                        className="text-button"
+                        disabled={disabled || pages.isFetching}
+                        onClick={() => void refresh()}
+                    >
+                        Refresh rides
+                    </button>
+                </div>
             </div>
-            <p className="dialog-description">
-                Each ride belongs to the components fitted at its start.
-                <br />
-                Times are shown in your browser’s local timezone.
-            </p>
+            <div className="section-intro">
+                <p>
+                    Each ride belongs to the components fitted at its start.
+                    <br />
+                    Times are shown in your browser’s local timezone.
+                </p>
+            </div>
             {pages.error && (
                 <ReadError error={pages.error} onRetry={() => void refresh()} />
             )}
@@ -71,9 +80,9 @@ export function Rides({
                         <thead>
                             <tr>
                                 <th>Ride</th>
-                                <th>Start time</th>
-                                <th>Distance (km)</th>
-                                <th>Duration (minutes / seconds)</th>
+                                <th>Date</th>
+                                <th>Distance</th>
+                                <th>Duration</th>
                                 <th>Allocation</th>
                                 <th>Actions</th>
                             </tr>
@@ -98,7 +107,8 @@ export function Rides({
                                         <td>
                                             {formatKilometres(
                                                 ride.distanceMetres,
-                                            )}
+                                            )}{' '}
+                                            km
                                         </td>
                                         <td>
                                             {formatDuration(
@@ -106,33 +116,47 @@ export function Rides({
                                             )}
                                         </td>
                                         <td>
-                                            {!overview.data || overview.error
-                                                ? 'Allocation not checked'
-                                                : gaps?.length
-                                                  ? gaps.map((gap) => (
-                                                        <p key={gap.position}>
-                                                            {gap.position}:
-                                                            missing installation
-                                                            history
-                                                        </p>
-                                                    ))
-                                                  : 'Fully allocated'}
+                                            {!overview.data ||
+                                            overview.error ? (
+                                                'Allocation not checked'
+                                            ) : gaps?.length ? (
+                                                gaps.map((gap) => (
+                                                    <p key={gap.position}>
+                                                        {gap.position}: missing
+                                                        installation history
+                                                    </p>
+                                                ))
+                                            ) : (
+                                                <span className="status green">
+                                                    Fully allocated
+                                                </span>
+                                            )}
                                         </td>
                                         <td>
-                                            <button
-                                                disabled={disabled || !onEdit}
-                                                aria-label={`Correct ${ride.name || local}`}
-                                                onClick={() => onEdit?.(ride)}
-                                            >
-                                                Correct
-                                            </button>
-                                            <button
-                                                disabled={disabled || !onDelete}
-                                                aria-label={`Delete ${ride.name || local}`}
-                                                onClick={() => onDelete?.(ride)}
-                                            >
-                                                Delete
-                                            </button>
+                                            <div className="row-actions">
+                                                <button
+                                                    disabled={
+                                                        disabled || !onEdit
+                                                    }
+                                                    aria-label={`Correct ${ride.name || local}`}
+                                                    onClick={() =>
+                                                        onEdit?.(ride)
+                                                    }
+                                                >
+                                                    Correct
+                                                </button>
+                                                <button
+                                                    disabled={
+                                                        disabled || !onDelete
+                                                    }
+                                                    aria-label={`Delete ${ride.name || local}`}
+                                                    onClick={() =>
+                                                        onDelete?.(ride)
+                                                    }
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 );

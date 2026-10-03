@@ -113,7 +113,10 @@ it('historicalRowsRetainIdentityAcrossPages', async () => {
         ),
     );
     mount(<Components bikeId="b1" />);
-    fireEvent.click(screen.getByRole('button', { name: 'All installations' }));
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'all' } },
+    );
     await screen.findByText('Load more installations');
     fireEvent.click(screen.getByText('Load more installations'));
     await waitFor(() =>
@@ -121,7 +124,7 @@ it('historicalRowsRetainIdentityAcrossPages', async () => {
             screen.getAllByText('Synthetic Retained chain').length,
         ).toBeGreaterThanOrEqual(2),
     );
-    expect(screen.queryByText('Currently fitted')).not.toBeInTheDocument();
+    expect(screen.queryByText('Fitted')).not.toBeInTheDocument();
 });
 it('passportUsesOwnerWideHistory', async () => {
     mount(
@@ -186,9 +189,15 @@ it('filterChangeDoesNotAppendLateAllPage', async () => {
               }),
     );
     mount(<Components bikeId="b1" />);
-    fireEvent.click(screen.getByText('All installations'));
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'all' } },
+    );
     await waitFor(() => expect(late).toBeDefined());
-    fireEvent.click(screen.getByText('Current installations'));
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'current' } },
+    );
     late({
         items: [
             {
@@ -363,18 +372,26 @@ it('returningToAllFilterStartsFreshFirstPage', async () => {
         });
     });
     mount(<Components bikeId="b1" />);
-    fireEvent.click(screen.getByText('All installations'));
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'all' } },
+    );
     await screen.findByText('Synthetic First snapshot 1');
     fireEvent.click(screen.getByText('Load more installations'));
     await screen.findByText('Synthetic Old second chapter');
-    fireEvent.click(screen.getByText('Current installations'));
-    await waitFor(() =>
-        expect(screen.getByText('Current installations')).toHaveAttribute(
-            'aria-pressed',
-            'true',
-        ),
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'current' } },
     );
-    fireEvent.click(screen.getByText('All installations'));
+    await waitFor(() =>
+        expect(
+            screen.getByRole('combobox', { name: 'Filter components' }),
+        ).toHaveValue('current'),
+    );
+    fireEvent.change(
+        screen.getByRole('combobox', { name: 'Filter components' }),
+        { target: { value: 'all' } },
+    );
     await screen.findByText('Synthetic First snapshot 2');
     expect(
         screen.queryByText('Synthetic Old second chapter'),

@@ -1285,9 +1285,6 @@ dialog::backdrop {
 .pending-feature {
     margin-top: 18px;
 }
-.nav-icon {
-    font-size: 18px;
-}
 
 /* Connected controls retain approved card/table containment. */
 main,
@@ -1300,6 +1297,7 @@ main,
     flex-wrap: wrap;
 }
 .table-wrap {
+    position: relative;
     max-width: 100%;
 }
 .component-card table {
@@ -1366,15 +1364,7 @@ dialog button[type='submit'] {
     color: var(--muted);
     margin-bottom: 6px;
 }
-.service-card > p:first-of-type {
-    display: inline-flex;
-    border-radius: 20px;
-    padding: 5px 8px;
-    background: #fff4da;
-    color: #a07522;
-    font-size: 10px;
-    margin-bottom: 12px;
-}
+
 .component-card > button {
     border: 1px solid var(--line);
     background: white;
@@ -1422,4 +1412,87 @@ dialog button[type='submit'] {
 .toast {
     max-width: calc(100vw - 32px);
     text-align: center;
+}
+
+/* Keep connected actions within the preview's control hierarchy. */
+.create-bike {
+    align-self: center;
+    padding: 12px;
+    margin-left: auto;
+    white-space: nowrap;
+}
+.card-title,
+.section-intro {
+    gap: 16px;
+}
+.section-intro {
+    flex-wrap: wrap;
+}
+.table-tools,
+.row-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.row-actions {
+    flex-wrap: nowrap;
+}
+.row-actions button {
+    min-height: 36px;
+}
+.component-library {
+    border-top: 1px solid var(--line);
+    margin-top: 20px;
+    padding-top: 16px;
+    font-size: 11px;
+    color: var(--muted);
+}
+.component-library summary {
+    cursor: pointer;
+    color: var(--green);
+    padding: 6px 0;
+    margin-bottom: 8px;
+}
+.position-label {
+    text-transform: capitalize;
+}
+.reminder-settings {
+    margin-top: 10px;
+    min-height: 28px;
+}
+.bike-choice svg {
+    flex-shrink: 0;
+}
+.bike-choice .choice-dot {
+    flex-shrink: 0;
+}
+@media (max-width: 650px) {
+    .create-bike {
+        margin-left: 0;
+    }
+    .heading-actions {
+        gap: 10px;
+    }
+    .table-tools {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+}
+.component-card td .component-name {
+    display: block;
+    text-align: left;
+    font-size: 9px;
+    color: var(--muted);
+    padding: 0;
+    margin-top: 5px;
+}
+.component-card td .row-button {
+    font-size: 17px;
+    padding: 7px;
+}
+.vacant-position {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 12px;
 }

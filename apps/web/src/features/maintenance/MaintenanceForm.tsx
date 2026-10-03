@@ -343,13 +343,24 @@ export function MaintenanceForm({
                             onChange={(e) => setCost(e.target.value)}
                         />
                     </Field>
-                    <button type="submit" disabled={!associationReady}>
+                </fieldset>
+                <div className="dialog-actions">
+                    <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="button primary"
+                        type="submit"
+                        disabled={busy || recovery || !associationReady}
+                    >
                         Save maintenance
                     </button>
-                </fieldset>
-                <button type="button" disabled={busy} onClick={onCancel}>
-                    Cancel
-                </button>
+                </div>
             </form>
             {recovery && (
                 <button disabled={busy} onClick={() => void refresh()}>

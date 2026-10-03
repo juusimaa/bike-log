@@ -155,10 +155,44 @@ export function Workspace(
                 }
             />
         );
+    const openComponent = (
+        kind: 'replace' | 'passport',
+        installation: Validated<InstallationResponse>,
+        context: GarageIntegration,
+    ) => {
+        if (kind === 'passport') {
+            context.requestCancel(() =>
+                setEditor({
+                    kind: 'passport',
+                    componentId: installation.componentId,
+                    bikeId: installation.bikeId,
+                    key: ++editorSequence.current,
+                }),
+            );
+            return;
+        }
+        context.requestCancel(() => {
+            const opening = ++editorSequence.current;
+            setBusy(true);
+            void getApi()
+                .getComponent(installation.componentId)
+                .then((component) => {
+                    setEditor({
+                        kind: 'replace',
+                        installation,
+                        component,
+                        key: opening,
+                    });
+                })
+                .catch(() => setNotice('Unable to load replacement component.'))
+                .finally(() => setBusy(false));
+        });
+    };
     return (
         <>
             <Garage
                 {...props}
+                onComponentAction={openComponent}
                 dirty={dirty}
                 navigationLocked={busy}
                 onExitAccepted={close}
@@ -226,29 +260,11 @@ export function Workspace(
                                         )
                                     }
                                     onReplace={(installation) =>
-                                        context.requestCancel(() => {
-                                            const opening =
-                                                ++editorSequence.current;
-                                            setBusy(true);
-                                            void getApi()
-                                                .getComponent(
-                                                    installation.componentId,
-                                                )
-                                                .then((component) => {
-                                                    setEditor({
-                                                        kind: 'replace',
-                                                        installation,
-                                                        component,
-                                                        key: opening,
-                                                    });
-                                                })
-                                                .catch(() =>
-                                                    setNotice(
-                                                        'Unable to load replacement component.',
-                                                    ),
-                                                )
-                                                .finally(() => setBusy(false));
-                                        })
+                                        openComponent(
+                                            'replace',
+                                            installation,
+                                            context,
+                                        )
                                     }
                                     onPassport={(componentId) =>
                                         context.requestCancel(() =>

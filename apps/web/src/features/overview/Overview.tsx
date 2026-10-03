@@ -1,21 +1,30 @@
 import type { ReactNode } from 'react';
-import type { Uuid, Position } from '@bikelog/api-client';
+import type {
+    Uuid,
+    Position,
+    InstallationResponse,
+    Validated,
+} from '@bikelog/api-client';
 import { useOverview, useCurrentInstallations } from '../garage/queries';
 import { Stats } from './Stats';
 import { Activity } from './Activity';
 import { BikeArt } from '../../components/BikeArt';
 import { ReadError } from '../../components/EmptyState';
-import { formatKilometres, formatMinutes } from '../../lib/format';
+import { formatKilometres } from '../../lib/format';
 export function Overview({
     bikeId,
     onEditBike,
     onViewComponents,
     reminder,
+    onReplace,
+    onPassport,
 }: {
     bikeId: Uuid;
     onEditBike?: () => void;
     onViewComponents?: () => void;
     reminder?: ReactNode;
+    onReplace?: (i: Validated<InstallationResponse>) => void;
+    onPassport?: (i: Validated<InstallationResponse>) => void;
 }) {
     const overview = useOverview(bikeId);
     const fitted = useCurrentInstallations(bikeId);
@@ -53,13 +62,31 @@ export function Overview({
                                     .join(' · ') || 'Metadata not provided'}
                             </p>
                         </div>
-                        <span className="label-pill">Your bike</span>
+                        <div className="hero-actions">
+                            <span className="label-pill">
+                                {s.bike.kind
+                                    ? `YOUR ${s.bike.kind.toUpperCase()} BIKE`
+                                    : 'YOUR BIKE'}
+                            </span>
+                            <button
+                                className="text-button"
+                                disabled={!onEditBike}
+                                onClick={onEditBike}
+                            >
+                                Edit bike
+                            </button>
+                        </div>
                     </div>
-                    <BikeArt />
+                    <BikeArt color={s.bike.color} />
                     <div className="hero-bottom">
-                        <span>Your rides and service, together</span>
-                        <button disabled={!onEditBike} onClick={onEditBike}>
-                            Edit bike →
+                        <span>
+                            ● {s.currentComponents.length} components fitted
+                        </span>
+                        <button
+                            disabled={!onViewComponents}
+                            onClick={onViewComponents}
+                        >
+                            Explore components ↗
                         </button>
                     </div>
                 </section>
@@ -85,7 +112,7 @@ export function Overview({
             <div className="content-grid">
                 <section className="card table-card">
                     <div className="card-title">
-                        <h2>Current components</h2>
+                        <h2>Currently on your bike</h2>
                         <button
                             className="text-button"
                             onClick={onViewComponents}
@@ -116,8 +143,13 @@ export function Overview({
                             <thead>
                                 <tr>
                                     <th>Component</th>
-                                    <th>Recorded usage</th>
-                                    <th>Duration</th>
+                                    <th>Lifetime</th>
+                                    <th>Status</th>
+                                    <th>
+                                        <span className="visually-hidden">
+                                            Actions
+                                        </span>
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -138,29 +170,95 @@ export function Overview({
                                     return (
                                         <tr key={position}>
                                             <td>
-                                                <strong>
-                                                    {position.replaceAll(
-                                                        '-',
-                                                        ' ',
+                                                <div className="item-name">
+                                                    <span
+                                                        className="part-icon"
+                                                        aria-hidden="true"
+                                                    >
+                                                        {position === 'chain'
+                                                            ? '⌁'
+                                                            : position ===
+                                                                'cassette'
+                                                              ? '⚙'
+                                                              : '◯'}
+                                                    </span>
+                                                    <span>
+                                                        <strong className="position-label">
+                                                            {position.replaceAll(
+                                                                '-',
+                                                                ' ',
+                                                            )}
+                                                        </strong>
+                                                        <small>
+                                                            {!usage
+                                                                ? '—'
+                                                                : identity
+                                                                  ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
+                                                                  : 'Loading component identity…'}
+                                                        </small>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="number">
+                                                {usage
+                                                    ? `${formatKilometres(usage.combinedLifetimeMetres)} km`
+                                                    : '—'}
+                                                {usage &&
+                                                    usage.initialUsageEstimateMetres >
+                                                        0 && (
+                                                        <small className="estimate-label">
+                                                            Includes estimate
+                                                        </small>
                                                     )}
-                                                </strong>
-                                                <small className="estimate-label">
+                                            </td>
+                                            <td>
+                                                <span
+                                                    className={`status ${!usage ? 'gray' : position === 'chain' && s.reminder?.due ? 'amber' : 'green'}`}
+                                                >
                                                     {!usage
                                                         ? 'Not fitted'
-                                                        : identity
-                                                          ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
-                                                          : 'Loading component identity…'}
-                                                </small>
+                                                        : position ===
+                                                                'chain' &&
+                                                            s.reminder?.due
+                                                          ? 'Service reminder'
+                                                          : 'Fitted'}
+                                                </span>
                                             </td>
                                             <td>
-                                                {usage
-                                                    ? `${formatKilometres(usage.currentInstallationMetres)} km`
-                                                    : '—'}
-                                            </td>
-                                            <td>
-                                                {usage
-                                                    ? `${formatMinutes(usage.currentInstallationSeconds) + (usage.currentInstallationSeconds % 3 === 0 ? ' min' : '')}${usage.currentInstallationHasUnknownDuration ? ' + unknown duration' : ''}`
-                                                    : '—'}
+                                                <div className="component-actions">
+                                                    {identity && (
+                                                        <>
+                                                            <button
+                                                                className="text-button"
+                                                                disabled={
+                                                                    !onReplace
+                                                                }
+                                                                onClick={() =>
+                                                                    onReplace?.(
+                                                                        identity.installation,
+                                                                    )
+                                                                }
+                                                                aria-label={`Replace ${position.replaceAll('-', ' ')}`}
+                                                            >
+                                                                Replace
+                                                            </button>
+                                                            <button
+                                                                className="row-button"
+                                                                disabled={
+                                                                    !onPassport
+                                                                }
+                                                                onClick={() =>
+                                                                    onPassport?.(
+                                                                        identity.installation,
+                                                                    )
+                                                                }
+                                                                aria-label={`View ${position.replaceAll('-', ' ')} history`}
+                                                            >
+                                                                ↗
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     );

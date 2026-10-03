@@ -13,12 +13,23 @@ export function DirtyFormGuard({
     return (
         <Dialog open={dirty} title="Discard unsaved changes?" onCancel={onStay}>
             <p>Your changes have not been saved.</p>
-            <button type="button" onClick={onStay} autoFocus>
-                Keep editing
-            </button>
-            <button type="button" onClick={onDiscard}>
-                Discard changes
-            </button>
+            <div className="dialog-actions">
+                <button
+                    className="button secondary"
+                    type="button"
+                    onClick={onDiscard}
+                >
+                    Discard changes
+                </button>
+                <button
+                    className="button primary"
+                    type="button"
+                    onClick={onStay}
+                    autoFocus
+                >
+                    Keep editing
+                </button>
+            </div>
         </Dialog>
     );
 }

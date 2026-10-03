@@ -261,13 +261,24 @@ export function RideForm({
                         onChange={setValues}
                         onDurationEdited={() => setDurationEdited(true)}
                     />
-                    <button className="button primary" type="submit">
+                </fieldset>
+                <div className="dialog-actions">
+                    <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={cancel}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="button primary"
+                        type="submit"
+                        disabled={busy || recovery}
+                    >
                         Save ride
                     </button>
-                </fieldset>
-                <button type="button" disabled={busy} onClick={cancel}>
-                    Cancel
-                </button>
+                </div>
             </form>
             <RideRecovery
                 phase={save.state.phase}

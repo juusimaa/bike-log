@@ -10,6 +10,7 @@ export function Activity({
         <section className="card activity-card">
             <div className="card-title">
                 <h2>The latest chapter</h2>
+                <span className="count">RECENT ACTIVITY</span>
             </div>
             <div className="activity-list">
                 {snapshot.recentActivity.map((a) => (
@@ -18,7 +19,7 @@ export function Activity({
                         key={`${a.kind}:${a.id}`}
                     >
                         <span className="activity-icon" aria-hidden="true">
-                            ↗
+                            {a.kind === 'ride' ? '↗' : '⌁'}
                         </span>
                         <div>
                             <strong>{a.title}</strong>

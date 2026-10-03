@@ -5,7 +5,13 @@ import {
     useSyncExternalStore,
     type ReactNode,
 } from 'react';
-import type { Uuid, View, BikeResponse, Validated } from '@bikelog/api-client';
+import type {
+    Uuid,
+    View,
+    BikeResponse,
+    Validated,
+    InstallationResponse,
+} from '@bikelog/api-client';
 import { ApiError } from '@bikelog/api-client';
 import { AppShell, viewTitles } from '../../components/AppShell';
 import { BikeSelector } from '../../components/BikeSelector';
@@ -28,6 +34,11 @@ export type GarageProps = {
     navigationLocked?: boolean;
     onExitAccepted?: () => void;
     onAction?: (action: GarageAction, originalBikeId: Uuid | null) => void;
+    onComponentAction?: (
+        kind: 'replace' | 'passport',
+        installation: Validated<InstallationResponse>,
+        context: GarageIntegration,
+    ) => void;
     renderView?: (context: GarageIntegration) => ReactNode;
     renderOverlay?: (context: GarageIntegration) => ReactNode;
     renderReminder?: (bikeId: Uuid, context: GarageIntegration) => ReactNode;
@@ -68,6 +79,7 @@ export function Garage({
     onExitAccepted,
     onAction,
     renderView,
+    onComponentAction,
     renderOverlay,
     renderReminder,
 }: GarageProps = {}) {
@@ -192,7 +204,7 @@ export function Garage({
         >
             <div className="page-heading">
                 <div>
-                    <p className="eyebrow">YOUR GARAGE</p>
+                    <p className="eyebrow">LESS ADMIN. MORE RIDING.</p>
                     <h1>
                         {
                             {
@@ -223,21 +235,14 @@ export function Garage({
                         disabled={!usable || navigationLocked}
                         onClick={() => action('log-maintenance', bikeId)}
                     >
-                        Log maintenance
+                        <span aria-hidden="true">＋</span> Log maintenance
                     </button>
                     <button
                         className="button primary"
                         disabled={!usable || navigationLocked}
                         onClick={() => action('log-ride', bikeId)}
                     >
-                        Log ride
-                    </button>
-                    <button
-                        className="button secondary"
-                        disabled={navigationLocked}
-                        onClick={() => action('create-bike', null)}
-                    >
-                        Create bike
+                        <span aria-hidden="true">＋</span> Add a ride
                     </button>
                 </div>
             </div>
@@ -247,6 +252,7 @@ export function Garage({
                 </p>
             )}
             <BikeSelector
+                onCreate={() => action('create-bike', null)}
                 bikes={all}
                 disabled={navigationLocked}
                 bikeId={bikeId}
@@ -301,6 +307,16 @@ export function Garage({
                         navigationLocked
                             ? undefined
                             : () => navigate(bikeId, 'components')
+                    }
+                    onReplace={
+                        navigationLocked || !onComponentAction
+                            ? undefined
+                            : (i) => onComponentAction('replace', i, context)
+                    }
+                    onPassport={
+                        navigationLocked || !onComponentAction
+                            ? undefined
+                            : (i) => onComponentAction('passport', i, context)
                     }
                     reminder={renderReminder?.(bikeId, context)}
                 />

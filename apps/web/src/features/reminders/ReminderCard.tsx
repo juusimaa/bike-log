@@ -12,55 +12,97 @@ export function ReminderCard({
     onLubricate: () => void;
     disabled?: boolean;
 }) {
+    const ready = e.state === 'ready';
+    const distance = e.distanceSinceBaselineMetres;
+    const threshold = e.activeThresholdMetres;
+    const progress =
+        ready && distance !== null && threshold !== null && threshold > 0
+            ? Math.min(100, (distance / threshold) * 100)
+            : null;
+    const status =
+        e.state === 'disabled'
+            ? 'Reminder disabled'
+            : e.state === 'no-current-chain'
+              ? 'No fitted chain'
+              : ready && e.due === true
+                ? 'Lubrication due'
+                : ready && e.due === false && e.remainingMetres !== null
+                  ? `Ready · ${formatKilometres(e.remainingMetres)} km remaining`
+                  : 'Reminder evaluation unavailable';
     return (
         <aside
             className="card service-card"
             aria-label="Chain lubrication reminder"
         >
             <div className="card-title">
-                <h2>Chain lubrication</h2>
+                <h2>A little attention</h2>
+                <span className="count">
+                    {ready
+                        ? e.due
+                            ? '1 reminder'
+                            : 'Up to date'
+                        : 'Chain care'}
+                </span>
             </div>
-            {e.state === 'disabled' ? (
-                <p>Reminder disabled</p>
-            ) : e.state === 'no-current-chain' ? (
-                <p>No fitted chain</p>
-            ) : e.state === 'ready' && e.due === true ? (
-                <p>Lubrication due</p>
-            ) : e.state === 'ready' &&
-              e.due === false &&
-              e.remainingMetres !== null ? (
-                <p>
-                    Ready · {formatKilometres(e.remainingMetres)} km remaining
-                </p>
-            ) : (
-                <p>Reminder evaluation unavailable</p>
+            <div className="service-header">
+                <span className="service-symbol" aria-hidden="true">
+                    ⌁
+                </span>
+                <div>
+                    <h3>Lubricate your chain</h3>
+                    {e.method && (
+                        <small>
+                            {e.method === 'wax' ? 'Wax' : 'Oil'} lubrication
+                        </small>
+                    )}
+                </div>
+            </div>
+            <span
+                className={`status ${ready ? (e.due ? 'amber' : 'green') : 'gray'}`}
+            >
+                {status}
+            </span>
+            {progress !== null && (
+                <>
+                    <div
+                        className="progress"
+                        role="progressbar"
+                        aria-label="Chain lubrication interval"
+                        aria-valuenow={Math.round(progress)}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                    >
+                        <span style={{ width: `${progress}%` }} />
+                    </div>
+                    <div className="progress-labels">
+                        <span>
+                            {formatKilometres(distance!)} km since{' '}
+                            {e.baselineKind === 'installation'
+                                ? 'installation'
+                                : 'service'}
+                        </span>
+                        <span>{formatKilometres(threshold!)} km</span>
+                    </div>
+                </>
             )}
-            {e.method && <p>Method: {e.method}</p>}
-            {e.distanceSinceBaselineMetres !== null && (
-                <p>
-                    {formatKilometres(e.distanceSinceBaselineMetres)} km since
-                    baseline
-                </p>
-            )}
-            {e.activeThresholdMetres !== null && (
-                <p>Interval: {formatKilometres(e.activeThresholdMetres)} km</p>
-            )}
+            <button
+                className="button secondary"
+                disabled={disabled || e.componentId === null}
+                onClick={onLubricate}
+            >
+                Log lubrication <span aria-hidden="true">↗</span>
+            </button>
             <p className="service-footnote">
+                Reminders follow your chosen interval.
+                <br />
                 Distance service prompt, not a wear measurement.
             </p>
             <button
-                className="button secondary"
+                className="text-button reminder-settings"
                 disabled={disabled}
                 onClick={onConfigure}
             >
                 Configure reminder
-            </button>
-            <button
-                className="button"
-                disabled={disabled || e.componentId === null}
-                onClick={onLubricate}
-            >
-                Log lubrication
             </button>
         </aside>
     );

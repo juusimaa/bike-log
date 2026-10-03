@@ -25,7 +25,7 @@ for (const status of [400, 404, 409, 500, 503])
                 });
         });
         await page.goto(`/?bike=${bikeId}`);
-        await page.getByRole('button', { name: 'Edit bike →' }).click();
+        await page.getByRole('button', { name: 'Edit bike' }).click();
         await page
             .getByLabel('Bike name', { exact: true })
             .fill('Preserved task9 attempt');
@@ -113,7 +113,7 @@ test('browser owns close warning only while unresolved editor work exists', asyn
 }) => {
     await mockVisual(page);
     await page.goto(`/?bike=${bikeId}`);
-    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await page.getByRole('button', { name: 'Edit bike' }).click();
     await page.getByLabel('Bike name', { exact: true }).fill('Unsaved reload');
     // Effects register after committed input; wait for the actual guard rather than racing reload.
     await expect
@@ -143,8 +143,6 @@ test('browser owns close warning only while unresolved editor work exists', asyn
         await dialog.dismiss();
     });
     await page.reload();
-    await expect(
-        page.getByRole('button', { name: 'Edit bike →' }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit bike' })).toBeVisible();
     expect(extraWarning).toBe(false);
 });

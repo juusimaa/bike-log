@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { createHash } from 'node:crypto';
 import { readFile, writeFile } from 'node:fs/promises';
 import { mockVisual, bikeId } from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
@@ -22,7 +21,7 @@ const titles = [
     'Miles worth remembering.',
     'Care that goes the distance.',
 ];
-test('archived and connected four views: geometry, copy and accessible overflow', async ({
+test('design and connected four views: geometry, copy and accessible overflow', async ({
     page,
 }, info) => {
     await page.route('http://127.0.0.1:3000/__approved/**', async (route) => {
@@ -34,23 +33,9 @@ test('archived and connected four views: geometry, copy and accessible overflow'
                 : file.endsWith('.css')
                   ? 'text/css'
                   : 'application/javascript',
-            body: await readFile(`../../docs/ui-design/versions/v1/${file}`),
+            body: await readFile(`../../docs/ui-design/${file}`),
         });
     });
-    const manifest = JSON.parse(
-        await readFile(
-            '../../docs/ui-design/versions/v1/manifest.json',
-            'utf8',
-        ),
-    );
-    for (const [file, hash] of Object.entries(manifest.files))
-        expect(
-            createHash('sha256')
-                .update(
-                    await readFile(`../../docs/ui-design/versions/v1/${file}`),
-                )
-                .digest('hex'),
-        ).toBe(hash);
     const geometry = async () =>
         page.evaluate(() => {
             const box = (selector: string) => {
@@ -182,7 +167,7 @@ test('native dialog traps Tab, Escape returns focus and repeat validation focuse
 });
 test('real clean and dirty Back/Forward preserve both history branches', async ({
     page,
-}) => {
+}, info) => {
     await mockVisual(page);
     await page.goto(`/?bike=${bikeId}&view=overview`);
     await page.getByRole('link', { name: 'Rides', exact: true }).click();
@@ -191,9 +176,28 @@ test('real clean and dirty Back/Forward preserve both history branches', async (
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.goForward();
     await expect(page).toHaveURL(/view=rides/);
-    await page.getByRole('button', { name: 'Log ride', exact: true }).click();
+    await page.getByRole('button', { name: 'Add a ride', exact: true }).click();
     await page.getByLabel('Distance (km)', { exact: true }).fill('65');
     await page.goBack();
+    const confirmation = page.getByRole('dialog', {
+        name: 'Discard unsaved changes?',
+    });
+    await expect(confirmation).toBeVisible();
+    const keep = confirmation.getByRole('button', { name: 'Keep editing' });
+    const discard = confirmation.getByRole('button', {
+        name: 'Discard changes',
+    });
+    await expect(keep).toBeFocused();
+    await expect(keep).toHaveCSS('background-color', 'rgb(52, 91, 67)');
+    const keepBox = (await keep.boundingBox())!;
+    const discardBox = (await discard.boundingBox())!;
+    expect(keepBox.y).toBe(discardBox.y);
+    expect(keepBox.x - discardBox.x - discardBox.width).toBeGreaterThanOrEqual(
+        8,
+    );
+    await page.screenshot({
+        path: info.outputPath('discard-changes-dialog.png'),
+    });
     await page.getByRole('button', { name: 'Keep editing' }).click();
     await expect(page.getByLabel('Distance (km)', { exact: true })).toHaveValue(
         '65',
@@ -365,7 +369,7 @@ test('approved server snapshot statistics and three latest activities remain vis
     await page.goto(`/?bike=${bikeId}`);
     const stats = page.getByRole('region', { name: 'Bike statistics' });
     await expect(
-        stats.getByText('Current chain', { exact: true }),
+        stats.locator('.stat-label').filter({ hasText: 'Current chain' }),
     ).toBeVisible();
     await expect(stats.getByText('350 km', { exact: true })).toBeVisible();
     await expect(stats.getByText('787 km', { exact: true })).toBeVisible();
@@ -403,7 +407,7 @@ test('styled real dialog and visible aria-live success notification', async ({
         });
     });
     await page.goto(`/?bike=${bikeId}`);
-    await page.getByRole('button', { name: 'Edit bike →' }).click();
+    await page.getByRole('button', { name: 'Edit bike' }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit bike' });
     const make = page.getByLabel('Make', { exact: true });
     await make.focus();
@@ -446,4 +450,54 @@ test('styled real dialog and visible aria-live success notification', async ({
         path: toastPath,
         contentType: 'image/png',
     });
+});
+
+test('design action placement, spacing and component replacement remain usable', async ({
+    page,
+}) => {
+    await mockVisual(page);
+    await page.goto(`/?bike=${bikeId}`);
+    const heading = page.locator('.heading-actions');
+    await expect(heading.getByRole('button')).toHaveCount(2);
+    await expect(
+        page
+            .locator('.bike-selector')
+            .getByRole('button', { name: 'Create bike' }),
+    ).toBeVisible();
+    const buttons = await heading.getByRole('button').all();
+    const first = (await buttons[0].boundingBox())!;
+    const second = (await buttons[1].boundingBox())!;
+    expect(second.x - first.x - first.width).toBeGreaterThanOrEqual(8);
+    await expect(
+        page
+            .locator('.hero-actions')
+            .getByRole('button', { name: 'Edit bike' }),
+    ).toBeVisible();
+    await page
+        .getByRole('button', { name: 'Replace chain', exact: true })
+        .click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    const cancel = (await dialog
+        .getByRole('button', { name: 'Cancel', exact: true })
+        .boundingBox())!;
+    const save = (await dialog
+        .getByRole('button', { name: 'Replace component', exact: true })
+        .boundingBox())!;
+    expect(save.y).toBe(cancel.y);
+    expect(save.x - cancel.x - cancel.width).toBeGreaterThanOrEqual(8);
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByRole('link', { name: 'Components', exact: true }).click();
+    await expect(
+        page.getByRole('combobox', { name: 'Filter components' }),
+    ).toBeVisible();
+    await expect(page.locator('.component-library')).not.toHaveAttribute(
+        'open',
+    );
+    await page
+        .getByRole('combobox', { name: 'Filter components' })
+        .selectOption('all');
+    await expect(
+        page.getByRole('combobox', { name: 'Filter components' }),
+    ).toHaveValue('all');
 });

@@ -68,6 +68,9 @@ export function Maintenance({ bikeId }: { bikeId: string }) {
         <section className="card table-card" aria-label="Maintenance history">
             <div className="card-title">
                 <h2>Maintenance history</h2>
+                {history.data && (
+                    <span className="count">{history.data.length} RECORDS</span>
+                )}
             </div>
             <p className="dialog-description">
                 Service creates a new chapter. It never resets a component’s

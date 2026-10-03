@@ -90,7 +90,9 @@ describe('garage', () => {
         expect(
             await screen.findByRole('heading', { name: 'Missing bike' }),
         ).toBeVisible();
-        expect(screen.getByRole('button', { name: 'Log ride' })).toBeDisabled();
+        expect(
+            screen.getByRole('button', { name: 'Add a ride' }),
+        ).toBeDisabled();
     });
     it('unavailableAndUnsafeReadsRemainRecoverable', async () => {
         reset();
@@ -160,7 +162,9 @@ describe('garage', () => {
         api.listBikes.mockResolvedValue({ items: [], nextCursor: null });
         mount();
         expect(await screen.findByText('Your garage is empty')).toBeVisible();
-        expect(screen.getByRole('button', { name: 'Log ride' })).toBeDisabled();
+        expect(
+            screen.getByRole('button', { name: 'Add a ride' }),
+        ).toBeDisabled();
         expect(
             screen.getByRole('button', { name: 'Create bike' }),
         ).toBeEnabled();
@@ -218,7 +222,12 @@ describe('garage', () => {
     it('overviewUsesSnapshotNotPageSums', async () => {
         reset();
         mount();
-        expect(await screen.findByText('987 km')).toBeVisible();
+        expect(
+            await screen.findByText(
+                (_, e) =>
+                    e?.className === 'stat-value' && e.textContent === '987 km',
+            ),
+        ).toBeVisible();
         expect(screen.getByText('123 recorded rides')).toBeVisible();
         expect(screen.getByText('€12.00')).toBeVisible();
         expect(screen.getByText('USD 34.00')).toBeVisible();
@@ -241,7 +250,10 @@ describe('garage', () => {
         fireEvent.click(screen.getByRole('button', { name: /Bike B/ }));
         await screen.findByRole('heading', { name: 'Bike B' });
         resolve(snapshot(a));
-        await screen.findByText('384 km');
+        await screen.findByText(
+            (_, e) =>
+                e?.className === 'stat-value' && e.textContent === '384 km',
+        );
         expect(screen.queryByText('987 km')).not.toBeInTheDocument();
         await waitFor(() =>
             expect(

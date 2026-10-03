@@ -192,11 +192,24 @@ export function ReplacementForm({
                         cost={cost}
                         setCost={setCost}
                     />
-                    <button type="submit">Replace component</button>
                 </fieldset>
-                <button type="button" disabled={busy} onClick={onCancel}>
-                    Cancel
-                </button>
+                <div className="dialog-actions">
+                    <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={onCancel}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="button primary"
+                        type="submit"
+                        disabled={busy || recovery}
+                    >
+                        Replace component
+                    </button>
+                </div>
             </form>
             {recovery && (
                 <section>

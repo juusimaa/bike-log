@@ -260,13 +260,24 @@ export function BikeForm({
                             ))}
                         </select>
                     </Field>
-                    <button className="button primary" type="submit">
+                </fieldset>
+                <div className="dialog-actions">
+                    <button
+                        className="button secondary"
+                        type="button"
+                        disabled={busy}
+                        onClick={cancel}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        className="button primary"
+                        type="submit"
+                        disabled={busy || recovery}
+                    >
                         Save bike
                     </button>
-                </fieldset>
-                <button type="button" disabled={busy} onClick={cancel}>
-                    Cancel
-                </button>
+                </div>
             </form>
             {save.state.phase === 'conflict' &&
                 save.state.refreshed &&

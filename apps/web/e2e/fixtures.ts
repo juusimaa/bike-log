@@ -186,7 +186,30 @@ export async function mockVisual(page: Page) {
             body = overview(path.includes(secondId) ? secondId : bikeId);
         else if (path.endsWith('/installations'))
             body = { items: rows, nextCursor: null };
-        else if (path.endsWith('/rides'))
+        else if (path.endsWith('/usage')) {
+            const row = rows.find((r) => path.includes(r.component.id))!;
+            const current = overview().currentComponents.find(
+                (c) => c.componentId === row.component.id,
+            )!;
+            body = {
+                componentId: row.component.id,
+                lifetimeMetres: current.lifetimeMetres,
+                lifetimeSeconds: 120000,
+                hasUnknownDuration: false,
+                initialUsageEstimateMetres:
+                    row.component.initialUsageEstimateMetres,
+                combinedLifetimeMetres: current.combinedLifetimeMetres,
+                installations: [
+                    {
+                        installation: row.installation,
+                        metres: current.currentInstallationMetres,
+                        seconds: 120000,
+                        hasUnknownDuration: false,
+                    },
+                ],
+                calculatedAtUtc: null,
+            };
+        } else if (path.endsWith('/rides'))
             body = { items: baselineRides, nextCursor: null };
         else if (path.endsWith('/reminder')) body = reminder;
         else if (path.endsWith('/maintenance'))

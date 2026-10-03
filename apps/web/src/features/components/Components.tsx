@@ -7,8 +7,38 @@ import type {
     Position,
     Validated,
 } from '@bikelog/api-client';
-import { useComponentPages, useInstallationPages } from './queries';
-import { formatDateTime } from '../../lib/dates';
+import {
+    useComponentPages,
+    useInstallationPages,
+    useComponentUsage,
+} from './queries';
+import { formatKilometres } from '../../lib/format';
+function Lifetime({ componentId }: { componentId: string }) {
+    const usage = useComponentUsage(componentId);
+    return (
+        <>
+            {usage.data ? (
+                <>
+                    {formatKilometres(usage.data.combinedLifetimeMetres)} km
+                    {usage.data.initialUsageEstimateMetres > 0 && (
+                        <small className="estimate-label">
+                            Includes estimate
+                        </small>
+                    )}
+                </>
+            ) : usage.isError ? (
+                <button
+                    className="text-button"
+                    onClick={() => void usage.refetch()}
+                >
+                    Retry usage
+                </button>
+            ) : (
+                'Loading…'
+            )}
+        </>
+    );
+}
 export type ComponentsProps = {
     bikeId: string;
     disabled?: boolean;
@@ -70,26 +100,26 @@ export function Components({
             <div className="card-title">
                 <h2>Component collection</h2>
             </div>
-            <p className="dialog-description">
-                Lifetime mileage stays with the component.
-                <br />
-                Open a component to see calculated usage and installation
-                history.
-            </p>
-            <button
-                aria-pressed={status === 'current'}
-                disabled={switching}
-                onClick={() => void selectFilter('current')}
-            >
-                Current installations
-            </button>
-            <button
-                aria-pressed={status === 'all'}
-                disabled={switching}
-                onClick={() => void selectFilter('all')}
-            >
-                All installations
-            </button>
+            <div className="section-intro">
+                <p>
+                    Lifetime mileage stays with the component.
+                    <br />
+                    Open a component to see calculated usage and installation
+                    history.
+                </p>
+                <select
+                    className="filter"
+                    aria-label="Filter components"
+                    value={status}
+                    disabled={switching}
+                    onChange={(e) =>
+                        void selectFilter(e.target.value as 'current' | 'all')
+                    }
+                >
+                    <option value="current">Currently fitted</option>
+                    <option value="all">Include replaced parts</option>
+                </select>
+            </div>
             {chapters.isPending && <p>Loading installations…</p>}
             {chapters.isError && (
                 <p role="alert">
@@ -104,46 +134,87 @@ export function Components({
                     <thead>
                         <tr>
                             <th>Component</th>
-                            <th>Position</th>
-                            <th>Chapter</th>
-                            <th>Actions</th>
+                            <th>Lifetime</th>
+                            <th>Status</th>
+                            <th>
+                                <span className="visually-hidden">Actions</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
                         {rows.map(({ installation: i, component: c }) => (
                             <tr key={i.id}>
                                 <td>
-                                    <button
-                                        disabled={disabled}
-                                        onClick={() => onPassport?.(c.id)}
-                                    >
-                                        {c.make}{' '}
-                                        {c.model?.trim() ||
-                                            'Model not provided'}
-                                    </button>
-                                </td>
-                                <td>{i.position}</td>
-                                <td>
-                                    {formatDateTime(i.startUtc)} —{' '}
-                                    {i.endUtc
-                                        ? formatDateTime(i.endUtc)
-                                        : 'Open-ended'}
-                                    {currentRows.some(
-                                        (r) => r.installation.id === i.id,
-                                    ) && <span> Currently fitted</span>}
-                                </td>
-                                <td>
-                                    {onReplace &&
-                                        currentRows.some(
-                                            (r) => r.installation.id === i.id,
-                                        ) && (
+                                    <div className="item-name">
+                                        <span
+                                            className="part-icon"
+                                            aria-hidden="true"
+                                        >
+                                            {i.position === 'chain'
+                                                ? '⌁'
+                                                : i.position === 'cassette'
+                                                  ? '⚙'
+                                                  : '◯'}
+                                        </span>
+                                        <span>
+                                            <strong className="position-label">
+                                                {i.position.replaceAll(
+                                                    '-',
+                                                    ' ',
+                                                )}
+                                            </strong>
                                             <button
+                                                className="text-button component-name"
                                                 disabled={disabled}
-                                                onClick={() => onReplace(i)}
+                                                onClick={() =>
+                                                    onPassport?.(c.id)
+                                                }
                                             >
-                                                Replace
+                                                {c.make}{' '}
+                                                {c.model?.trim() ||
+                                                    'Model not provided'}
                                             </button>
-                                        )}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td className="number">
+                                    <Lifetime componentId={c.id} />
+                                </td>
+                                <td>
+                                    <span
+                                        className={`status ${currentRows.some((r) => r.installation.id === i.id) ? 'green' : 'gray'}`}
+                                    >
+                                        {currentRows.some(
+                                            (r) => r.installation.id === i.id,
+                                        )
+                                            ? 'Fitted'
+                                            : 'Archived'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div className="component-actions">
+                                        {onReplace &&
+                                            currentRows.some(
+                                                (r) =>
+                                                    r.installation.id === i.id,
+                                            ) && (
+                                                <button
+                                                    className="text-button"
+                                                    disabled={disabled}
+                                                    onClick={() => onReplace(i)}
+                                                >
+                                                    Replace
+                                                </button>
+                                            )}
+                                        <button
+                                            className="row-button"
+                                            disabled={disabled || !onPassport}
+                                            onClick={() => onPassport?.(c.id)}
+                                            aria-label={`View ${i.position.replaceAll('-', ' ')} history`}
+                                        >
+                                            ↗
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -168,10 +239,11 @@ export function Components({
                             ),
                     )
                     .map((p) => (
-                        <p key={p}>
+                        <p className="vacant-position" key={p}>
                             {p}: vacant{' '}
                             {onFit && (
                                 <button
+                                    className="button secondary"
                                     disabled={disabled}
                                     onClick={() => onFit(p)}
                                 >
@@ -180,35 +252,44 @@ export function Components({
                             )}
                         </p>
                     ))}
-            <h3>Owner-wide component collection</h3>
-            <p>
-                Retained parts remain available after removal. Open a passport
-                to inspect every dated chapter.
-            </p>
-            {collection.isError && (
-                <button onClick={() => void collection.refetch()}>
-                    Retry collection
-                </button>
-            )}
-            {parts.map((c) => (
-                <article key={c.id}>
-                    <button
-                        disabled={disabled}
-                        onClick={() => onPassport?.(c.id)}
-                    >
-                        {c.make} {c.model?.trim() || 'Model not provided'}
+            <details className="component-library">
+                <summary>Other parts in your garage</summary>
+                <p>
+                    Retained parts remain available after removal. Open a
+                    passport to inspect every dated chapter.
+                </p>
+                {collection.isError && (
+                    <button onClick={() => void collection.refetch()}>
+                        Retry collection
                     </button>
-                    {c.installations.length === 0 && <span> Never fitted</span>}
-                </article>
-            ))}
-            {collection.hasNextPage && (
-                <button
-                    disabled={collection.isFetchingNextPage}
-                    onClick={() => void collection.fetchNextPage()}
-                >
-                    Load more components
-                </button>
-            )}
+                )}
+                {parts
+                    .filter(
+                        (c) => !rows.some((row) => row.component.id === c.id),
+                    )
+                    .map((c) => (
+                        <article key={c.id}>
+                            <button
+                                disabled={disabled}
+                                onClick={() => onPassport?.(c.id)}
+                            >
+                                {c.make}{' '}
+                                {c.model?.trim() || 'Model not provided'}
+                            </button>
+                            {c.installations.length === 0 && (
+                                <span> Never fitted</span>
+                            )}
+                        </article>
+                    ))}
+                {collection.hasNextPage && (
+                    <button
+                        disabled={collection.isFetchingNextPage}
+                        onClick={() => void collection.fetchNextPage()}
+                    >
+                        Load more components
+                    </button>
+                )}
+            </details>
         </section>
     );
 }
