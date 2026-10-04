@@ -80,3 +80,21 @@ pgdata/
 # Browser artifacts
 playwright-report/
 test-results/
+
+# Locally installed Impeccable skills and agent definitions
+/.agent/skills/impeccable/
+/.agents/skills/impeccable/
+/.claude/skills/impeccable/
+/.gemini/skills/impeccable/
+/.vibe/skills/impeccable/
+/.claude/agents/impeccable-*.md
+
+# Local agent hooks (keep other agent configuration trackable)
+/.codex/hooks.json
+/.claude/settings.local.json
+
+# Impeccable local overrides, caches and live runtime state
+**/.impeccable/config.local.json
+**/.impeccable/cache/
+**/.impeccable/live/*
+!**/.impeccable/live/config.json
