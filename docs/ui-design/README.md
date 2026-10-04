@@ -1,4 +1,9 @@
-# Bike Log UI preview — approved version 1.0
+# Bike Log UI previews
+
+Authentication design: [V2 draft](versions/v2/README.md) · [Open V2 mock](versions/v2/index.html).
+V2 adds sign-in, registration, recovery and account controls for review.
+
+## Version 1.0
 
 Status: **First approved visual and interaction baseline**, approved by the owner
 on 2026-10-02. The unchanged archived version is [versions/v1](versions/v1/README.md),
