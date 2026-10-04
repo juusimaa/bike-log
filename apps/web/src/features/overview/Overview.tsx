@@ -11,6 +11,7 @@ import { Activity } from './Activity';
 import { BikeArt } from '../../components/BikeArt';
 import { ReadError } from '../../components/EmptyState';
 import { formatKilometres } from '../../lib/format';
+import styles from './Overview.module.css';
 export function Overview({
     bikeId,
     onEditBike,
@@ -43,66 +44,71 @@ export function Overview({
             .map((i) => [i.installation.id, i]),
     );
     return (
-        <>
-            <div className="dashboard-grid">
-                <section className="card hero">
-                    <div className="hero-top">
-                        <div>
-                            <h2>{s.bike.displayName}</h2>
+        <div className={styles.overview}>
+            <div className={styles.dashboard}>
+                <div className={styles.care}>
+                    {reminder ?? (
+                        <section className="card service-card">
+                            <div className="card-title">
+                                <h2>Chain care</h2>
+                            </div>
                             <p>
-                                {[
-                                    s.bike.make,
-                                    s.bike.model,
-                                    s.bike.year,
-                                    s.bike.kind,
-                                ]
-                                    .filter(
-                                        (v) => v !== null && v !== undefined,
-                                    )
-                                    .join(' · ') || 'Metadata not provided'}
+                                Reminder controls will be connected in the
+                                maintenance step.
                             </p>
+                        </section>
+                    )}
+                </div>
+                <div className={styles.bike}>
+                    <section className="card hero">
+                        <div className="hero-top">
+                            <div>
+                                <h2>{s.bike.displayName}</h2>
+                                <p>
+                                    {[
+                                        s.bike.make,
+                                        s.bike.model,
+                                        s.bike.year,
+                                        s.bike.kind,
+                                    ]
+                                        .filter(
+                                            (v) =>
+                                                v !== null && v !== undefined,
+                                        )
+                                        .join(' · ') || 'Metadata not provided'}
+                                </p>
+                            </div>
+                            <div className="hero-actions">
+                                <span className="label-pill">
+                                    {s.bike.kind
+                                        ? `YOUR ${s.bike.kind.toUpperCase()} BIKE`
+                                        : 'YOUR BIKE'}
+                                </span>
+                                <button
+                                    className="text-button"
+                                    disabled={!onEditBike}
+                                    onClick={onEditBike}
+                                >
+                                    Edit bike
+                                </button>
+                            </div>
                         </div>
-                        <div className="hero-actions">
-                            <span className="label-pill">
-                                {s.bike.kind
-                                    ? `YOUR ${s.bike.kind.toUpperCase()} BIKE`
-                                    : 'YOUR BIKE'}
+                        <BikeArt color={s.bike.color} />
+                        <div className="hero-bottom">
+                            <span>
+                                ● {s.currentComponents.length} components fitted
                             </span>
                             <button
-                                className="text-button"
-                                disabled={!onEditBike}
-                                onClick={onEditBike}
+                                disabled={!onViewComponents}
+                                onClick={onViewComponents}
                             >
-                                Edit bike
+                                Explore components ↗
                             </button>
                         </div>
-                    </div>
-                    <BikeArt color={s.bike.color} />
-                    <div className="hero-bottom">
-                        <span>
-                            ● {s.currentComponents.length} components fitted
-                        </span>
-                        <button
-                            disabled={!onViewComponents}
-                            onClick={onViewComponents}
-                        >
-                            Explore components ↗
-                        </button>
-                    </div>
-                </section>
-                {reminder ?? (
-                    <section className="card service-card">
-                        <div className="card-title">
-                            <h2>Chain care</h2>
-                        </div>
-                        <p>
-                            Reminder controls will be connected in the
-                            maintenance step.
-                        </p>
                     </section>
-                )}
+                    <Stats snapshot={s} />
+                </div>
             </div>
-            <Stats snapshot={s} />
             {s.allocationGaps.map((g, i) => (
                 <div className="gap-notice" key={i}>
                     Allocation gap: ride {g.rideId} has no{' '}
@@ -138,7 +144,16 @@ export function Overview({
                             onRetry={() => void fitted.refetch()}
                         />
                     )}
-                    <div className="table-wrap">
+                    <p className={styles.scrollHint}>
+                        Scroll horizontally for full status and component
+                        actions.
+                    </p>
+                    <div
+                        className="table-wrap"
+                        role="region"
+                        aria-label="Current components, scroll for more columns"
+                        tabIndex={0}
+                    >
                         <table>
                             <thead>
                                 <tr>
@@ -278,6 +293,6 @@ export function Overview({
                 </section>
                 <Activity snapshot={s} />
             </div>
-        </>
+        </div>
     );
 }

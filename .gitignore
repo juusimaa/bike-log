@@ -96,5 +96,7 @@ test-results/
 # Impeccable local overrides, caches and live runtime state
 **/.impeccable/config.local.json
 **/.impeccable/cache/
+**/.impeccable/questions/
+**/.impeccable/review/
 **/.impeccable/live/*
 !**/.impeccable/live/config.json

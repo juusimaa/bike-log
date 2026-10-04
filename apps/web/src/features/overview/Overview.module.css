@@ -1,0 +1,283 @@
+.overview {
+    --muted: #59675d;
+    color: var(--ink);
+}
+
+.overview ::selection {
+    background: var(--lime);
+    color: var(--ink);
+}
+
+.scrollHint {
+    display: none;
+}
+
+.overview :global(.table-wrap:focus-visible) {
+    outline: 3px solid #7ba78a;
+    outline-offset: 3px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: minmax(290px, 0.85fr) minmax(0, 1.65fr);
+    gap: 24px;
+    margin-bottom: 28px;
+    align-items: stretch;
+}
+
+.care,
+.bike {
+    min-width: 0;
+}
+
+.care :global(.service-card) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 26px;
+    background: #edf1e7;
+    border-color: #d4decc;
+}
+
+.care :global(.card-title) {
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 30px;
+}
+
+.care :global(.card-title h2) {
+    font-size: 18px;
+    letter-spacing: -0.02em;
+}
+
+.care :global(.service-header h3) {
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.care :global(.service-header small),
+.care :global(.count),
+.care :global(.progress-labels),
+.care :global(.service-footnote) {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.care :global(.status) {
+    align-self: flex-start;
+    white-space: normal;
+    font-size: 12px;
+    margin: 8px 0 22px;
+}
+
+.overview :global(.status.amber) {
+    color: #785313;
+}
+
+.overview :global(.status.green) {
+    color: #42612c;
+}
+
+.overview :global(.status.gray) {
+    color: #52604c;
+}
+
+.care :global(.progress) {
+    height: 8px;
+    background: #dce4d5;
+}
+
+.care :global(.progress-labels) {
+    gap: 14px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+}
+
+.care :global(.button) {
+    min-height: 44px;
+    margin-top: 26px;
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+    font-size: 13px;
+}
+
+.care :global(.button:hover:not(:disabled)) {
+    background: #264632;
+}
+
+.care :global(.service-footnote) {
+    border-color: #d4decc;
+    margin-top: 24px;
+    padding-top: 18px;
+}
+
+.overview :global(.text-button),
+.overview :global(.hero-bottom button) {
+    color: #42612c;
+    font-size: 12px;
+    min-height: 32px;
+}
+
+.care :global(.reminder-settings) {
+    align-self: flex-start;
+    margin-top: auto;
+    padding-top: 14px;
+}
+
+.bike {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.bike :global(.hero) {
+    background: white;
+    min-height: 0;
+    padding: 22px 24px 18px;
+    flex: 1;
+}
+
+.bike :global(.hero h2) {
+    font-size: 22px;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+}
+
+.bike :global(.hero-top) {
+    gap: 18px;
+}
+
+.bike :global(.hero p),
+.bike :global(.hero-bottom) {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.bike :global(.hero svg) {
+    height: 160px;
+    width: 80%;
+    margin: 6px auto;
+}
+
+.bike :global(.hero-bottom) {
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.bike :global(.stats) {
+    margin: 0;
+    gap: 0;
+    background: white;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.bike :global(.stat) {
+    min-width: 0;
+    padding: 18px 16px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+.bike :global(.stat + .stat) {
+    border-left: 1px solid var(--line);
+}
+
+.bike :global(.stat-label),
+.bike :global(.stat-caption) {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.bike :global(.stat-label span) {
+    display: none;
+}
+
+.bike :global(.stat-value) {
+    font-size: 24px;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.overview :global(.table-card th),
+.overview :global(.item-name small),
+.overview :global(.estimate-label),
+.overview :global(.activity time),
+.overview :global(.activity p) {
+    color: var(--muted);
+}
+
+@media (max-width: 1150px) {
+    .dashboard {
+        grid-template-columns: minmax(250px, 0.9fr) minmax(0, 1.1fr);
+        gap: 18px;
+    }
+
+    .care :global(.service-card) {
+        padding: 22px;
+    }
+
+    .bike :global(.stats) {
+        grid-template-columns: 1fr;
+    }
+
+    .bike :global(.stat) {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 4px 12px;
+        padding: 12px 16px;
+    }
+
+    .bike :global(.stat + .stat) {
+        border-left: 0;
+        border-top: 1px solid var(--line);
+    }
+
+    .bike :global(.stat-value) {
+        margin: 0;
+        grid-column: 2;
+        font-size: 20px;
+        text-align: right;
+    }
+
+    .bike :global(.stat-caption) {
+        grid-column: 1 / -1;
+        margin: 0;
+    }
+
+    .bike :global(.hero-top) {
+        flex-direction: column;
+    }
+
+    .bike :global(.hero-actions) {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+    }
+}
+
+@media (max-width: 950px) {
+    .dashboard {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .care :global(.card-title) {
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 650px) {
+    .scrollHint {
+        display: block;
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+}

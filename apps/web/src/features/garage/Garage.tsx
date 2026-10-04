@@ -204,7 +204,9 @@ export function Garage({
         >
             <div className="page-heading">
                 <div>
-                    <p className="eyebrow">LESS ADMIN. MORE RIDING.</p>
+                    {view !== 'overview' && (
+                        <p className="eyebrow">LESS ADMIN. MORE RIDING.</p>
+                    )}
                     <h1>
                         {
                             {

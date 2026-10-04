@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { mockVisual, bikeId } from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
     console.log(`Browser ${info.project.name}: ${browser.version()}`);
@@ -21,7 +21,7 @@ const titles = [
     'Miles worth remembering.',
     'Care that goes the distance.',
 ];
-test('design and connected four views: geometry, copy and accessible overflow', async ({
+test('dashboard care-first layout and established secondary views: geometry and overflow', async ({
     page,
 }, info) => {
     await page.route('http://127.0.0.1:3000/__approved/**', async (route) => {
@@ -98,8 +98,31 @@ test('design and connected four views: geometry, copy and accessible overflow', 
         expect(current.headingFont).toBe(approved.headingFont);
         expect(current.headingWeight).toBe(approved.headingWeight);
         if (view === 'overview') {
-            expect(current.hero?.x).toBe(approved.hero?.x);
-            expect(current.hero?.width).toBe(approved.hero?.width);
+            const care = (await page
+                .getByRole('complementary', {
+                    name: 'Chain lubrication reminder',
+                })
+                .boundingBox())!;
+            const hero = (await page.locator('.hero').boundingBox())!;
+            const stats = (await page
+                .getByRole('region', {
+                    name: 'Bike statistics',
+                })
+                .boundingBox())!;
+            if (page.viewportSize()!.width > 950) {
+                expect(care.x + care.width).toBeLessThan(hero.x);
+                expect(Math.abs(care.y - hero.y)).toBeLessThan(2);
+                expect(stats.y).toBeGreaterThanOrEqual(hero.y + hero.height);
+            } else {
+                expect(care.y + care.height).toBeLessThan(hero.y);
+            }
+            const review = '.impeccable/review';
+            await mkdir(review, { recursive: true });
+            await page.screenshot({
+                path: `${review}/${info.project.name.replace('visual-', '')}.png`,
+                fullPage: true,
+                animations: 'disabled',
+            });
         }
         paired[view] = { ...(paired[view] as object), connected: current };
         expect(
@@ -473,6 +496,22 @@ test('design action placement, spacing and component replacement remain usable',
             .locator('.hero-actions')
             .getByRole('button', { name: 'Edit bike' }),
     ).toBeVisible();
+    if (page.viewportSize()!.width === 390) {
+        await expect(
+            page.getByText(
+                'Scroll horizontally for full status and component actions.',
+            ),
+        ).toBeVisible();
+        const table = page.getByRole('region', {
+            name: 'Current components, scroll for more columns',
+        });
+        await table.focus();
+        await expect(table).toBeFocused();
+        await page.keyboard.press('ArrowRight');
+        await expect
+            .poll(() => table.evaluate((e) => e.scrollLeft))
+            .toBeGreaterThan(0);
+    }
     await page
         .getByRole('button', { name: 'Replace chain', exact: true })
         .click();

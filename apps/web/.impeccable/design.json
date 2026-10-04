@@ -1,0 +1,419 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-04T05:26:27.876286+00:00",
+  "title": "Design System: Bike Log",
+  "extensions": {
+    "colorMeta": {
+      "green": {
+        "role": "primary",
+        "displayName": "Green",
+        "tonalRamp": [
+          "oklch(15.00% 0.05997 155.89)",
+          "oklch(26.43% 0.05997 155.89)",
+          "oklch(37.86% 0.05997 155.89)",
+          "oklch(49.29% 0.05997 155.89)",
+          "oklch(60.71% 0.05997 155.89)",
+          "oklch(72.14% 0.05997 155.89)",
+          "oklch(83.57% 0.05997 155.89)",
+          "oklch(95.00% 0.05997 155.89)"
+        ]
+      },
+      "green-hover": {
+        "role": "primary",
+        "displayName": "Green Hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.05796 154.38)",
+          "oklch(26.43% 0.05796 154.38)",
+          "oklch(37.86% 0.05796 154.38)",
+          "oklch(49.29% 0.05796 154.38)",
+          "oklch(60.71% 0.05796 154.38)",
+          "oklch(72.14% 0.05796 154.38)",
+          "oklch(83.57% 0.05796 154.38)",
+          "oklch(95.00% 0.05796 154.38)"
+        ]
+      },
+      "lime": {
+        "role": "primary",
+        "displayName": "Lime",
+        "tonalRamp": [
+          "oklch(15.00% 0.08231 116.08)",
+          "oklch(26.43% 0.08231 116.08)",
+          "oklch(37.86% 0.08231 116.08)",
+          "oklch(49.29% 0.08231 116.08)",
+          "oklch(60.71% 0.08231 116.08)",
+          "oklch(72.14% 0.08231 116.08)",
+          "oklch(83.57% 0.08231 116.08)",
+          "oklch(95.00% 0.08231 116.08)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.02272 168.28)",
+          "oklch(26.43% 0.02272 168.28)",
+          "oklch(37.86% 0.02272 168.28)",
+          "oklch(49.29% 0.02272 168.28)",
+          "oklch(60.71% 0.02272 168.28)",
+          "oklch(72.14% 0.02272 168.28)",
+          "oklch(83.57% 0.02272 168.28)",
+          "oklch(95.00% 0.02272 168.28)"
+        ]
+      },
+      "overview-muted": {
+        "role": "neutral",
+        "displayName": "Overview Muted",
+        "tonalRamp": [
+          "oklch(15.00% 0.02321 154.40)",
+          "oklch(26.43% 0.02321 154.40)",
+          "oklch(37.86% 0.02321 154.40)",
+          "oklch(49.29% 0.02321 154.40)",
+          "oklch(60.71% 0.02321 154.40)",
+          "oklch(72.14% 0.02321 154.40)",
+          "oklch(83.57% 0.02321 154.40)",
+          "oklch(95.00% 0.02321 154.40)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "tonalRamp": [
+          "oklch(15.00% 0.00409 121.56)",
+          "oklch(26.43% 0.00409 121.56)",
+          "oklch(37.86% 0.00409 121.56)",
+          "oklch(49.29% 0.00409 121.56)",
+          "oklch(60.71% 0.00409 121.56)",
+          "oklch(72.14% 0.00409 121.56)",
+          "oklch(83.57% 0.00409 121.56)",
+          "oklch(95.00% 0.00409 121.56)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.00987 125.69)",
+          "oklch(26.43% 0.00987 125.69)",
+          "oklch(37.86% 0.00987 125.69)",
+          "oklch(49.29% 0.00987 125.69)",
+          "oklch(60.71% 0.00987 125.69)",
+          "oklch(72.14% 0.00987 125.69)",
+          "oklch(83.57% 0.00987 125.69)",
+          "oklch(95.00% 0.00987 125.69)"
+        ]
+      },
+      "white": {
+        "role": "neutral",
+        "displayName": "White",
+        "tonalRamp": [
+          "oklch(15.00% 0.00000 0.00)",
+          "oklch(26.43% 0.00000 0.00)",
+          "oklch(37.86% 0.00000 0.00)",
+          "oklch(49.29% 0.00000 0.00)",
+          "oklch(60.71% 0.00000 0.00)",
+          "oklch(72.14% 0.00000 0.00)",
+          "oklch(83.57% 0.00000 0.00)",
+          "oklch(95.00% 0.00000 0.00)"
+        ]
+      },
+      "sage": {
+        "role": "neutral",
+        "displayName": "Sage",
+        "tonalRamp": [
+          "oklch(15.00% 0.01390 124.55)",
+          "oklch(26.43% 0.01390 124.55)",
+          "oklch(37.86% 0.01390 124.55)",
+          "oklch(49.29% 0.01390 124.55)",
+          "oklch(60.71% 0.01390 124.55)",
+          "oklch(72.14% 0.01390 124.55)",
+          "oklch(83.57% 0.01390 124.55)",
+          "oklch(95.00% 0.01390 124.55)"
+        ]
+      },
+      "sage-line": {
+        "role": "neutral",
+        "displayName": "Sage Line",
+        "tonalRamp": [
+          "oklch(15.00% 0.02651 130.93)",
+          "oklch(26.43% 0.02651 130.93)",
+          "oklch(37.86% 0.02651 130.93)",
+          "oklch(49.29% 0.02651 130.93)",
+          "oklch(60.71% 0.02651 130.93)",
+          "oklch(72.14% 0.02651 130.93)",
+          "oklch(83.57% 0.02651 130.93)",
+          "oklch(95.00% 0.02651 130.93)"
+        ]
+      },
+      "active-nav": {
+        "role": "neutral",
+        "displayName": "Active Nav",
+        "tonalRamp": [
+          "oklch(15.00% 0.01798 123.97)",
+          "oklch(26.43% 0.01798 123.97)",
+          "oklch(37.86% 0.01798 123.97)",
+          "oklch(49.29% 0.01798 123.97)",
+          "oklch(60.71% 0.01798 123.97)",
+          "oklch(72.14% 0.01798 123.97)",
+          "oklch(83.57% 0.01798 123.97)",
+          "oklch(95.00% 0.01798 123.97)"
+        ]
+      },
+      "status-amber-bg": {
+        "role": "neutral",
+        "displayName": "Status Amber Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.03600 87.79)",
+          "oklch(26.43% 0.03600 87.79)",
+          "oklch(37.86% 0.03600 87.79)",
+          "oklch(49.29% 0.03600 87.79)",
+          "oklch(60.71% 0.03600 87.79)",
+          "oklch(72.14% 0.03600 87.79)",
+          "oklch(83.57% 0.03600 87.79)",
+          "oklch(95.00% 0.03600 87.79)"
+        ]
+      },
+      "status-amber-text": {
+        "role": "neutral",
+        "displayName": "Status Amber Text",
+        "tonalRamp": [
+          "oklch(15.00% 0.09050 75.82)",
+          "oklch(26.43% 0.09050 75.82)",
+          "oklch(37.86% 0.09050 75.82)",
+          "oklch(49.29% 0.09050 75.82)",
+          "oklch(60.71% 0.09050 75.82)",
+          "oklch(72.14% 0.09050 75.82)",
+          "oklch(83.57% 0.09050 75.82)",
+          "oklch(95.00% 0.09050 75.82)"
+        ]
+      },
+      "status-green-bg": {
+        "role": "neutral",
+        "displayName": "Status Green Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.01871 130.18)",
+          "oklch(26.43% 0.01871 130.18)",
+          "oklch(37.86% 0.01871 130.18)",
+          "oklch(49.29% 0.01871 130.18)",
+          "oklch(60.71% 0.01871 130.18)",
+          "oklch(72.14% 0.01871 130.18)",
+          "oklch(83.57% 0.01871 130.18)",
+          "oklch(95.00% 0.01871 130.18)"
+        ]
+      },
+      "status-green-text": {
+        "role": "neutral",
+        "displayName": "Status Green Text",
+        "tonalRamp": [
+          "oklch(15.00% 0.08744 133.78)",
+          "oklch(26.43% 0.08744 133.78)",
+          "oklch(37.86% 0.08744 133.78)",
+          "oklch(49.29% 0.08744 133.78)",
+          "oklch(60.71% 0.08744 133.78)",
+          "oklch(72.14% 0.08744 133.78)",
+          "oklch(83.57% 0.08744 133.78)",
+          "oklch(95.00% 0.08744 133.78)"
+        ]
+      },
+      "status-gray-bg": {
+        "role": "neutral",
+        "displayName": "Status Gray Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.00570 128.53)",
+          "oklch(26.43% 0.00570 128.53)",
+          "oklch(37.86% 0.00570 128.53)",
+          "oklch(49.29% 0.00570 128.53)",
+          "oklch(60.71% 0.00570 128.53)",
+          "oklch(72.14% 0.00570 128.53)",
+          "oklch(83.57% 0.00570 128.53)",
+          "oklch(95.00% 0.00570 128.53)"
+        ]
+      },
+      "status-gray-text": {
+        "role": "neutral",
+        "displayName": "Status Gray Text",
+        "tonalRamp": [
+          "oklch(15.00% 0.03593 136.32)",
+          "oklch(26.43% 0.03593 136.32)",
+          "oklch(37.86% 0.03593 136.32)",
+          "oklch(49.29% 0.03593 136.32)",
+          "oklch(60.71% 0.03593 136.32)",
+          "oklch(72.14% 0.03593 136.32)",
+          "oklch(83.57% 0.03593 136.32)",
+          "oklch(95.00% 0.03593 136.32)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "title": {
+        "displayName": "Bike title",
+        "purpose": "Overview bike heading."
+      },
+      "section": {
+        "displayName": "Care heading",
+        "purpose": "Overview maintenance panel title."
+      },
+      "body": {
+        "displayName": "Supporting text",
+        "purpose": "Overview metadata and care explanations."
+      },
+      "label": {
+        "displayName": "Control label",
+        "purpose": "Compact standard actions."
+      },
+      "metric": {
+        "displayName": "Usage value",
+        "purpose": "Overview mileage with tabular numerals."
+      }
+    },
+    "shadows": [
+      {
+        "name": "dialog",
+        "value": "0 30px 120px #1c332c30",
+        "purpose": "Ambient modal elevation."
+      },
+      {
+        "name": "toast",
+        "value": "0 5px 20px #24332d25",
+        "purpose": "Transient feedback."
+      },
+      {
+        "name": "selected-bike",
+        "value": "0 0 0 1px #6e8e6c",
+        "purpose": "Selected bike outline."
+      },
+      {
+        "name": "field-focus",
+        "value": "0 0 0 3px #eaf0e4",
+        "purpose": "Input focus ring."
+      }
+    ],
+    "motion": [
+      {
+        "name": "bike-selection",
+        "value": "border-color 0.15s, background 0.15s",
+        "purpose": "Bike selector state changes."
+      },
+      {
+        "name": "toast",
+        "value": "opacity 0.2s, transform 0.2s",
+        "purpose": "Feedback entrance; transitions disabled under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1500px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1150px"
+      },
+      {
+        "name": "single-column",
+        "value": "950px"
+      },
+      {
+        "name": "phone",
+        "value": "650px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Log a ride button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Canonical primary action.",
+      "html": "<button class=\"ds-button-primary\">Log a ride</button>",
+      "css": ".ds-button-primary{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;background:var(--green,#345b43);color:var(--white,#fff);border:1px solid transparent;border-radius:8px;padding:11px 15px;font-size:11px;font-weight:600;min-height:38px;cursor:pointer}.ds-button-primary:hover:not(:disabled){background:#244831}.ds-button-primary:focus-visible{outline:3px solid #7ba78a;outline-offset:4px}.ds-button-primary:disabled{opacity:.5;cursor:default}"
+    },
+    {
+      "name": "Cancel button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Canonical secondary action.",
+      "html": "<button class=\"ds-button-secondary\">Cancel</button>",
+      "css": ".ds-button-secondary{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;background:var(--white,#fff);color:var(--ink,#24332d);border:1px solid var(--line,#e5e8e1);border-radius:8px;padding:11px 15px;font-size:11px;font-weight:600;min-height:38px;cursor:pointer}.ds-button-secondary:hover:not(:disabled){background:#f0f3eb}.ds-button-secondary:focus-visible{outline:3px solid #7ba78a;outline-offset:4px}.ds-button-secondary:disabled{opacity:.5;cursor:default}"
+    },
+    {
+      "name": "Text action",
+      "kind": "button",
+      "refersTo": "text-action",
+      "description": "Compact overview action.",
+      "html": "<button class=\"ds-text\">View all</button>",
+      "css": ".ds-text{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;border:0;background:none;color:#42612c;font-size:12px;padding:0;min-height:32px;cursor:pointer}.ds-text:focus-visible{outline:3px solid #7ba78a;outline-offset:4px}"
+    },
+    {
+      "name": "Text field",
+      "kind": "input",
+      "refersTo": "text-field",
+      "description": "Labeled native control with focus and invalid states.",
+      "html": "<label class=\"ds-field\" for=\"ds-bike\">Bike name</label><input class=\"ds-input\" id=\"ds-bike\" value=\"Gravel bike\">",
+      "css": ".ds-field{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:block;font-size:11px;font-weight:600;color:var(--ink,#24332d)}.ds-input{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:block;margin-top:7px;border:1px solid #dce1d6;border-radius:8px;padding:11px 12px;font-size:12px;background:var(--white,#fff);color:var(--ink,#24332d)}.ds-input:focus{outline:none;border-color:#7c9c70;box-shadow:0 0 0 3px #eaf0e4}.ds-input[aria-invalid=\"true\"]{border-color:#a32929}"
+    },
+    {
+      "name": "Selected navigation",
+      "kind": "nav",
+      "refersTo": "navigation-active",
+      "description": "Current destination with its text label.",
+      "html": "<nav aria-label=\"Sample navigation\"><a class=\"ds-nav\" href=\"#overview\" aria-current=\"page\">Overview</a></nav>",
+      "css": ".ds-nav{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:flex;padding:12px;border-radius:9px;font-size:13px;background:#eef3e6;color:var(--green,#345b43);font-weight:650;text-decoration:none}.ds-nav:focus-visible{outline:3px solid #7ba78a;outline-offset:4px}"
+    },
+    {
+      "name": "Fitted status",
+      "kind": "chip",
+      "refersTo": "status-fitted",
+      "description": "Written component state in a compact pill.",
+      "html": "<span class=\"ds-status\">Fitted</span>",
+      "css": ".ds-status{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:20px;white-space:nowrap;font-size:9px;font-weight:550;background:#edf4e7;color:#42612c}"
+    },
+    {
+      "name": "Information panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat bordered surface used for records and activity.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-panel-title\">Currently on your bike</h2></section>",
+      "css": ".ds-panel{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;padding:22px 24px;background:var(--white,#fff);color:var(--ink,#24332d);border:1px solid var(--line,#e5e8e1);border-radius:var(--radius,16px);overflow:hidden}.ds-panel-title{margin:0;font-size:14px;font-weight:650;letter-spacing:-.3px}"
+    },
+    {
+      "name": "Care panel",
+      "kind": "card",
+      "refersTo": "care-panel",
+      "description": "Overview-specific maintenance emphasis and service action.",
+      "html": "<section class=\"ds-care\"><h2 class=\"ds-care-title\">Chain care</h2><p class=\"ds-care-copy\">Inspect or service your chain.</p><button class=\"ds-care-action\">Log maintenance</button></section>",
+      "css": ".ds-care{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;padding:26px;background:#edf1e7;color:var(--ink,#24332d);border:1px solid #d4decc;border-radius:var(--radius,16px)}.ds-care-title{margin:0 0 30px;font-size:18px;font-weight:650;letter-spacing:-.02em}.ds-care-copy{font-size:12px;line-height:1.5;color:#59675d}.ds-care-action{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;width:100%;margin-top:26px;min-height:44px;padding:11px 15px;border:1px solid var(--green,#345b43);border-radius:8px;background:var(--green,#345b43);color:white;font-size:13px;font-weight:600;cursor:pointer}.ds-care-action:hover:not(:disabled){background:#264632}.ds-care-action:focus-visible{outline:3px solid #7ba78a;outline-offset:4px}.ds-care-action:disabled{opacity:.5;cursor:default}@media(max-width:1150px){.ds-care{padding:22px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Bike Log",
+    "overview": "Bike Log keeps the established forest green identity, pale sage emphasis, white panels and compact controls. Its visual language supports inspecting a bicycle and recording its maintenance history with a calm, practical hierarchy.\n\nThis record describes the connected web implementation and the finished overview. It preserves the approved V1 identity; the care-column composition remains an overview-specific decision, not a template for every screen.",
+    "keyCharacteristics": [
+      "Forest green actions and pale sage emphasis.",
+      "Rounded, bordered surfaces with restrained elevation.",
+      "Compact data presentation with explicit units and states."
+    ],
+    "rules": [
+      {
+        "name": "The Action Green Rule",
+        "body": "Use forest green for primary actions and selected navigation; pair status color with a written state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Separate ordinary panels with background tone and fine borders; reserve ambient elevation for dialogs and transient feedback.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve the established green identity and reuse the existing CSS custom properties.",
+      "Do keep maintenance state, lifetime mileage, and estimates explicit in text.",
+      "Do retain keyboard focus visibility and reduced-motion behavior.",
+      "Do keep overflowing tables within a labeled, keyboard-focusable region with a visible phone scroll cue."
+    ],
+    "donts": [
+      "Don't use reminder colors or progress bars to imply measured physical wear or guaranteed safety.",
+      "Don't promote the overview care-column composition into a requirement for every screen.",
+      "Don't copy inherited low-contrast text, glyph icons, or decorative eyebrows into new surfaces."
+    ]
+  }
+}
