@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Start only after `2026-10-08-identity-feasibility.md` passes; never enable public signup as a workaround.
+- Start only after `2026-10-08-auth0-identity-feasibility.md` passes; never enable public signup as a workaround.
 - API authorization accepts an access token for the Bike Log custom API audience and `BikeLog.Access` scope from one exact Auth0 issuer. ID tokens and tokens for other audiences fail.
 - Ownership comes only from the validated token's issuer and `sub` and an active local user; email and display name are snapshots, never keys.
 - Missing/invalid credentials return 401; valid identities without an active Bike Log user return 403; absent and foreign resources return the same 404 shape.
