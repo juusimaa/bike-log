@@ -1,5 +1,5 @@
 using System.Data;
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Reminders;
 using BikeLog.Infrastructure.Persistence;
@@ -17,7 +17,7 @@ public static class ReminderEndpoints
                     Guid id,
                     BikeLogDbContext db,
                     ReminderReader reader,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     TimeProvider clock,
                     CancellationToken ct
                 ) =>
@@ -39,7 +39,7 @@ public static class ReminderEndpoints
                     BikeLogDbContext db,
                     OwnerMutation mutation,
                     ReminderReader reader,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     TimeProvider clock,
                     CancellationToken ct
                 ) =>

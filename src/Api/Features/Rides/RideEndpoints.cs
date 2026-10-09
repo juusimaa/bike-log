@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Rides;
 using BikeLog.Infrastructure.Persistence;
@@ -16,7 +16,7 @@ public static class RideEndpoints
                     CreateRide request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -55,11 +55,11 @@ public static class RideEndpoints
             )
             .Produces<RideResponse>(201)
             .WithDescription(
-                "Manual synthetic ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet."
+                "Manual ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet."
             );
         api.MapGet(
             "/rides/{id:guid}",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
                 RideResponse.From(
                     await db
                         .Rides.AsNoTracking()
@@ -74,7 +74,7 @@ public static class RideEndpoints
                     CorrectRide request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -123,7 +123,7 @@ public static class RideEndpoints
                     long expectedVersion,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {

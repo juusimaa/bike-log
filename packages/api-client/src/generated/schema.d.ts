@@ -45,7 +45,7 @@ export interface paths {
                 query?: {
                     /** @description Page size, default 50; valid range 1 to 200. */
                     pageSize?: number;
-                    /** @description Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations. */
+                    /** @description Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations. */
                     cursor?: string;
                 };
                 header?: never;
@@ -111,7 +111,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description Create a synthetic bike. Owner is supplied by the local development host. */
+        /** @description Create a bike for the current owner. */
         post: {
             parameters: {
                 query?: never;
@@ -199,7 +199,7 @@ export interface paths {
                 query?: {
                     /** @description Page size, default 50; valid range 1 to 200. */
                     pageSize?: number;
-                    /** @description Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations. */
+                    /** @description Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations. */
                     cursor?: string;
                 };
                 header?: never;
@@ -352,7 +352,7 @@ export interface paths {
                 query?: {
                     /** @description Page size, default 50; valid range 1 to 200. */
                     pageSize?: number;
-                    /** @description Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations. */
+                    /** @description Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations. */
                     cursor?: string;
                 };
                 header?: never;
@@ -439,7 +439,7 @@ export interface paths {
                 query?: {
                     /** @description Page size, default 50; valid range 1 to 200. */
                     pageSize?: number;
-                    /** @description Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations. */
+                    /** @description Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations. */
                     cursor?: string;
                 };
                 header?: never;
@@ -528,7 +528,7 @@ export interface paths {
                     status?: "current" | "all";
                     /** @description Page size, default 50; valid range 1 to 200. */
                     pageSize?: number;
-                    /** @description Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations. */
+                    /** @description Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations. */
                     cursor?: string;
                 };
                 header?: never;
@@ -1905,7 +1905,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Manual synthetic ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet. */
+        /** @description Manual ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet. */
         post: {
             parameters: {
                 query?: never;

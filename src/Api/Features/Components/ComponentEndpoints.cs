@@ -1,5 +1,5 @@
 using System.Data;
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Installations;
 using BikeLog.Domain.Components;
@@ -18,7 +18,7 @@ public static class ComponentEndpoints
                     CreateComponent request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -57,7 +57,7 @@ public static class ComponentEndpoints
             .Produces<ComponentResponse>(201);
         api.MapGet(
             "/components/{id:guid}",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
             {
                 await using var snapshot = await db.Database.BeginTransactionAsync(
                     IsolationLevel.RepeatableRead,

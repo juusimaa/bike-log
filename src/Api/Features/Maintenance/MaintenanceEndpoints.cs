@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
@@ -18,7 +18,7 @@ public static class MaintenanceEndpoints
                     CreateMaintenance request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -131,7 +131,7 @@ public static class MaintenanceEndpoints
             );
         api.MapGet(
             "/maintenance/{id:guid}",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
                 MaintenanceResponse.From(
                     await db
                         .MaintenanceRecords.AsNoTracking()
@@ -141,7 +141,7 @@ public static class MaintenanceEndpoints
         );
         api.MapGet(
             "/bikes/{id:guid}/maintenance",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
             {
                 if (!await db.Bikes.AnyAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct))
                 {

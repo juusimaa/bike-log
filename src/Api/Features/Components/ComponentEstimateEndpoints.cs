@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Usage;
 using BikeLog.Infrastructure.Persistence;
@@ -17,7 +17,7 @@ public static class ComponentEstimateEndpoints
                     EditComponentEstimate request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                     await mutation.ExecuteAsync(

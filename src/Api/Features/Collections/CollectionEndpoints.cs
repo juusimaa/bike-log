@@ -1,6 +1,6 @@
 using System.Data;
 using System.Text.Json.Nodes;
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
@@ -18,6 +18,9 @@ namespace BikeLog.Api.Features.Collections;
 
 public static class CollectionEndpoints
 {
+    private static string OwnerScope(string collection, Guid ownerId) =>
+        $"{collection}:owner:{ownerId:D}";
+
     public static Task DescribeParameters(
         OpenApiOperation operation,
         OpenApiOperationTransformerContext context,
@@ -48,7 +51,7 @@ public static class CollectionEndpoints
                     break;
                 case "cursor":
                     documented.Description =
-                        "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.";
+                        "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.";
                     break;
                 case "status":
                     documented.Description = "Installation filter: current (default) or all.";
@@ -141,11 +144,11 @@ public static class CollectionEndpoints
                     int? pageSize,
                     string? cursor,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
-                    const string scope = "bikes";
+                    var scope = OwnerScope("bikes", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, false);
                     var q = db.Bikes.AsNoTracking().Where(x => x.OwnerId == owner.OwnerId);
                     if (p != null)
@@ -164,11 +167,11 @@ public static class CollectionEndpoints
                     int? pageSize,
                     string? cursor,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
-                    const string scope = "components";
+                    var scope = OwnerScope("components", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, false);
                     await using var snapshot = await db.Database.BeginTransactionAsync(
                         IsolationLevel.RepeatableRead,
@@ -193,7 +196,7 @@ public static class CollectionEndpoints
                     int? pageSize,
                     string? cursor,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -206,7 +209,7 @@ public static class CollectionEndpoints
                         throw ApiInput.Missing();
                     }
 
-                    var scope = $"bikes/{id}/rides";
+                    var scope = OwnerScope($"bikes/{id}/rides", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, true);
                     var q = db
                         .Rides.AsNoTracking()
@@ -239,7 +242,7 @@ public static class CollectionEndpoints
                     int? pageSize,
                     string? cursor,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -257,7 +260,7 @@ public static class CollectionEndpoints
                         throw ApiInput.Missing();
                     }
 
-                    var scope = $"components/{id}/maintenance";
+                    var scope = OwnerScope($"components/{id}/maintenance", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, true);
                     var q = db
                         .MaintenanceRecords.AsNoTracking()
@@ -291,7 +294,7 @@ public static class CollectionEndpoints
                     int? pageSize,
                     string? cursor,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     TimeProvider time,
                     CancellationToken ct
                 ) =>
@@ -311,7 +314,7 @@ public static class CollectionEndpoints
                         status is "current" or "all",
                         "status must be current or all."
                     );
-                    var scope = $"bikes/{id}/installations/{status}";
+                    var scope = OwnerScope($"bikes/{id}/installations/{status}", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, true);
                     var q = db
                         .Installations.AsNoTracking()

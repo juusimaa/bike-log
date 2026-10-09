@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Installations;
@@ -17,7 +17,7 @@ public static class InstallationEndpoints
                     CreateInstallation request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -77,7 +77,7 @@ public static class InstallationEndpoints
             );
         api.MapGet(
             "/installations/{id:guid}",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
                 InstallationResponse.From(
                     await db
                         .Installations.AsNoTracking()
@@ -92,7 +92,7 @@ public static class InstallationEndpoints
                     CorrectInstallation request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -135,7 +135,7 @@ public static class InstallationEndpoints
                 ReplaceInstallation request,
                 BikeLogDbContext db,
                 OwnerMutation mutation,
-                IDevelopmentOwner owner,
+                ICurrentOwner owner,
                 CancellationToken ct
             ) =>
             {

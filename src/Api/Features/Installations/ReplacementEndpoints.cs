@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Maintenance;
@@ -21,7 +21,7 @@ public static class ReplacementEndpoints
                     ReplaceWithService request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                     await mutation.ExecuteAsync(

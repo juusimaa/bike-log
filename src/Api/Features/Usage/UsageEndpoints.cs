@@ -1,5 +1,5 @@
 using System.Data;
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Installations;
@@ -16,12 +16,7 @@ public static class UsageEndpoints
     {
         api.MapGet(
                 "/components/{id:guid}/usage",
-                async (
-                    Guid id,
-                    BikeLogDbContext db,
-                    IDevelopmentOwner owner,
-                    CancellationToken ct
-                ) =>
+                async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
                 {
                     await using var snapshot = await db.Database.BeginTransactionAsync(
                         IsolationLevel.RepeatableRead,
@@ -83,7 +78,7 @@ public static class UsageEndpoints
                 async (
                     Guid id,
                     BikeLogDbContext db,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     BikeUsageReader reader,
                     TimeProvider clock,
                     CancellationToken ct

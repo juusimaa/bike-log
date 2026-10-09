@@ -1,4 +1,4 @@
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Bikes;
 using BikeLog.Infrastructure.Persistence;
@@ -16,7 +16,7 @@ public static class BikeEndpoints
                     CreateBike request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
-                    IDevelopmentOwner owner,
+                    ICurrentOwner owner,
                     CancellationToken ct
                 ) =>
                 {
@@ -44,12 +44,10 @@ public static class BikeEndpoints
                 }
             )
             .Produces<BikeResponse>(201)
-            .WithDescription(
-                "Create a synthetic bike. Owner is supplied by the local development host."
-            );
+            .WithDescription("Create a bike for the current owner.");
         api.MapGet(
             "/bikes/{id:guid}",
-            async (Guid id, BikeLogDbContext db, IDevelopmentOwner owner, CancellationToken ct) =>
+            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
             {
                 var b =
                     await db
@@ -66,7 +64,7 @@ public static class BikeEndpoints
                 EditBike request,
                 BikeLogDbContext db,
                 OwnerMutation mutation,
-                IDevelopmentOwner owner,
+                ICurrentOwner owner,
                 CancellationToken ct
             ) =>
             {

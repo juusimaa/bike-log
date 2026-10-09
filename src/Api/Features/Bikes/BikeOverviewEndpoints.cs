@@ -1,6 +1,6 @@
 using System.Data;
 using System.Globalization;
-using BikeLog.Api.Development;
+using BikeLog.Api.Auth;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Reminders;
 using BikeLog.Api.Features.Usage;
@@ -18,7 +18,7 @@ public static class BikeOverviewEndpoints
             async (
                 Guid id,
                 BikeLogDbContext db,
-                IDevelopmentOwner owner,
+                ICurrentOwner owner,
                 BikeUsageReader usageReader,
                 ReminderReader reminders,
                 TimeProvider clock,

@@ -43,7 +43,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.",
+            "description": "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.",
             "schema": {
               "type": "string"
             }
@@ -116,7 +116,7 @@
         "tags": [
           "BikeLog.Api"
         ],
-        "description": "Create a synthetic bike. Owner is supplied by the local development host.",
+        "description": "Create a bike for the current owner.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -211,7 +211,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.",
+            "description": "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.",
             "schema": {
               "type": "string"
             }
@@ -387,7 +387,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.",
+            "description": "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.",
             "schema": {
               "type": "string"
             }
@@ -486,7 +486,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.",
+            "description": "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.",
             "schema": {
               "type": "string"
             }
@@ -598,7 +598,7 @@
           {
             "name": "cursor",
             "in": "query",
-            "description": "Opaque continuation cursor scoped to this route, parent and filter. Refresh the collection after mutations.",
+            "description": "Opaque continuation cursor scoped to the owner, route, parent and filter. Refresh the collection after mutations.",
             "schema": {
               "type": "string"
             }
@@ -2000,7 +2000,7 @@
         "tags": [
           "BikeLog.Api"
         ],
-        "description": "Manual synthetic ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet.",
+        "description": "Manual ride: integer metres, optional positive seconds, UTC instant. Repeated POSTs create distinct rides; no offline deduplication yet.",
         "requestBody": {
           "content": {
             "application/json": {
