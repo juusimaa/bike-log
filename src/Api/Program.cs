@@ -9,6 +9,7 @@ using BikeLog.Api.Features.Maintenance;
 using BikeLog.Api.Features.Reminders;
 using BikeLog.Api.Features.Rides;
 using BikeLog.Api.Features.Usage;
+using BikeLog.Api.Operations;
 using BikeLog.Domain.Reminders;
 using BikeLog.Domain.Usage;
 using BikeLog.Infrastructure.Persistence;
@@ -64,8 +65,13 @@ if (accessMode == AccessMode.Synthetic)
 {
     DevelopmentAccess.Validate(app.Environment, app.Configuration);
 }
+if (await OperatorCommandLine.TryExecuteAsync(app, args))
+{
+    return;
+}
 if (args.Contains("--rebuild-usage"))
 {
+    OperatorCommandLine.ValidateRebuild(accessMode, args);
     await ProjectionUpgrade.RebuildAllAsync(app.Services, CancellationToken.None);
     return;
 }

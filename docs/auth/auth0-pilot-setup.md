@@ -46,3 +46,19 @@ Place the following in ignored `.local/identity-proof/auth0-config.json` only af
 | `redirectUri` | `http://127.0.0.1:3000/auth/callback`. |
 
 Store the web client secret as `{ "clientSecret": "..." }` in a separate mode-600 ignored `.local/identity-proof/auth0-web-client-secret.json` file. Do not print the secret or full token response. Record tenant, app, connection, API, and test-user IDs privately, with a sanitized settings/result summary in `auth0-proof-results.md`.
+
+## Local API and pilot-user operations
+
+Apply the additive API migration to the dedicated loopback PostgreSQL database before provisioning. Configure the API with `AccessMode=Authenticated`, `LocalSyntheticMode=false`, `Auth__Issuer` set to the exact Auth0 discovery issuer (including the trailing slash), `Auth__Audience` set to the custom API identifier, and `Auth__Scope=BikeLog.Access`. The operator commands also require `ASPNETCORE_ENVIRONMENT=Development` and the configured database to be the dedicated `127.0.0.1:54329` `bikelog_dev` database. Keep the PostgreSQL password in ignored local configuration. Run commands from this worktree with `dotnet run --project src/Api --no-launch-profile --` followed by one of these argument sets:
+
+| Operation | Arguments after `--` | Result |
+| --- | --- | --- |
+| Provision one approved customer | `--provision-pilot-user --issuer <exact-issuer> --subject <Auth0-user-id> --email <confirmed-address>` | Assigns a new internal owner UUID; rejects an existing issuer/subject pair. |
+| Disable | `--disable-pilot-user --owner <internal-owner-uuid>` | The next API request returns 403. Also block the Auth0 account in provider administration. |
+| Re-enable | `--enable-pilot-user --owner <internal-owner-uuid>` | Restores API access for valid provider tokens. |
+
+Use the provider's exact `user_id` as `--subject`, never the email address. Confirm the address and subject together from trusted Auth0 administrative data before provisioning. The command output contains only the internal owner UUID or a status, not customer email, token, or secret. Provisioning has no HTTP endpoint and never happens automatically on sign-in. The web session can exist while the local user is disabled; the API still checks the local row on every request.
+
+The synthetic purge command is separate: under **synthetic** Development mode with the same dedicated loopback database, pass `--purge-synthetic-owner --owner 11111111-1111-1111-1111-111111111111 --confirm-delete-synthetic`. It deletes only that fixed owner's usage projections, maintenance, installations, rides, reminder rules, components, and bikes in one transaction. It rejects a different owner, missing confirmation, authenticated mode, a nonlocal or differently configured database, and any real user registered with the fixed owner. It does not delete migration history, pilot users, or other owners. Rehearse on a copied test database before running it on local development data; the integration test uses an isolated representative database with both owners and repeats the purge to check idempotence. `--rebuild-usage` is restricted to synthetic mode.
+
+For a provider signing-key rotation, the API obtains current keys from the configured issuer's OIDC metadata; verify a freshly issued token before retiring the old key. Rotating the confidential web client secret requires updating only ignored server configuration and restarting the web server. A web session protection-key rotation invalidates sessions encrypted with the old key unless a controlled key ring is retained; clear affected session rows and sign in again. During an Auth0 outage, new login and refresh can fail; do not bypass local-user authorization or accept ID tokens as API credentials. Restore provider access or let the existing bounded session expire and retry sign-in.
