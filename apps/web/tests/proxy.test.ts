@@ -195,7 +195,7 @@ it('accepts Next internal URL normalization only for the exact public loopback H
 
 it('authenticated proxy requires a server session token before any upstream fetch', async () => {
     vi.stubEnv('BIKELOG_WEB_ACCESS_MODE', 'Authenticated');
-    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://127.0.0.1:3000');
+    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://localhost:3000');
     vi.stubEnv('BIKELOG_API_ORIGIN', 'http://127.0.0.1:5080');
     let calls = 0;
     vi.stubGlobal('fetch', async () => {
@@ -203,7 +203,7 @@ it('authenticated proxy requires a server session token before any upstream fetc
         return new Response('{}');
     });
     const response = await forwardApi(
-        new Request('http://127.0.0.1:3000/api/bikes'),
+        new Request('http://localhost:3000/api/bikes'),
         ['bikes'],
         null,
     );
@@ -213,7 +213,7 @@ it('authenticated proxy requires a server session token before any upstream fetc
 
 it('authenticated proxy forwards only the server-held bearer and no browser credentials', async () => {
     vi.stubEnv('BIKELOG_WEB_ACCESS_MODE', 'Authenticated');
-    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://127.0.0.1:3000');
+    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://localhost:3000');
     vi.stubEnv('BIKELOG_API_ORIGIN', 'http://127.0.0.1:5080');
     let received: Request | undefined;
     vi.stubGlobal(
@@ -228,11 +228,11 @@ it('authenticated proxy forwards only the server-held bearer and no browser cred
             );
         },
     );
-    const browser = new Request('http://127.0.0.1:3000/api/me', {
+    const browser = new Request('http://localhost:3000/api/me', {
         headers: {
             authorization: 'Bearer attacker-browser-token',
             cookie: 'other=private',
-            host: '127.0.0.1:3000',
+            host: 'localhost:3000',
             'x-forwarded-host': 'evil.example',
         },
     });

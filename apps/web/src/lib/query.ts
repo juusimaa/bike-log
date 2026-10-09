@@ -1,5 +1,7 @@
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import type { Uuid } from '@bikelog/api-client';
+import { ApiError } from '@bikelog/api-client';
+import type { AccessIssue } from '../components/SessionExpired';
 export const queryKeys = {
     bikes: () => ['bikes'] as const,
     bike: (id: Uuid) => ['bike', id] as const,
@@ -14,13 +16,30 @@ export const queryKeys = {
     maintenance: (id: Uuid) => ['maintenance', id] as const,
     reminder: (id: Uuid) => ['reminder', id] as const,
 };
-export function createQueryClient() {
+function accessIssue(error: unknown): AccessIssue | null {
+    if (!(error instanceof ApiError)) return null;
+    if (error.status === 401) return 'expired';
+    if (error.status === 403 && ['pilot_access_required', 'user_not_provisioned', 'forbidden'].includes(error.code)) return 'pilot-access';
+    if (error.status === 502 || error.status === 503) return 'unavailable';
+    return null;
+}
+export function createQueryClient(onAccessIssue?: (issue: AccessIssue) => void) {
+    const report = (error: unknown) => {
+        const issue = accessIssue(error);
+        if (issue) onAccessIssue?.(issue);
+    };
     return new QueryClient({
+        queryCache: new QueryCache({ onError: report }),
+        mutationCache: new MutationCache({ onError: report }),
         defaultOptions: {
-            queries: { retry: 1, refetchOnWindowFocus: false },
+            queries: { retry: (count, error) => !accessIssue(error) && count < 1, refetchOnWindowFocus: false },
             mutations: { retry: false },
         },
     });
+}
+export async function clearPrivateQueries(client: QueryClient): Promise<void> {
+    await client.cancelQueries();
+    client.clear();
 }
 export async function invalidateBike(
     client: QueryClient,

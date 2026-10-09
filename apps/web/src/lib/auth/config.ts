@@ -41,7 +41,7 @@ export function readAuthConfig(
     if (
         originUrl.origin !== publicOrigin ||
         (originUrl.protocol !== 'https:' &&
-            publicOrigin !== 'http://127.0.0.1:3000')
+            publicOrigin !== 'http://localhost:3000')
     ) {
         throw new Error(
             'The public web origin must be HTTPS or the exact local pilot origin.',

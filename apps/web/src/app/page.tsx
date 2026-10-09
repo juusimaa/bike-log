@@ -1,13 +1,21 @@
-'use client';
-import { useState } from 'react';
-import { QueryClientProvider } from '@tanstack/react-query';
-import { createQueryClient } from '../lib/query';
-import { Workspace } from '../features/garage/Workspace';
-export default function Home() {
-    const [client] = useState(createQueryClient);
-    return (
-        <QueryClientProvider client={client}>
-            <Workspace />
-        </QueryClientProvider>
-    );
+import { createHash } from 'node:crypto';
+import { SignIn } from '../components/SignIn';
+import { HomeClient } from '../components/HomeClient';
+import { getWebSession } from '../lib/auth/current-session';
+import { authenticatedWebMode } from '../lib/proxy';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+export default async function Home({ searchParams }: { searchParams: Promise<{ signedOut?: string }> }) {
+    if (!authenticatedWebMode()) return <HomeClient identity="synthetic" authenticated={false} />;
+    let session;
+    try {
+        session = await getWebSession();
+    } catch {
+        return <SignIn state="unavailable" />;
+    }
+    if (!session) return <SignIn state={(await searchParams).signedOut === '1' ? 'signed-out' : 'default'} />;
+    const identity = createHash('sha256').update(`${session.issuer}\0${session.subject}`).digest('hex');
+    return <HomeClient key={identity} identity={identity} authenticated />;
 }

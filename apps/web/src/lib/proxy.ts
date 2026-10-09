@@ -1,4 +1,5 @@
 const localOrigin = 'http://127.0.0.1:3000';
+const authenticatedLocalOrigin = 'http://localhost:3000';
 const localUpstream = 'http://127.0.0.1:5080';
 const uuid = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}';
 const routes: [RegExp, string[]][] = [
@@ -67,7 +68,7 @@ function destinations(authenticated: boolean): {
     ) {
         throw new Error('Exact public and API origins are required.');
     }
-    if (origin !== localOrigin || upstream !== localUpstream) {
+    if (origin !== authenticatedLocalOrigin || upstream !== localUpstream) {
         throw new Error(
             'The pilot proxy is limited to the approved loopback origins.',
         );
@@ -122,6 +123,10 @@ export async function forwardApi(
         if (response.status >= 300 && response.status < 400)
             return problem(502, 'backend_unavailable');
         const responseHeaders = new Headers({ 'cache-control': 'no-store' });
+        if (authenticated && response.status === 401)
+            return problem(401, 'sign_in_required');
+        if (authenticated && response.status === 403)
+            return problem(403, 'pilot_access_required');
         if ([204, 205, 304].includes(response.status))
             return new Response(null, {
                 status: response.status,

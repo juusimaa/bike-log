@@ -12,7 +12,9 @@ import type {
 } from '@bikelog/api-client';
 import { Garage, type GarageProps, type GarageIntegration } from './Garage';
 import { BikeForm } from '../bikes/BikeForm';
-import { queryKeys } from '../../lib/query';
+import { clearPrivateQueries, queryKeys } from '../../lib/query';
+import { SessionExpired, type AccessIssue } from '../../components/SessionExpired';
+import { DirtyFormGuard } from '../../components/DirtyFormGuard';
 import { RideForm } from '../rides/RideForm';
 import { DeleteRideDialog } from '../rides/DeleteRideDialog';
 import { Rides } from '../rides/Rides';
@@ -79,7 +81,11 @@ function ConnectedReminder({
     );
 }
 export function Workspace(
-    props: Pick<GarageProps, 'renderView' | 'renderReminder'> = {},
+    props: Pick<GarageProps, 'renderView' | 'renderReminder'> & {
+        authenticated?: boolean;
+        accessIssue?: AccessIssue | null;
+        onAccessIssue?: (issue: AccessIssue | null) => void;
+    } = {},
 ) {
     const client = useQueryClient();
     const editorSequence = useRef(0);
@@ -121,7 +127,29 @@ export function Workspace(
     const [editor, setEditor] = useState<Editor | null>(null);
     const [dirty, setDirty] = useState(false);
     const [busy, setBusy] = useState(false);
+    const [confirmSignOut, setConfirmSignOut] = useState(false);
     useBeforeUnload(!!editor && (dirty || busy));
+    useEffect(() => {
+        if (props.accessIssue) void clearPrivateQueries(client);
+    }, [props.accessIssue, client]);
+    const leave = useCallback(() => {
+        void clearPrivateQueries(client).then(async () => {
+            try {
+                const response = await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' });
+                if (!response.ok) throw new Error('Sign-out unavailable');
+                const body = await response.json() as { logoutUrl?: string };
+                if (!body.logoutUrl) throw new Error('Sign-out destination unavailable');
+                window.location.replace(body.logoutUrl);
+            } catch {
+                props.onAccessIssue?.('unavailable');
+            }
+        });
+    }, [client, props]);
+    const requestSignOut = useCallback(() => {
+        if (busy) return;
+        if (editor && dirty) setConfirmSignOut(true);
+        else leave();
+    }, [busy, editor, dirty, leave]);
     const [savedId, setSavedId] = useState<string | null>(null);
     const clearSaved = useCallback(() => setSavedId(null), []);
     const [notice, setNotice] = useState<string | null>(null);
@@ -190,8 +218,10 @@ export function Workspace(
     };
     return (
         <>
+            <div aria-hidden={!!props.accessIssue} inert={!!props.accessIssue}>
             <Garage
                 {...props}
+                onSignOut={props.authenticated ? requestSignOut : undefined}
                 onComponentAction={openComponent}
                 dirty={dirty}
                 navigationLocked={busy}
@@ -440,6 +470,9 @@ export function Workspace(
                     )
                 }
             />
+            </div>
+            {props.accessIssue && <SessionExpired reason={props.accessIssue} onLeave={leave} onRetry={() => props.onAccessIssue?.(null)} />}
+            {confirmSignOut && <DirtyFormGuard dirty onStay={() => setConfirmSignOut(false)} onDiscard={() => { setConfirmSignOut(false); close(); leave(); }} />}
             <Toast message={notice} />
         </>
     );

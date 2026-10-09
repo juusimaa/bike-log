@@ -52,5 +52,10 @@ export default defineConfig({
             testMatch: /(workflow|errors)\.spec\.ts/,
             use: { browserName: 'webkit' },
         },
+        {
+            name: 'auth-chromium',
+            testMatch: /auth\.spec\.ts/,
+            use: { browserName: 'chromium', baseURL: 'http://localhost:3000' },
+        },
     ],
 });

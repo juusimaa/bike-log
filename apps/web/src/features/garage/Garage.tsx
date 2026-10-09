@@ -33,6 +33,7 @@ export type GarageProps = {
     dirty?: boolean;
     navigationLocked?: boolean;
     onExitAccepted?: () => void;
+    onSignOut?: () => void;
     onAction?: (action: GarageAction, originalBikeId: Uuid | null) => void;
     onComponentAction?: (
         kind: 'replace' | 'passport',
@@ -77,6 +78,7 @@ export function Garage({
     dirty = false,
     navigationLocked = false,
     onExitAccepted,
+    onSignOut,
     onAction,
     renderView,
     onComponentAction,
@@ -199,6 +201,7 @@ export function Garage({
         <AppShell
             view={view}
             navigationLocked={navigationLocked}
+            onSignOut={onSignOut}
             onNavigate={(v) => navigate(bikeId, v)}
             hrefFor={(v) => selectionUrl(bikeId, v)}
         >

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { View } from '@bikelog/api-client';
 export const viewTitles = {
     overview: 'Overview',
@@ -13,13 +13,22 @@ export function AppShell({
     hrefFor,
     children,
     navigationLocked = false,
+    onSignOut,
 }: {
     view: View;
     onNavigate: (view: View) => void;
     hrefFor: (view: View) => string;
     children: ReactNode;
     navigationLocked?: boolean;
+    onSignOut?: () => void;
 }) {
+    const [accountOpen, setAccountOpen] = useState(false);
+    useEffect(() => {
+        if (!accountOpen) return;
+        const close = (event: KeyboardEvent) => { if (event.key === 'Escape') setAccountOpen(false); };
+        window.addEventListener('keydown', close);
+        return () => window.removeEventListener('keydown', close);
+    }, [accountOpen]);
     return (
         <>
             <aside className="sidebar">
@@ -77,10 +86,7 @@ export function AppShell({
                     </strong>
                     <p>Keep the history. Enjoy the ride.</p>
                 </div>
-                <div className="sidebar-footer">
-                    <span className="demo-dot" />
-                    Local synthetic workspace
-                </div>
+                <div className="sidebar-footer"><span className="demo-dot" />{onSignOut ? 'Personal workspace' : 'Local synthetic workspace'}</div>
             </aside>
             <div className="main-shell">
                 <header className="topbar">
@@ -89,10 +95,7 @@ export function AppShell({
                         <strong>{viewTitles[view]}</strong>
                     </div>
                     <div className="topbar-right">
-                        <span className="demo-pill">LOCAL · SYNTHETIC</span>
-                        <span className="avatar small" aria-hidden="true">
-                            BL
-                        </span>
+                        {onSignOut ? <div className="account-wrap"><button type="button" className="account-trigger" aria-label="Open account menu" aria-expanded={accountOpen} aria-controls="account-menu" onClick={() => setAccountOpen(!accountOpen)}><span className="avatar small" aria-hidden="true">BL</span><span className="account-name">Your account</span>⌄</button>{accountOpen && <div className="account-panel" id="account-menu"><strong>Your account</strong><p>Personal garage</p><div className="account-private">Only your bike history is shown here.</div><button type="button" onClick={() => { setAccountOpen(false); onSignOut(); }}>Sign out <span aria-hidden="true">↗</span></button></div>}</div> : <><span className="demo-pill">LOCAL · SYNTHETIC</span><span className="avatar small" aria-hidden="true">BL</span></>}
                     </div>
                 </header>
                 <main>

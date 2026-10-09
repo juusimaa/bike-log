@@ -8,7 +8,7 @@ Status: documentation checked and provider proof passed 2026-10-09. This documen
 - Configure the email connection to send a **code**, disable signups, and enable it only for the Bike Log proof web application. Configure Universal Login for passwordless email; send `connection=email` from the authorization request if required to select it.
 - Create exactly the two previously approved pilot customer identities administratively in the `email` connection. Actual inboxes and user IDs belong only in ignored `.local/identity-proof/`. Check whether account creation sends a verification or welcome email. The later sign-in code demonstrates inbox control.
 - Register a custom API with RS256 signing and one permission, `BikeLog.Access`. Request its exact identifier as `audience`; request `openid profile email offline_access BikeLog.Access` as scopes. The probe must validate issuer, signature, expiration, API audience, and `scope` membership. An ID token is never an API credential.
-- Register a confidential Regular Web Application with Authorization Code and Refresh Token grants enabled, and `http://127.0.0.1:3000/auth/callback` as the exact local callback. Enable **Allow Offline Access on the custom API** for the refresh-token check. Store the web client secret only in ignored local storage. Check actual refresh-token availability; if absent, the web session must end at access-token expiry.
+- Register a confidential Regular Web Application with Authorization Code and Refresh Token grants enabled. The original provider proof used `http://127.0.0.1:3000/auth/callback`; the integrated web pilot uses `http://localhost:3000/auth/callback` so Chromium accepts its `Secure` host cookie. Register `http://localhost:3000` as the exact logout return URL. Enable **Allow Offline Access on the custom API** for the refresh-token check. Store the web client secret only in ignored local storage. Check actual refresh-token availability; if absent, the web session must end at access-token expiry.
 - Run the probe on `127.0.0.1` only, with synthetic data and no token/code/secret logging. No production or remote application is included in this proof.
 
 ## Current provider sources
@@ -43,7 +43,7 @@ Place the following in ignored `.local/identity-proof/auth0-config.json` only af
 | `apiAudience` | Custom Bike Log API identifier registered in Auth0. |
 | `apiScope` | `BikeLog.Access`. |
 | `webClientId` | Confidential Regular Web Application client ID. |
-| `redirectUri` | `http://127.0.0.1:3000/auth/callback`. |
+| `redirectUri` | `http://localhost:3000/auth/callback` for the integrated web pilot. |
 
 Store the web client secret as `{ "clientSecret": "..." }` in a separate mode-600 ignored `.local/identity-proof/auth0-web-client-secret.json` file. Do not print the secret or full token response. Record tenant, app, connection, API, and test-user IDs privately, with a sanitized settings/result summary in `auth0-proof-results.md`.
 

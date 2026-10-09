@@ -21,7 +21,7 @@ function setup() {
             audience: 'https://api.example.test/bike-log',
             clientId: 'web-client',
             clientSecret: 'test-secret',
-            publicOrigin: 'http://127.0.0.1:3000',
+            publicOrigin: 'http://localhost:3000',
         },
         store: {
             createLoginTransaction: async (
@@ -96,7 +96,7 @@ it('starts Auth0 email code with API audience, state, nonce and PKCE', async () 
     );
     expect(redirect.searchParams.get('code_challenge_method')).toBe('S256');
     expect(redirect.searchParams.get('redirect_uri')).toBe(
-        'http://127.0.0.1:3000/auth/callback',
+        'http://localhost:3000/auth/callback',
     );
     expect(transactions.has(redirect.searchParams.get('state')!)).toBe(true);
     expect(redirect.searchParams.get('nonce')).toBeTruthy();
@@ -113,7 +113,7 @@ it('rejects wrong state, callback origin and replay without creating sessions', 
         (
             await completeLogin(
                 new Request(
-                    'http://127.0.0.1:3000/auth/callback?code=abc&state=wrong',
+                    'http://localhost:3000/auth/callback?code=abc&state=wrong',
                 ),
                 deps,
             )
@@ -131,11 +131,11 @@ it('rejects wrong state, callback origin and replay without creating sessions', 
     ).toBe(400);
     expect(sessions).toHaveLength(0);
     const callback = new Request(
-        `http://127.0.0.1:3000/auth/callback?code=abc&state=${state}`,
+        `http://localhost:3000/auth/callback?code=abc&state=${state}`,
     );
     const success = await completeLogin(callback, deps);
     expect(success.status).toBe(303);
-    expect(success.headers.get('location')).toBe('http://127.0.0.1:3000/');
+    expect(success.headers.get('location')).toBe('http://localhost:3000/');
     expect(success.headers.get('set-cookie')).toMatch(
         /Secure; HttpOnly; SameSite=Lax/,
     );
@@ -167,7 +167,7 @@ it('creates no session after nonce, PKCE, unsafe return path, or provider failur
             };
         const response = await completeLogin(
             new Request(
-                `http://127.0.0.1:3000/auth/callback?code=abc&state=${state}`,
+                `http://localhost:3000/auth/callback?code=abc&state=${state}`,
             ),
             deps,
         );
