@@ -70,10 +70,12 @@ createServer(async (request, response) => {
           return { claims, refreshTokenAvailable: typeof tokens.refresh_token === 'string' };
         },
       });
+      process.stdout.write('Identity proof callback: verified\n');
       return respond(response, 200, JSON.stringify(result, null, 2), {
         'Set-Cookie': 'proof_session=; HttpOnly; SameSite=Lax; Path=/auth/callback; Max-Age=0',
       });
     } catch {
+      process.stdout.write('Identity proof callback: rejected\n');
       return respond(response, 400, 'Authentication failed; open /login to try again.', {
         'Set-Cookie': 'proof_session=; HttpOnly; SameSite=Lax; Path=/auth/callback; Max-Age=0',
       });
