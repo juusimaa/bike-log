@@ -3,6 +3,7 @@ import { it, expect, vi, afterEach } from 'vitest';
 import { forwardApi } from '../src/lib/proxy';
 const id = '11111111-1111-4111-8111-111111111111';
 afterEach(() => vi.unstubAllGlobals());
+afterEach(() => vi.unstubAllEnvs());
 it('proxyRejectsForeignOriginAndRedirects', async () => {
     let calls = 0;
     vi.stubGlobal('fetch', async () => {
@@ -190,4 +191,57 @@ it('accepts Next internal URL normalization only for the exact public loopback H
         headers: { host: 'evil.example', 'x-forwarded-host': '127.0.0.1:3000' },
     });
     expect((await forwardApi(foreignHost, ['bikes'])).status).toBe(403);
+});
+
+it('authenticated proxy requires a server session token before any upstream fetch', async () => {
+    vi.stubEnv('BIKELOG_WEB_ACCESS_MODE', 'Authenticated');
+    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://127.0.0.1:3000');
+    vi.stubEnv('BIKELOG_API_ORIGIN', 'http://127.0.0.1:5080');
+    let calls = 0;
+    vi.stubGlobal('fetch', async () => {
+        calls++;
+        return new Response('{}');
+    });
+    const response = await forwardApi(
+        new Request('http://127.0.0.1:3000/api/bikes'),
+        ['bikes'],
+        null,
+    );
+    expect(response.status).toBe(401);
+    expect(calls).toBe(0);
+});
+
+it('authenticated proxy forwards only the server-held bearer and no browser credentials', async () => {
+    vi.stubEnv('BIKELOG_WEB_ACCESS_MODE', 'Authenticated');
+    vi.stubEnv('WEB_PUBLIC_ORIGIN', 'http://127.0.0.1:3000');
+    vi.stubEnv('BIKELOG_API_ORIGIN', 'http://127.0.0.1:5080');
+    let received: Request | undefined;
+    vi.stubGlobal(
+        'fetch',
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+            received = new Request(input, init);
+            return new Response(
+                '{"email":"pilot@example.test","displayName":null}',
+                {
+                    headers: { 'content-type': 'application/json' },
+                },
+            );
+        },
+    );
+    const browser = new Request('http://127.0.0.1:3000/api/me', {
+        headers: {
+            authorization: 'Bearer attacker-browser-token',
+            cookie: 'other=private',
+            host: '127.0.0.1:3000',
+            'x-forwarded-host': 'evil.example',
+        },
+    });
+    const response = await forwardApi(browser, ['me'], 'server-access-token');
+    expect(response.status).toBe(200);
+    expect(received?.headers.get('authorization')).toBe(
+        'Bearer server-access-token',
+    );
+    expect(received?.headers.has('cookie')).toBe(false);
+    expect(received?.headers.has('x-forwarded-host')).toBe(false);
+    expect(received?.url).toBe('http://127.0.0.1:5080/api/me');
 });

@@ -1,7 +1,8 @@
-const origin = 'http://127.0.0.1:3000';
-const upstream = 'http://127.0.0.1:5080';
+const localOrigin = 'http://127.0.0.1:3000';
+const localUpstream = 'http://127.0.0.1:5080';
 const uuid = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}';
 const routes: [RegExp, string[]][] = [
+    [/^me$/, ['GET']],
     [/^(bikes|components)$/, ['GET', 'POST']],
     [/^rides$/, ['POST']],
     [/^(installations|maintenance)$/, ['POST']],
@@ -29,17 +30,57 @@ function problem(status: number, code: string): Response {
             status,
             code,
             title:
-                code === 'backend_unavailable'
-                    ? 'The backend is unavailable.'
-                    : 'Request rejected.',
+                code === 'sign_in_required'
+                    ? 'Sign in to see your garage.'
+                    : code === 'backend_unavailable'
+                      ? 'The backend is unavailable.'
+                      : 'Request rejected.',
         },
         { status, headers: { 'cache-control': 'no-store' } },
     );
 }
+export function authenticatedWebMode(): boolean {
+    const mode = process.env.BIKELOG_WEB_ACCESS_MODE;
+    if (mode === 'Authenticated') return true;
+    if (
+        mode === 'Synthetic' ||
+        (!mode && process.env.NODE_ENV !== 'production')
+    )
+        return false;
+    throw new Error(
+        'BIKELOG_WEB_ACCESS_MODE must be set to Authenticated or Synthetic.',
+    );
+}
+
+function destinations(authenticated: boolean): {
+    origin: string;
+    upstream: string;
+} {
+    if (!authenticated) return { origin: localOrigin, upstream: localUpstream };
+    const origin = process.env.WEB_PUBLIC_ORIGIN;
+    const upstream = process.env.BIKELOG_API_ORIGIN;
+    if (
+        !origin ||
+        !upstream ||
+        new URL(origin).origin !== origin ||
+        new URL(upstream).origin !== upstream
+    ) {
+        throw new Error('Exact public and API origins are required.');
+    }
+    if (origin !== localOrigin || upstream !== localUpstream) {
+        throw new Error(
+            'The pilot proxy is limited to the approved loopback origins.',
+        );
+    }
+    return { origin, upstream };
+}
 export async function forwardApi(
     request: Request,
     path: string[],
+    accessToken?: string | null,
 ): Promise<Response> {
+    const authenticated = authenticatedWebMode();
+    const { origin, upstream } = destinations(authenticated);
     const route = routes.find(([pattern]) => pattern.test(path.join('/')));
     if (!route || path.some((segment) => !/^[a-z0-9-]+$/i.test(segment)))
         return problem(404, 'not_found');
@@ -48,12 +89,13 @@ export async function forwardApi(
     const mutation = request.method !== 'GET';
     if (
         (request.headers.get('host') ?? new URL(request.url).host) !==
-            '127.0.0.1:3000' ||
+            new URL(origin).host ||
         (request.headers.has('origin') &&
             request.headers.get('origin') !== origin) ||
         (mutation && request.headers.get('origin') !== origin)
     )
         return problem(403, 'foreign_origin');
+    if (authenticated && !accessToken) return problem(401, 'sign_in_required');
     const hasBody = mutation && request.method !== 'DELETE';
     if (
         hasBody &&
@@ -65,6 +107,8 @@ export async function forwardApi(
     try {
         const headers = new Headers({ accept: 'application/json' });
         if (hasBody) headers.set('content-type', 'application/json');
+        if (authenticated)
+            headers.set('authorization', `Bearer ${accessToken}`);
         const target = new URL(`/api/${path.join('/')}`, upstream);
         target.search = new URL(request.url).search;
         const response = await fetch(target, {

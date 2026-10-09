@@ -22,19 +22,23 @@ export type AuthDependencies = {
 
 const SCOPE = 'openid profile email offline_access BikeLog.Access';
 let discovered: Promise<client.Configuration> | undefined;
+function configuration(config: AuthConfig): Promise<client.Configuration> {
+    return (discovered ??= client.discovery(
+        new URL(config.issuer),
+        config.clientId,
+        config.clientSecret,
+    ));
+}
 function provider(config: AuthConfig): AuthProvider {
-    const configuration = () =>
-        (discovered ??= client.discovery(
-            new URL(config.issuer),
-            config.clientId,
-            config.clientSecret,
-        ));
     return {
         authorizationUrl: async (parameters) =>
-            client.buildAuthorizationUrl(await configuration(), parameters),
+            client.buildAuthorizationUrl(
+                await configuration(config),
+                parameters,
+            ),
         exchange: async (url, checks) => {
             const tokens = await client.authorizationCodeGrant(
-                await configuration(),
+                await configuration(config),
                 url,
                 {
                     expectedState: checks.state,
@@ -61,6 +65,25 @@ function provider(config: AuthConfig): AuthProvider {
                 scope: tokens.scope ?? SCOPE,
             };
         },
+    };
+}
+
+export async function refreshAuth0Tokens(
+    refreshToken: string,
+): Promise<TokenEnvelope> {
+    const config = readAuthConfig();
+    const tokens = await client.refreshTokenGrant(
+        await configuration(config),
+        refreshToken,
+    );
+    if (!tokens.access_token || !tokens.expires_in) {
+        throw new Error('Incomplete provider refresh response.');
+    }
+    return {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token ?? refreshToken,
+        expiresAt: Date.now() + tokens.expires_in * 1000,
+        scope: tokens.scope ?? SCOPE,
     };
 }
 
