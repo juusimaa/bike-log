@@ -26,6 +26,16 @@ if (args.Contains("--rebuild-usage"))
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
 }
 builder.Services.AddSingleton<IDevelopmentOwner, DevelopmentOwner>();
+builder.Services.AddScoped<CurrentOwner>(services =>
+{
+    var owner = new CurrentOwner();
+    if (accessMode == AccessMode.Synthetic)
+    {
+        owner.Set(services.GetRequiredService<IDevelopmentOwner>().OwnerId);
+    }
+    return owner;
+});
+builder.Services.AddScoped<ICurrentOwner>(services => services.GetRequiredService<CurrentOwner>());
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddOpenApi(options =>
     options
@@ -103,6 +113,21 @@ foreach (var status in new[] { 400, 404, 409, 500, 503 })
 }
 
 api.MapCollections();
+api.MapGet(
+        "/me",
+        async (BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
+        {
+            if (accessMode == AccessMode.Synthetic)
+            {
+                return Results.Ok(new MeResponse(null, null));
+            }
+            var user = await db
+                .BikeLogUsers.AsNoTracking()
+                .SingleAsync(x => x.OwnerId == owner.OwnerId, ct);
+            return Results.Ok(new MeResponse(user.Email, user.DisplayName));
+        }
+    )
+    .Produces<MeResponse>(200);
 api.MapBikes();
 api.MapBikeOverview();
 api.MapComponents();

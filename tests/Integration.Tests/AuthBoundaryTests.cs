@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using BikeLog.Integration.Tests.Fixtures;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
@@ -12,7 +13,9 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace BikeLog.Integration.Tests;
 
-public class AuthBoundaryTests : IDisposable
+public class AuthBoundaryTests(PostgresFixture database)
+    : IClassFixture<PostgresFixture>,
+        IDisposable
 {
     private const string LocalConnection =
         "Host=127.0.0.1;Port=54329;Database=unused;Username=unused;Password=unused";
@@ -40,7 +43,7 @@ public class AuthBoundaryTests : IDisposable
             }
         }
         return new ApiFactory(
-            LocalConnection,
+            database.ConnectionString,
             enabled: false,
             configure: services =>
                 services.PostConfigure<JwtBearerOptions>(
@@ -93,8 +96,13 @@ public class AuthBoundaryTests : IDisposable
         return new JwtSecurityTokenHandler().WriteToken(jwt);
     }
 
-    private async Task<HttpStatusCode> RequestWithToken(string token)
+    private async Task<HttpStatusCode> RequestWithToken(string token, bool migrate = false)
     {
+        if (migrate)
+        {
+            await using var db = TestDatabase.Open(database.ConnectionString);
+            await db.Database.MigrateAsync();
+        }
         await using var app = AuthenticatedFactory();
         using var client = app.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -117,7 +125,7 @@ public class AuthBoundaryTests : IDisposable
     [Fact]
     public async Task ValidApiTokenFailsClosedUntilLocalUserRegistryExists()
     {
-        Assert.Equal(HttpStatusCode.Forbidden, await RequestWithToken(Token()));
+        Assert.Equal(HttpStatusCode.Forbidden, await RequestWithToken(Token(), migrate: true));
     }
 
     [Theory]
@@ -152,7 +160,10 @@ public class AuthBoundaryTests : IDisposable
     {
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            await RequestWithToken(Token(audience: "bike-log-web-client", secondAudience: Audience))
+            await RequestWithToken(
+                Token(audience: "bike-log-web-client", secondAudience: Audience),
+                migrate: true
+            )
         );
         Assert.Equal(
             HttpStatusCode.Unauthorized,
@@ -167,7 +178,10 @@ public class AuthBoundaryTests : IDisposable
     {
         Assert.Equal(
             HttpStatusCode.Forbidden,
-            await RequestWithToken(Token(scope: "profile BikeLog.Access offline_access"))
+            await RequestWithToken(
+                Token(scope: "profile BikeLog.Access offline_access"),
+                migrate: true
+            )
         );
     }
 
@@ -182,7 +196,7 @@ public class AuthBoundaryTests : IDisposable
         Assert.Equal(HttpStatusCode.OK, openApi.StatusCode);
         var schema = await openApi.Content.ReadAsStringAsync();
         Assert.DoesNotContain("email|pilot-one", schema);
-        Assert.Equal(HttpStatusCode.ServiceUnavailable, health.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, health.StatusCode);
         Assert.DoesNotContain("email", await health.Content.ReadAsStringAsync());
     }
 

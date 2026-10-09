@@ -19,6 +19,9 @@ public sealed class BikeLogDbContext(DbContextOptions<BikeLogDbContext> options)
     public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
     public DbSet<ComponentUsageRow> ComponentUsages => Set<ComponentUsageRow>();
     public DbSet<InstallationUsageRow> InstallationUsages => Set<InstallationUsageRow>();
+    public DbSet<BikeLogUser> BikeLogUsers => Set<BikeLogUser>();
+    public DbSet<WebSession> WebSessions => Set<WebSession>();
+    public DbSet<OidcLoginTransaction> OidcLoginTransactions => Set<OidcLoginTransaction>();
 
     protected override void OnModelCreating(ModelBuilder b) =>
         b.ApplyConfigurationsFromAssembly(typeof(BikeLogDbContext).Assembly);

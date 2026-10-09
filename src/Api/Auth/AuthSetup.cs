@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
 namespace BikeLog.Api.Auth;
@@ -82,12 +84,17 @@ public static class AuthSetup
                             );
                         if (
                             string.IsNullOrWhiteSpace(subject)
+                            || context.SecurityToken.Issuer != settings.Issuer
                             || scopes is null
                             || !scopes.Contains(settings.Scope, StringComparer.Ordinal)
                         )
                         {
                             context.Fail("Invalid Bike Log access token claims.");
+                            return Task.CompletedTask;
                         }
+                        ((ClaimsIdentity)context.Principal!.Identity!).AddClaim(
+                            new Claim("bikelog:validated_issuer", context.SecurityToken.Issuer)
+                        );
                         return Task.CompletedTask;
                     },
                 };
@@ -96,8 +103,10 @@ public static class AuthSetup
             .AddAuthorizationBuilder()
             .AddPolicy(
                 "BikeLogAccess",
-                policy => policy.RequireAuthenticatedUser().RequireAssertion(_ => false)
+                policy =>
+                    policy.RequireAuthenticatedUser().AddRequirements(new LocalUserRequirement())
             );
+        services.AddScoped<IAuthorizationHandler, LocalUserAuthorization>();
         return mode;
     }
 }
