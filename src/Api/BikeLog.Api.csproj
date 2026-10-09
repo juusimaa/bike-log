@@ -2,6 +2,7 @@
     <ItemGroup>
         <ProjectReference Include="../Infrastructure/BikeLog.Infrastructure.csproj" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

@@ -1,3 +1,4 @@
+using BikeLog.Api.Auth;
 using BikeLog.Api.Development;
 using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Collections;
@@ -15,6 +16,11 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
+var accessMode = AuthSetup.AddBikeLogAuthentication(
+    builder.Services,
+    builder.Configuration,
+    builder.Environment
+);
 if (args.Contains("--rebuild-usage"))
 {
     builder.Logging.AddFilter("Microsoft.EntityFrameworkCore", LogLevel.Warning);
@@ -44,28 +50,47 @@ builder.Services.AddSingleton<IReminderCalculator, ReminderCalculator>();
 builder.Services.AddScoped<ReminderReader>();
 builder.Services.AddScoped<BikeUsageReader>();
 var app = builder.Build();
-DevelopmentAccess.Validate(app.Environment, app.Configuration);
+if (accessMode == AccessMode.Synthetic)
+{
+    DevelopmentAccess.Validate(app.Environment, app.Configuration);
+}
 if (args.Contains("--rebuild-usage"))
 {
     await ProjectionUpgrade.RebuildAllAsync(app.Services, CancellationToken.None);
     return;
 }
 var connection = app.Configuration.GetConnectionString("Postgres")!;
-app.Use(
-    async (context, next) =>
-    {
-        if (context.Connection.RemoteIpAddress is { } ip && !System.Net.IPAddress.IsLoopback(ip))
+if (accessMode == AccessMode.Synthetic)
+{
+    app.Use(
+        async (context, next) =>
         {
-            context.Response.StatusCode = 403;
-            return;
+            if (
+                context.Connection.RemoteIpAddress is { } ip
+                && !System.Net.IPAddress.IsLoopback(ip)
+            )
+            {
+                context.Response.StatusCode = 403;
+                return;
+            }
+            await next(context);
         }
-        await next(context);
-    }
-);
+    );
+}
 app.UseMiddleware<RequestErrorMiddleware>();
 app.UseStatusCodePages();
+if (accessMode == AccessMode.Authenticated)
+{
+    app.UseRouting();
+    app.UseAuthentication();
+    app.UseAuthorization();
+}
 app.MapOpenApi();
 var api = app.MapGroup("/api").AddEndpointFilter<ApiProblemMapping>();
+if (accessMode == AccessMode.Authenticated)
+{
+    api.RequireAuthorization("BikeLogAccess");
+}
 foreach (var status in new[] { 400, 404, 409, 500, 503 })
 {
     api.WithMetadata(

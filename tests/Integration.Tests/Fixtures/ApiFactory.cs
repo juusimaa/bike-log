@@ -11,12 +11,25 @@ public class ApiFactory(
     bool enabled = true,
     string urls = "http://127.0.0.1:5080",
     Action<IServiceCollection>? configure = null,
-    TimeProvider? timeProvider = null
+    TimeProvider? timeProvider = null,
+    IReadOnlyDictionary<string, string?>? settings = null
 ) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(environment);
+        builder.UseSetting("AccessMode", settings?.GetValueOrDefault("AccessMode") ?? "Synthetic");
+        builder.UseSetting("LocalSyntheticMode", enabled.ToString());
+        if (settings is not null)
+        {
+            foreach (var (key, value) in settings)
+            {
+                if (value is not null)
+                {
+                    builder.UseSetting(key, value);
+                }
+            }
+        }
         if (timeProvider is not null)
         {
             builder.ConfigureServices(services => services.AddSingleton(timeProvider));
@@ -28,14 +41,23 @@ public class ApiFactory(
 
         builder.ConfigureAppConfiguration(
             (_, configuration) =>
-                configuration.AddInMemoryCollection(
-                    new Dictionary<string, string?>
+            {
+                var values = new Dictionary<string, string?>
+                {
+                    ["LocalSyntheticMode"] = enabled.ToString(),
+                    ["AccessMode"] = "Synthetic",
+                    ["urls"] = urls,
+                    ["ConnectionStrings:Postgres"] = connectionString,
+                };
+                if (settings is not null)
+                {
+                    foreach (var (key, value) in settings)
                     {
-                        ["LocalSyntheticMode"] = enabled.ToString(),
-                        ["urls"] = urls,
-                        ["ConnectionStrings:Postgres"] = connectionString,
+                        values[key] = value;
                     }
-                )
+                }
+                configuration.AddInMemoryCollection(values);
+            }
         );
     }
 }

@@ -29,9 +29,9 @@ case "${1:-}" in
     [ "${2:-}" = --confirm-delete-local-data ] || { echo 'Refused: db-reset --confirm-delete-local-data permanently deletes all local database records.' >&2; exit 2; }
     echo 'Deleting the local PostgreSQL volume and its records.' >&2
     docker compose down --volumes ;;
-  migrate) "$sdk" tool restore; "$sdk" ef database update --project src/Infrastructure --startup-project src/Api ;;
-  rebuild-usage) "$sdk" run --project src/Api --no-launch-profile -- --rebuild-usage ;;
-  run) "$sdk" run --project src/Api --no-launch-profile ;;
+  migrate) export AccessMode=Synthetic; "$sdk" tool restore; "$sdk" ef database update --project src/Infrastructure --startup-project src/Api ;;
+  rebuild-usage) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile -- --rebuild-usage ;;
+  run) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile ;;
   test) shift; "$sdk" test BikeLog.slnx "$@" ;;
   *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|db-reset --confirm-delete-local-data|migrate|rebuild-usage|run|test}' >&2; exit 2 ;;
 esac

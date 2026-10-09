@@ -45,6 +45,15 @@ public class HostTests : IClassFixture<PostgresFixture>
     }
 
     [Fact]
+    public void RejectsSyntheticModeWithNonlocalDatabase()
+    {
+        using var app = new ApiFactory(
+            "Host=192.0.2.5;Port=5432;Database=bikelog_dev;Username=unused;Password=unused"
+        );
+        Assert.Throws<InvalidOperationException>(() => app.CreateClient());
+    }
+
+    [Fact]
     public async Task OpenApiIsAvailableLocally()
     {
         await using var app = new ApiFactory(connection);
