@@ -1,7 +1,7 @@
 # Bike Log authentication and per-user ownership
 
 Date: 2026-10-08
-Status: Revised for Auth0; pending owner review. The earlier Entra design failed its live onboarding gate.
+Status: Revised for Auth0. The web-first milestone was implemented and verified on 2026-10-09; the native proof is deferred until the web UI is ready. Tracked in [specs/001-auth-user-ownership/spec.md](../../../specs/001-auth-user-ownership/spec.md). The earlier Entra design failed its live onboarding gate.
 
 ## Intent and scope
 
