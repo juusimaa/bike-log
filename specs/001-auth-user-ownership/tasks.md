@@ -67,8 +67,8 @@ confirm the garage needs a new sign-in. The auth screens fit at 1440/390/320 px.
 
 ### Remaining verification for User Story 1 (SC-009)
 
-- [ ] T008 [US1] Read apps/web/e2e/auth.spec.ts and add width checks for 1440, 390 and 320 px to the session-expired, pilot-access (unprovisioned) and account-menu tests, matching the existing entry-screen pattern (`page.setViewportSize({ width, height: 900 })` and `document.documentElement.scrollWidth <= width`). Do not change product code unless a check fails, and report any failure as a defect.
-- [ ] T009 [US1] Run `npm run web:e2e -- auth.spec.ts` (or `./scripts/web-e2e.sh --grep auth`) and append a dated, sanitized result (tests passed per width) to docs/auth/auth0-pilot-setup.md. Commit T008 and T009 as `test: check auth screens at three widths`.
+- [x] T008 [US1] Read apps/web/e2e/auth.spec.ts and add width checks for 1440, 390 and 320 px to the session-expired, pilot-access (unprovisioned) and account-menu tests, matching the existing entry-screen pattern (`page.setViewportSize({ width, height: 900 })` and `document.documentElement.scrollWidth <= width`). Do not change product code unless a check fails, and report any failure as a defect.
+- [x] T009 [US1] Run `npm run web:e2e -- auth.spec.ts` (or `./scripts/web-e2e.sh --grep auth`) and append a dated, sanitized result (tests passed per width) to docs/auth/auth0-pilot-setup.md. Commit T008 and T009 as `test: check auth screens at three widths`.
 
 **Checkpoint**: US1 is fully verified.
 
