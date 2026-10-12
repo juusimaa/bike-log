@@ -40,32 +40,41 @@ test.describe('authenticated local pilot', () => {
         return id;
     }
 
-    test('account menu signs out and deletes the server session', async ({ page }) => {
-        const id = await signIn(page);
-        await page.route('**/api/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], nextCursor: null }) }));
-        await page.goto('/');
-        await expect(page.getByRole('button', { name: 'Open account menu' })).toBeVisible();
-        await page.getByRole('button', { name: 'Open account menu' }).click();
-        await page.getByRole('button', { name: 'Sign out' }).click();
-        await expect(page.getByRole('heading', { name: 'You’re signed out.' })).toBeVisible();
-        expect(await store.get(id)).toBeNull();
-    });
+    for (const width of [1440, 390, 320]) {
+        test(`account menu signs out and deletes the server session at ${width}px`, async ({ page }) => {
+            await page.setViewportSize({ width, height: 900 });
+            const id = await signIn(page);
+            await page.route('**/api/**', route => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ items: [], nextCursor: null }) }));
+            await page.goto('/');
+            await expect(page.getByRole('button', { name: 'Open account menu' })).toBeVisible();
+            await page.getByRole('button', { name: 'Open account menu' }).click();
+            await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+            await page.getByRole('button', { name: 'Sign out' }).click();
+            await expect(page.getByRole('heading', { name: 'You’re signed out.' })).toBeVisible();
+            expect(await store.get(id)).toBeNull();
+        });
 
-    test('expired session replaces the garage and offers sign-in', async ({ page }) => {
-        const id = await signIn(page);
-        await page.route('**/api/**', route => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ status: 401, code: 'sign_in_required', title: 'Sign in' }) }));
-        await page.goto('/');
-        await expect(page.getByRole('alertdialog', { name: 'Pick up where you left off.' })).toBeVisible();
-        await page.getByRole('button', { name: 'Sign in again' }).click();
-        await expect(page.getByRole('heading', { name: 'You’re signed out.' })).toBeVisible();
-        expect(await store.get(id)).toBeNull();
-    });
+        test(`expired session replaces the garage and offers sign-in at ${width}px`, async ({ page }) => {
+            await page.setViewportSize({ width, height: 900 });
+            const id = await signIn(page);
+            await page.route('**/api/**', route => route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ status: 401, code: 'sign_in_required', title: 'Sign in' }) }));
+            await page.goto('/');
+            await expect(page.getByRole('alertdialog', { name: 'Pick up where you left off.' })).toBeVisible();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+            await page.getByRole('button', { name: 'Sign in again' }).click();
+            await expect(page.getByRole('heading', { name: 'You’re signed out.' })).toBeVisible();
+            expect(await store.get(id)).toBeNull();
+        });
 
-    test('unprovisioned account explains pilot access', async ({ page }) => {
-        const id = await signIn(page);
-        await page.route('**/api/**', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ status: 403, code: 'pilot_access_required', title: 'Pilot access required' }) }));
-        await page.goto('/');
-        await expect(page.getByRole('alertdialog', { name: 'Your garage is not ready yet.' })).toBeVisible();
-        await store.delete(id);
-    });
+        test(`unprovisioned account explains pilot access at ${width}px`, async ({ page }) => {
+            await page.setViewportSize({ width, height: 900 });
+            const id = await signIn(page);
+            await page.route('**/api/**', route => route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ status: 403, code: 'pilot_access_required', title: 'Pilot access required' }) }));
+            await page.goto('/');
+            await expect(page.getByRole('alertdialog', { name: 'Your garage is not ready yet.' })).toBeVisible();
+            expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+            await store.delete(id);
+        });
+    }
 });

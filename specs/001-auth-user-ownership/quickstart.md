@@ -16,7 +16,7 @@ milestone. Record only sanitized results; addresses, subjects, codes, tokens and
 ## A0. Regression baseline
 
 ```bash
-dotnet test BikeLog.slnx
+./scripts/dev.sh test   # integration fixture refuses a bare `dotnet test`
 npm run web:test && npm run web:typecheck && npm run web:lint && npm run web:build
 npm run test --workspace @bikelog/api-client
 ./scripts/dev.sh lint

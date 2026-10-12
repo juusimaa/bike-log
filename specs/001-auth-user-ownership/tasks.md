@@ -37,7 +37,7 @@ it before each commit.
 **Purpose**: Provider configuration and a known-good baseline
 
 - [x] T001 Configure the disposable Auth0 tenant (email passwordless connection with signup off, Identifier First profile, custom API with `BikeLog.Access`, confidential web app) and pass the invite-only feasibility proof, recorded in docs/auth/auth0-proof-results.md (commits `17f8353`, `6fea22b`, `d82a9fe`)
-- [ ] T002 Run the regression baseline from specs/001-auth-user-ownership/quickstart.md §A0 (`dotnet test BikeLog.slnx`, `npm run web:test`, `npm run web:typecheck`, `npm run web:lint`, `npm run web:build`, `npm run test --workspace @bikelog/api-client`, `./scripts/dev.sh lint`) and append a dated pass/fail line with test counts to the "Integrated pilot" notes in docs/auth/auth0-pilot-setup.md. If anything fails, stop and report the failure as observed.
+- [x] T002 Run the regression baseline from specs/001-auth-user-ownership/quickstart.md §A0 (`./scripts/dev.sh test`, `npm run web:test`, `npm run web:typecheck`, `npm run web:lint`, `npm run web:build`, `npm run test --workspace @bikelog/api-client`, `./scripts/dev.sh lint`) and append a dated pass/fail line with test counts to the "Integrated pilot" notes in docs/auth/auth0-pilot-setup.md. If anything fails, stop and report the failure as observed.
 
 ---
 
@@ -67,8 +67,8 @@ confirm the garage needs a new sign-in. The auth screens fit at 1440/390/320 px.
 
 ### Remaining verification for User Story 1 (SC-009)
 
-- [ ] T008 [US1] Read apps/web/e2e/auth.spec.ts and add width checks for 1440, 390 and 320 px to the session-expired, pilot-access (unprovisioned) and account-menu tests, matching the existing entry-screen pattern (`page.setViewportSize({ width, height: 900 })` and `document.documentElement.scrollWidth <= width`). Do not change product code unless a check fails, and report any failure as a defect.
-- [ ] T009 [US1] Run `npm run web:e2e -- auth.spec.ts` (or `./scripts/web-e2e.sh --grep auth`) and append a dated, sanitized result (tests passed per width) to docs/auth/auth0-pilot-setup.md. Commit T008 and T009 as `test: check auth screens at three widths`.
+- [x] T008 [US1] Read apps/web/e2e/auth.spec.ts and add width checks for 1440, 390 and 320 px to the session-expired, pilot-access (unprovisioned) and account-menu tests, matching the existing entry-screen pattern (`page.setViewportSize({ width, height: 900 })` and `document.documentElement.scrollWidth <= width`). Do not change product code unless a check fails, and report any failure as a defect.
+- [x] T009 [US1] Run `npm run web:e2e -- auth.spec.ts` (or `./scripts/web-e2e.sh --grep auth`) and append a dated, sanitized result (tests passed per width) to docs/auth/auth0-pilot-setup.md. Commit T008 and T009 as `test: check auth screens at three widths`.
 
 **Checkpoint**: US1 is fully verified.
 
@@ -96,7 +96,7 @@ requests return 404.
 and re-enabling restores 200.
 
 - [x] T012 [US3] Provision, disable and enable operator commands in src/Api/Operations/PilotUserCommands.cs, covered by tests/Integration.Tests/PilotUserCommandTests.cs and documented in docs/auth/auth0-pilot-setup.md (commit `76f0d39`)
-- [ ] T013 👤 [US3] Run specs/001-auth-user-ownership/quickstart.md §A1. Before and after, count `BikeLogUsers` rows. With an Auth0 identity that has no enabled Bike Log user (a third administrator-created test identity, or a pilot user temporarily disabled with `--disable-pilot-user --owner <uuid>`), sign in on `localhost:3000`. Confirm the pilot-access screen and a 403 from `/api/me`, and confirm the row count is unchanged. If a user was disabled, re-enable them and confirm 200. Add a dated row "Unprovisioned or disabled identity is refused by the product API" with sanitized evidence to docs/auth/auth0-proof-results.md and commit it as `docs: record live pilot-access refusal`.
+- [x] T013 👤 [US3] Run specs/001-auth-user-ownership/quickstart.md §A1. Before and after, count `BikeLogUsers` rows. With an Auth0 identity that has no enabled Bike Log user (a third administrator-created test identity, or a pilot user temporarily disabled with `--disable-pilot-user --owner <uuid>`), sign in on `localhost:3000`. Confirm the pilot-access screen and a 403 from `/api/me`, and confirm the row count is unchanged. If a user was disabled, re-enable them and confirm 200. Add a dated row "Unprovisioned or disabled identity is refused by the product API" with sanitized evidence to docs/auth/auth0-proof-results.md and commit it as `docs: record live pilot-access refusal`.
 
 **Checkpoint**: US3 is fully verified.
 
@@ -110,9 +110,9 @@ and re-enabling restores 200.
 and a repeat run deletes 0 rows.
 
 - [x] T014 [US4] Guarded purge command in src/Api/Operations/SyntheticOwnerPurge.cs with src/Api/Operations/LocalDatabaseGuard.cs, covered by tests/Integration.Tests/SyntheticOwnerPurgeTests.cs (commit `76f0d39`)
-- [ ] T015 [US4] Create `.local/backups/` and take a safety backup with `docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" -Fc bikelog_dev > .local/backups/bikelog_dev-pre-purge.dump`. Confirm the file is non-empty and ignored by Git (`git check-ignore`). Then record per-owner row counts (owner UUIDs abbreviated, with pilot owners labeled "pilot A/B") for bikes, components, installations, rides, maintenance, reminder rules and usage projections in a scratch note under `.local/`.
-- [ ] T016 [US4] Following specs/001-auth-user-ownership/contracts/operator-commands.md, run the purge in synthetic Development mode against `bikelog_dev`. First confirm it is refused without `--confirm-delete-synthetic` and in authenticated mode, then run it with the flag and save the printed counts. Run it again and confirm 0 rows deleted. Re-count and confirm only the synthetic owner's rows fell to 0, and that `BikeLogUsers`, `__EFMigrationsHistory` and the pilot owners' rows are unchanged. If any other row changed, restore from the T015 backup and stop.
-- [ ] T017 [US4] Append a dated, sanitized purge result (per-table counts deleted, repeat = 0, guard refusals, other owners unchanged) to the synthetic purge section of docs/auth/auth0-pilot-setup.md and commit it as `docs: record local synthetic purge`.
+- [x] T015 [US4] Create `.local/backups/` and take a safety backup with `docker compose exec -T postgres pg_dump -U "$POSTGRES_USER" -Fc bikelog_dev > .local/backups/bikelog_dev-pre-purge.dump`. Confirm the file is non-empty and ignored by Git (`git check-ignore`). Then record per-owner row counts (owner UUIDs abbreviated, with pilot owners labeled "pilot A/B") for bikes, components, installations, rides, maintenance, reminder rules and usage projections in a scratch note under `.local/`.
+- [x] T016 [US4] Following specs/001-auth-user-ownership/contracts/operator-commands.md, run the purge in synthetic Development mode against `bikelog_dev`. First confirm it is refused without `--confirm-delete-synthetic` and in authenticated mode, then run it with the flag and save the printed counts. Run it again and confirm 0 rows deleted. Re-count and confirm only the synthetic owner's rows fell to 0, and that `BikeLogUsers`, `__EFMigrationsHistory` and the pilot owners' rows are unchanged. If any other row changed, restore from the T015 backup and stop.
+- [x] T017 [US4] Append a dated, sanitized purge result (per-table counts deleted, repeat = 0, guard refusals, other owners unchanged) to the synthetic purge section of docs/auth/auth0-pilot-setup.md and commit it as `docs: record local synthetic purge`.
 
 **Checkpoint**: US4 is fully verified.
 
@@ -122,10 +122,10 @@ and a repeat run deletes 0 rows.
 
 **Purpose**: Constitution compliance and accurate status. Completes the web-first milestone.
 
-- [ ] T018 [P] Write docs/decisions/0002-auth0-invite-only-identity.md in the style of docs/decisions/0001-local-backend.md. It records the decision (Auth0 email passwordless, signup off, Identifier First, custom API audience and `BikeLog.Access`, free tier), context (the Entra attempt failed per docs/auth/identity-proof-results.md), alternatives (Entra External ID, Auth0 database OTP, passwords or open signup) and consequences (operator provisioning, provider dependency, and native proof still pending), using research.md D1–D4.
-- [ ] T019 [P] Update the `Status:` line of docs/superpowers/specs/2026-10-08-authentication-ownership-design.md to say that the web-first milestone was implemented and verified on 2026-10-09, that the native proof is deferred until the web UI is ready, and that the spec is tracked in specs/001-auth-user-ownership/spec.md.
-- [ ] T020 Update the "Implementation Status" table in specs/001-auth-user-ownership/spec.md so the live 403, purge and width rows read Done with the evidence links from T009, T013 and T017, and change the "Remaining work" paragraph to name only the deferred native proof (depends on T009, T013, T017).
-- [ ] T021 Run `./scripts/dev.sh lint` and `git diff --check`, and scan the staged changes for addresses, Auth0 `user_id` values, tenant domains, tokens and secrets. Commit T018–T020 as `docs: close web-first authentication milestone`.
+- [x] T018 [P] Write docs/decisions/0002-auth0-invite-only-identity.md in the style of docs/decisions/0001-local-backend.md. It records the decision (Auth0 email passwordless, signup off, Identifier First, custom API audience and `BikeLog.Access`, free tier), context (the Entra attempt failed per docs/auth/identity-proof-results.md), alternatives (Entra External ID, Auth0 database OTP, passwords or open signup) and consequences (operator provisioning, provider dependency, and native proof still pending), using research.md D1–D4.
+- [x] T019 [P] Update the `Status:` line of docs/superpowers/specs/2026-10-08-authentication-ownership-design.md to say that the web-first milestone was implemented and verified on 2026-10-09, that the native proof is deferred until the web UI is ready, and that the spec is tracked in specs/001-auth-user-ownership/spec.md.
+- [x] T020 Update the "Implementation Status" table in specs/001-auth-user-ownership/spec.md so the live 403, purge and width rows read Done with the evidence links from T009, T013 and T017, and change the "Remaining work" paragraph to name only the deferred native proof (depends on T009, T013, T017).
+- [x] T021 Run `./scripts/dev.sh lint` and `git diff --check`, and scan the staged changes for addresses, Auth0 `user_id` values, tenant domains, tokens and secrets. Commit T018–T020 as `docs: close web-first authentication milestone`.
 
 **Checkpoint**: The web-first milestone is complete, and every spec status row except the native proof
 reads Done.

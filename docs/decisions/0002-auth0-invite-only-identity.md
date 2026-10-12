@@ -1,0 +1,11 @@
+# Auth0 invite-only identity
+
+Approved identity: Auth0 email passwordless (one-time code, not magic link) through Universal Login, with public signup disabled, only the `email` connection enabled for the web application, and the tenant authentication profile set to **Identifier First**. Bike Log registers a custom API audience with the `BikeLog.Access` scope. The pilot runs on Auth0's free tier.
+
+Context: the first design used Microsoft Entra External ID and failed its live onboarding gate on 2026-10-08. An administrator-created customer was asked for a password instead of an email code, and Graph refuses to create a customer without one ([identity-proof-results.md](../auth/identity-proof-results.md)). The Auth0 proof passed on 2026-10-09: both administrator-created pilot users reached a code prompt without a password, and uninvited addresses created no account ([auth0-proof-results.md](../auth/auth0-proof-results.md)).
+
+The API accepts only access tokens with the exact issuer, the Bike Log audience (string or array `aud`), RS256 signatures from OIDC metadata, a valid lifetime and `BikeLog.Access` in `scope`. It then resolves `(iss, sub)` to an enabled local `BikeLogUser` on every request. Email is never a key, and users are never created on first sign-in. Foreign-owner records return the same 404 as missing ones. The web app uses authorization code with state, nonce and PKCE, keeps encrypted tokens in PostgreSQL, and gives the browser only an opaque `Secure` host session cookie.
+
+Alternatives rejected: Entra External ID (password prompt for administrator-created customers); Auth0 database-connection OTP (availability uncertain); passwords or open signup (excluded by the design); tokens in browser storage (constitution IV); a separate session store such as Redis (constitution V).
+
+Consequences: an operator provisions every rider twice, in Auth0 and with `--provision-pilot-user`, and disables both on removal ([auth0-pilot-setup.md](../auth/auth0-pilot-setup.md)). Sign-in and refresh depend on Auth0 availability; during an outage the API must not fall back to ID tokens or skip the local-user check. The native public-client proof is still pending and is deferred until the web UI is ready. Real-data use still requires the ordinary release gates.

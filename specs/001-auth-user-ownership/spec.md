@@ -318,12 +318,10 @@ Derived from commits, plans and recorded evidence in [docs/auth/](../../docs/aut
 | Operator provisioning, disable/re-enable, synthetic purge (US3, US4; FR-005–006, FR-023–024) | **Done (code and tests)** | Commit `76f0d39`; `PilotUserCommandTests`, `SyntheticOwnerPurgeTests`; runbook in [auth0-pilot-setup.md](../../docs/auth/auth0-pilot-setup.md). |
 | Web sign-in, encrypted sessions, relay, sign-out and auth UI (US1; FR-016–021) | **Done** | Commits `6488c8e`, `559d1c8`, `d9cfa13`; web auth unit tests and `e2e/auth.spec.ts`. |
 | Integrated two-rider web check (SC-001, SC-005) | **Done, user-observed 2026-10-09** | Two provisioned riders each saw only their own bike after switching accounts; direct relay requests without a session returned 401. Full suite green on 2026-10-09 (167 web, 29 client, 9 probe, 48 domain, 186 integration tests). |
-| Live 403 for an unprovisioned identity (SC-003) | **Covered by tests; live result not recorded** | The API plan asked for a sanitized live 403 before provisioning the second rider; no such entry appears in the docs. |
-| Running the purge on actual local development data | **Not recorded** | The command and isolated-database test exist; no record that it has been run on the local development database. |
-| Auth UI at 1440/390/320 px (SC-009) | **Partially recorded** | A seven-check Chromium run covered cookie, sign-out and expiry; the docs do not record per-width results. |
+| Live 403 for an unprovisioned identity (SC-003) | **Done, user-observed 2026-10-12** | [auth0-proof-results.md](../../docs/auth/auth0-proof-results.md): a disabled pilot user saw the pilot-access screen and received 403 from `/api/me` with no user row created; re-enabling restored 200. Commit `5d7a09f`. |
+| Running the purge on actual local development data | **Done 2026-10-12** | [auth0-pilot-setup.md](../../docs/auth/auth0-pilot-setup.md): after a backup, guard refusals held, the synthetic owner's rows were deleted, a repeat deleted 0, and pilot owners, users and migrations were unchanged. Commit `cea99ac`. |
+| Auth UI at 1440/390/320 px (SC-009) | **Done 2026-10-12** | `e2e/auth.spec.ts` passed 13 of 13 in Chromium, covering entry, account menu, session-expired and pilot-access screens at each width without horizontal overflow; recorded in [auth0-pilot-setup.md](../../docs/auth/auth0-pilot-setup.md). Commit `f084e28`. |
 | Native proof (US5; FR-026–028; SC-008) | **Deferred until the web UI is ready** | No `apps/mobile/`; all tasks in [native-auth-proof plan](../../docs/superpowers/plans/2026-10-08-native-auth-proof.md) are unchecked. |
 
-**Remaining work**: now, close the three recording gaps above. The native proof (US5) follows once the web UI
-is ready. The source design
-document still says "pending owner review" even though the web-first milestone is implemented; its status
-should be updated.
+**Remaining work**: the web-first milestone is complete. Only the native proof (US5) remains, and it is
+deferred until the web UI is ready.
