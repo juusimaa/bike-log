@@ -124,8 +124,8 @@ and a repeat run deletes 0 rows.
 
 - [x] T018 [P] Write docs/decisions/0002-auth0-invite-only-identity.md in the style of docs/decisions/0001-local-backend.md. It records the decision (Auth0 email passwordless, signup off, Identifier First, custom API audience and `BikeLog.Access`, free tier), context (the Entra attempt failed per docs/auth/identity-proof-results.md), alternatives (Entra External ID, Auth0 database OTP, passwords or open signup) and consequences (operator provisioning, provider dependency, and native proof still pending), using research.md D1–D4.
 - [x] T019 [P] Update the `Status:` line of docs/superpowers/specs/2026-10-08-authentication-ownership-design.md to say that the web-first milestone was implemented and verified on 2026-10-09, that the native proof is deferred until the web UI is ready, and that the spec is tracked in specs/001-auth-user-ownership/spec.md.
-- [ ] T020 Update the "Implementation Status" table in specs/001-auth-user-ownership/spec.md so the live 403, purge and width rows read Done with the evidence links from T009, T013 and T017, and change the "Remaining work" paragraph to name only the deferred native proof (depends on T009, T013, T017).
-- [ ] T021 Run `./scripts/dev.sh lint` and `git diff --check`, and scan the staged changes for addresses, Auth0 `user_id` values, tenant domains, tokens and secrets. Commit T018–T020 as `docs: close web-first authentication milestone`.
+- [x] T020 Update the "Implementation Status" table in specs/001-auth-user-ownership/spec.md so the live 403, purge and width rows read Done with the evidence links from T009, T013 and T017, and change the "Remaining work" paragraph to name only the deferred native proof (depends on T009, T013, T017).
+- [x] T021 Run `./scripts/dev.sh lint` and `git diff --check`, and scan the staged changes for addresses, Auth0 `user_id` values, tenant domains, tokens and secrets. Commit T018–T020 as `docs: close web-first authentication milestone`.
 
 **Checkpoint**: The web-first milestone is complete, and every spec status row except the native proof
 reads Done.
