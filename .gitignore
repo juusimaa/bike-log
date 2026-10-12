@@ -90,7 +90,8 @@ test-results/
 # Local agent tooling: skills, agents, hooks and Spec Kit files
 /.claude/
 /.codex/
-/.specify/
+/.specify/*
+!/.specify/memory/
 
 # Impeccable local overrides, caches and live runtime state
 **/.impeccable/config.local.json
