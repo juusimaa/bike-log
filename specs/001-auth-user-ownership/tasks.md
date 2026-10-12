@@ -96,7 +96,7 @@ requests return 404.
 and re-enabling restores 200.
 
 - [x] T012 [US3] Provision, disable and enable operator commands in src/Api/Operations/PilotUserCommands.cs, covered by tests/Integration.Tests/PilotUserCommandTests.cs and documented in docs/auth/auth0-pilot-setup.md (commit `76f0d39`)
-- [ ] T013 👤 [US3] Run specs/001-auth-user-ownership/quickstart.md §A1. Before and after, count `BikeLogUsers` rows. With an Auth0 identity that has no enabled Bike Log user (a third administrator-created test identity, or a pilot user temporarily disabled with `--disable-pilot-user --owner <uuid>`), sign in on `localhost:3000`. Confirm the pilot-access screen and a 403 from `/api/me`, and confirm the row count is unchanged. If a user was disabled, re-enable them and confirm 200. Add a dated row "Unprovisioned or disabled identity is refused by the product API" with sanitized evidence to docs/auth/auth0-proof-results.md and commit it as `docs: record live pilot-access refusal`.
+- [x] T013 👤 [US3] Run specs/001-auth-user-ownership/quickstart.md §A1. Before and after, count `BikeLogUsers` rows. With an Auth0 identity that has no enabled Bike Log user (a third administrator-created test identity, or a pilot user temporarily disabled with `--disable-pilot-user --owner <uuid>`), sign in on `localhost:3000`. Confirm the pilot-access screen and a 403 from `/api/me`, and confirm the row count is unchanged. If a user was disabled, re-enable them and confirm 200. Add a dated row "Unprovisioned or disabled identity is refused by the product API" with sanitized evidence to docs/auth/auth0-proof-results.md and commit it as `docs: record live pilot-access refusal`.
 
 **Checkpoint**: US3 is fully verified.
 
