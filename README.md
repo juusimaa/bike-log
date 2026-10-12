@@ -65,9 +65,10 @@ Run `lint` before committing.
 
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request
 to `main` and on every push to `main` (i.e. after merge). The `dotnet` job runs
-`./scripts/dev.sh lint` and `./scripts/dev.sh test` against a throwaway pinned
-PostgreSQL service container; the `web` job runs `npm ci`, web lint, typecheck,
-all workspace tests and `web:build`. Browser e2e and OpenAPI drift checks remain
+`./scripts/dev.sh lint` and `./scripts/dev.sh test`; the `web` job runs `npm ci`,
+web lint, typecheck, all workspace tests and `web:build`. Both jobs use a
+throwaway PostgreSQL service container (same pinned image as `compose.yaml`) on
+loopback port 54329 with a CI-only synthetic `.env`. Browser e2e and OpenAPI drift checks remain
 local (see [web workflows](docs/web-workflows.md)).
 
 `main` is protected: changes land only through pull requests, and both `dotnet`
