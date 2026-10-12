@@ -150,7 +150,7 @@ public class MultiComponentApiTests
         await using var s = await ApiScenario.Open();
         var e = await s.Equipment();
         var part = await Component(s, "tyre");
-        await Install(s, e.Bike, part, "front-tyre", DateTimeOffset.UtcNow.AddYears(10));
+        await Install(s, e.Bike, part, "front-tyre", ApiScenario.Start.AddYears(100));
         var usage = await s.Read($"/api/bikes/{e.Bike}/usage");
         Assert.Single(usage.GetProperty("currentComponents").EnumerateArray());
         Assert.Equal(
