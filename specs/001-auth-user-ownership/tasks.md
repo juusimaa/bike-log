@@ -37,7 +37,7 @@ it before each commit.
 **Purpose**: Provider configuration and a known-good baseline
 
 - [x] T001 Configure the disposable Auth0 tenant (email passwordless connection with signup off, Identifier First profile, custom API with `BikeLog.Access`, confidential web app) and pass the invite-only feasibility proof, recorded in docs/auth/auth0-proof-results.md (commits `17f8353`, `6fea22b`, `d82a9fe`)
-- [ ] T002 Run the regression baseline from specs/001-auth-user-ownership/quickstart.md §A0 (`dotnet test BikeLog.slnx`, `npm run web:test`, `npm run web:typecheck`, `npm run web:lint`, `npm run web:build`, `npm run test --workspace @bikelog/api-client`, `./scripts/dev.sh lint`) and append a dated pass/fail line with test counts to the "Integrated pilot" notes in docs/auth/auth0-pilot-setup.md. If anything fails, stop and report the failure as observed.
+- [x] T002 Run the regression baseline from specs/001-auth-user-ownership/quickstart.md §A0 (`./scripts/dev.sh test`, `npm run web:test`, `npm run web:typecheck`, `npm run web:lint`, `npm run web:build`, `npm run test --workspace @bikelog/api-client`, `./scripts/dev.sh lint`) and append a dated pass/fail line with test counts to the "Integrated pilot" notes in docs/auth/auth0-pilot-setup.md. If anything fails, stop and report the failure as observed.
 
 ---
 
