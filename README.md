@@ -59,4 +59,17 @@ pre-commit install
 The hook uses the pinned local CSharpier tool and excludes generated migrations.
 If it changes files, review and stage those changes, then retry the commit.
 Each developer enables the hook after cloning.
-Run `lint` before committing; when CI is added, use the same command there.
+Run `lint` before committing.
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every pull request
+to `main` and on every push to `main` (i.e. after merge). The `dotnet` job runs
+`./scripts/dev.sh lint` and `./scripts/dev.sh test` against a throwaway pinned
+PostgreSQL service container; the `web` job runs `npm ci`, web lint, typecheck,
+all workspace tests and `web:build`. Browser e2e and OpenAPI drift checks remain
+local (see [web workflows](docs/web-workflows.md)).
+
+`main` is protected: changes land only through pull requests, and both `dotnet`
+and `web` checks must pass on an up-to-date branch before merging. Direct pushes
+and force pushes are blocked, including for admins.
