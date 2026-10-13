@@ -1,0 +1,67 @@
+/* V4: a garage with many bikes. Builds on V3 (styles.css + v3.css) and changes two things:
+   the bike switcher replaces the card row, and fitted rows are highlighted while a parts panel
+   stays open. Tokens are the V3 ones. */
+
+/* Bike switcher: one row, whatever the number of bikes */
+.bike-switcher{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin-bottom:20px}
+.switcher-button{display:grid;grid-template-columns:57px minmax(0,1fr) auto auto;align-items:center;gap:12px;width:min(100%,560px);padding:10px 14px 10px 12px;text-align:left;border:1px solid #6e8e6c;box-shadow:0 0 0 1px #6e8e6c;border-radius:12px;background:#f3f6ec;transition:background .15s}
+.switcher-button:hover{background:#edf2e3}
+.switcher-button .art{width:57px;height:33px}
+.switcher-text{display:block;min-width:0}
+.switcher-text strong{display:block;font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.switcher-text small{display:block;font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.switcher-change{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--ok-text);white-space:nowrap}
+.switcher-change .chev{transition:transform .18s cubic-bezier(.2,.8,.2,1)}
+.switcher-button[aria-expanded=true] .chev{transform:rotate(180deg)}
+.switcher-count{font-size:12px;color:var(--muted)}
+.switcher-count .amber{color:var(--amber-text);font-weight:600}
+
+.switcher-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:8;width:min(100%,560px);max-height:min(560px,70vh);display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px #1c332c29,0 2px 6px #1c332c12;overflow:hidden}
+.switcher-panel[hidden]{display:none}
+.switcher-search{display:flex;align-items:center;gap:9px;padding:12px 16px;border-bottom:1px solid var(--line);color:var(--muted)}
+.switcher-search:focus-within{box-shadow:inset 0 -2px 0 #7ba78a}
+.switcher-search input{flex:1;min-width:0;border:0;background:none;font-size:14px;color:var(--ink);padding:4px 0}
+.switcher-search input:focus-visible{outline:none}
+.switcher-search input::placeholder{color:#7d877f}
+.switcher-list{overflow:auto;overscroll-behavior:contain;padding:4px 6px 8px;flex:1}
+.list-heading{font-size:12px;font-weight:600;color:var(--muted);padding:12px 10px 6px}
+.list-empty{font-size:13px;color:var(--muted);padding:22px 12px;line-height:1.55}
+.switch-option{display:grid;grid-template-columns:44px minmax(0,1fr) auto 18px;align-items:center;gap:12px;width:100%;padding:8px 10px;border:0;border-radius:9px;background:none;text-align:left}
+.switch-option .art{width:44px;height:26px}
+.switch-option .switcher-text strong{font-size:13px}
+.switch-option:hover{background:#f4f6f0}
+.switch-option:focus-visible{background:#f0f3eb;outline:2px solid #7ba78a;outline-offset:-2px}
+.switch-option.active{background:#f3f6ec}
+.switch-option .option-meta{font-size:12px;color:#3f4c44}
+.switch-option .option-check{color:var(--green)}
+.switcher-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 10px 4px 14px;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+
+/* Parts panel: confirm the fit where it landed */
+.pos-row.just-fitted{animation:just-fitted 2.6s cubic-bezier(.2,.8,.2,1) both}
+@keyframes just-fitted{0%,35%{background:#eaf3dc}100%{background:#fff}}
+.fitted-tag{display:inline-flex;align-items:center;gap:3px;margin-left:8px;font-size:11px;font-weight:600;color:var(--ok-text);vertical-align:1px}
+.fitted-tag .i{width:13px;height:13px}
+
+.dialog-actions{flex-wrap:wrap}
+
+@media (prefers-reduced-motion:reduce){
+  .pos-row.just-fitted{animation:none;background:#f3f8ea}
+  .switcher-change .chev{transition:none}
+}
+
+@media(max-width:650px){
+  .bike-switcher{margin-bottom:16px}
+  .switcher-button{width:100%;grid-template-columns:44px minmax(0,1fr) auto;gap:4px 10px;padding:10px 12px}
+  .switcher-button .art{width:44px;height:26px;grid-row:1/span 2}
+  .switcher-button .pill{grid-column:2;grid-row:2;justify-self:start}
+  .switcher-change{grid-column:3;grid-row:1/span 2}
+  .switcher-change .label{display:none}
+  .switcher-count{width:100%}
+  .switcher-panel{width:100%;max-height:72vh}
+  .switch-option{grid-template-columns:36px minmax(0,1fr) auto;gap:10px}
+  .switch-option .art{width:36px;height:21px}
+  .switch-option .option-check{display:none}
+  .switcher-foot span{display:none}
+  .dialog-actions .button{flex:1 1 auto}
+  #dialog-submit-next{order:-1;flex-basis:100%}
+}

@@ -6,6 +6,9 @@ V2 adds sign-in, registration, recovery and account controls for review.
 Component groups and weights: [V3, approved 2026-10-13](versions/v3/README.md) · [Open V3 mock](versions/v3/index.html).
 V3 adds the grouped parts view, weights, tubeless setup, incomplete bikes and part moves.
 
+Many bikes: [V4 draft](versions/v4/README.md) · [Open V4 mock](versions/v4/index.html).
+V4 replaces the bike card row with a searchable switcher and keeps parts panels open while fitting.
+
 ## Version 1.0
 
 Status: **First approved visual and interaction baseline**, approved by the owner
