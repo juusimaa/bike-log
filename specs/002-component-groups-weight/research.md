@@ -99,6 +99,13 @@ the design questions the spec leaves to planning. Each one is grounded in the cu
 - **Rationale**: FR-012 requires an all-or-nothing operation. `OwnerMutation.ExecuteAsync` already wraps
   validation, persistence and the projection rebuild in one transaction.
 
+## D7a. Moving a part is one atomic step
+
+- **Decision**: Add `POST /installations/{id}/move`. It checks the installation's version and the
+  destination's compatibility, closes the old installation and opens the new one in one transaction.
+- **Rationale**: Two client calls could leave a part half-moved, and the sequencing is a domain rule that
+  belongs in the API (constitution II).
+
 ## D8. Frame stays on the bike
 
 - **Decision**: The bike's existing `Make`/`Model` are presented as the frame's. Add only

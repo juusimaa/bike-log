@@ -227,8 +227,9 @@ usage totals are identical before and after.
 - **FR-011**: While a wheel is tubeless, its inner tube position MUST be not applicable: fitting an inner
   tube there for an overlapping period MUST be rejected, and switching a wheel to tubeless MUST end any
   inner tube installation at the switch date.
-- **FR-012**: For brakes, brake levers and disc rotors, the owner MUST be able to fit the same make, model
-  and weight to front and rear in one action, which creates two independent components; either can
+- **FR-012**: For any component type with front and rear positions, the owner MUST be able to fit the same
+  make, model and weight to front and rear in one action (offered by default for brakes, brake levers and
+  disc rotors), which creates two independent components; either can
   later be replaced on its own. The action MUST succeed or fail as a whole.
 
 **Frame**
@@ -261,9 +262,9 @@ usage totals are identical before and after.
 - **Position**: A place on a bike where one component of a matching type can be fitted at a time (for
   example rear brake, front rim, handlebar tape).
 - **Installation**: A component fitted in a position on a bike for a dated period; unchanged in meaning.
-- **Position state period**: A dated declaration that a position is intentionally empty — the front
-  derailleur "none fitted", or an inner tube "not applicable" because the wheel is tubeless.
-- **Wheel setup**: Per bike and per wheel (front/rear), whether it is tubeless, with dated changes.
+- **Intentionally empty period**: A dated declaration that a position on a bike is empty on purpose.
+  There are two reasons. *None fitted* applies to the front derailleur. *Tubeless* applies to a wheel's
+  inner tube position, front or rear. A wheel's tubeless history is the list of its tubeless periods.
 - **Bike (frame)**: The bike identity, now including optional frame make, model and weight. Changing the
   frame means creating a new bike.
 

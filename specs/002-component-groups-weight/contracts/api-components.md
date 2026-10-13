@@ -43,18 +43,37 @@ Response 201: `{ "front": { component, installation }, "rear": { component, inst
 The request is rejected with 400 if the type is not in `pairTypes`, and with 409 if either position
 overlaps; in either case nothing is saved.
 
+### `POST /installations/{id}/move`
+
+Closes an open installation and fits the same component on another bike (or the same bike), all or
+nothing.
+
+Request: `{ "toBikeId", "toPosition"?, "movedAtUtc", "expectedInstallationVersion" }`. `toPosition`
+defaults to the current position and must be compatible with the component's type.
+
+Response 200: `{ oldInstallation, newInstallation }`. Errors: 400 for an incompatible position; 404 for a
+bike that isn't the owner's; 409 for a stale version or an overlap at the destination. On any error,
+nothing changes.
+
 ### `POST /bikes/{bikeId}/position-exemptions`
 
 Declares a position intentionally empty from a date. Any open installation in that position is ended at
 `startUtc` in the same transaction.
 
-Request: `{ "position": "rear-inner-tube" | "front-inner-tube" | "front-derailleur", "startUtc" }`.
+Request: `{ "position": "rear-inner-tube" | "front-inner-tube" | "front-derailleur", "startUtc",
+"expectedInstallationVersion"? }`. `expectedInstallationVersion` is required when an installation is open
+in that position at `startUtc`, and it must match that installation's version. The API closes that
+installation at `startUtc` in the same transaction.
 The reason is implied by the catalog (`tubeless` or `none-fitted`).
 Response 201: `PositionExemptionResponse`
 `{ id, bikeId, position, reason, startUtc, endUtc, version }`.
 
-The request is rejected with 400 for a position that cannot be empty, and with 409 if it overlaps an
-existing exemption or a closed installation that runs past `startUtc`.
+The request is rejected with:
+
+- 400 for a position that cannot be empty.
+- 409 version conflict when an installation is open and the version is missing or stale.
+- 409 `installation_overlap` when it overlaps an existing exemption, or a closed installation that runs
+  past `startUtc`.
 
 ### `PUT /position-exemptions/{id}`
 
@@ -88,4 +107,5 @@ Lists the bike's exemption history, newest first. This is the wheel setup histor
 | Pair requested for a type without front/rear positions | 400 | validation |
 | Inner tube fitted during a tubeless period, or any position overlap | 409 | `installation_overlap` |
 | Exemption would orphan recorded maintenance | 409 | `maintenance_history_conflict` |
-| Stale `expectedVersion` | 409 | existing version conflict |
+| Stale `expectedVersion` or `expectedInstallationVersion` | 409 | existing version conflict |
+| Exemption requested while an installation is open, without `expectedInstallationVersion` | 409 | existing version conflict |

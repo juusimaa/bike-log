@@ -43,7 +43,7 @@ O(rides × 27) in memory per bike read, which is acceptable at this scale.
 **Constraints**: Synthetic data only. No usage may be guessed. Existing totals must be identical after
 upgrade. No migration at startup.
 
-**Scale/Scope**: 20 component types, 27 positions, 1 new entity, 5 new endpoints, about 6 changed contracts,
+**Scale/Scope**: 20 component types, 27 positions, 1 new entity, 7 new endpoints, about 6 changed contracts,
 and a reworked bike components view in the web app.
 
 ## Constitution Check
@@ -107,6 +107,7 @@ src/Api/Features/
 ├── Components/ComponentEndpoints.cs   # weight on create; PUT /components/{id}
 ├── Components/CatalogEndpoints.cs     # NEW: GET /component-catalog
 ├── Installations/PairEndpoints.cs     # NEW: POST /installations/pair
+├── Installations/MoveEndpoints.cs     # NEW: POST /installations/{id}/move (atomic)
 ├── Installations/ReplacementEndpoints.cs  # newWeightGrams; task label from catalog
 ├── Installations/InstallationEndpoints.cs # ValidateHistory includes exemptions
 ├── Exemptions/ExemptionEndpoints.cs   # NEW: create/correct/list exemptions

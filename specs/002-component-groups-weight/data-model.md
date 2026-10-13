@@ -108,6 +108,8 @@ installation at T.
 
 - **PositionStatus** (per bike position, at evaluation time): `fitted` (with component and installation),
   `exempt` (with reason and since when), or `not-recorded`.
+  Display labels: `exempt` + `none-fitted` → "None fitted"; `exempt` + `tubeless` → "Not applicable
+  (tubeless)"; `not-recorded` → "Not recorded".
 - **PositionGap** (D6): position, ride count without a recorded component, first and last such ride
   start.
 - **WeightSummary** (D9): for each group, `grams` and `missingCount`; `frameGrams` (nullable);

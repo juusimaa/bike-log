@@ -36,7 +36,7 @@ section).
 | 4 | US1-3, SC-006 | Mark the front derailleur "none fitted" | No gap notice for the front derailleur on later rides |
 | 5 | US1-4 | Try to fit a saddle in the handlebar position (API) | 400 |
 | 6 | US2-1, SC-004 | Replace handlebar tape that already has rides, then log a ride | The old tape's total is unchanged, and the new tape has only the new ride. Other parts are unchanged |
-| 7 | US2-2 | End the pedals' installation on bike A and fit them on bike B. Ride B | Lifetime usage on the pedals continues |
+| 7 | US2-2 | Move the pedals from bike A to bike B in one step. Ride B. Then try moving a part into an occupied position | Lifetime usage on the pedals continues. The occupied move returns 409 and nothing changes |
 | 8 | US3-1/2 | Fit a brake pair, then replace only the rear brake | Two components exist. The front brake's history is unchanged |
 | 9 | FR-012 | Fit a rotor pair while the rear rotor position is occupied | 409. No component or installation is created |
 | 10 | US4-1 | With a rear tube fitted, switch the rear wheel to tubeless on a date | The tube's installation ends on that date, and the position shows "tubeless" |
@@ -46,6 +46,7 @@ section).
 | 14 | Edge | Enter weights 0, −5, 20001 and 12.5 | Each is rejected with a field message |
 | 15 | FR-016 | As a second synthetic user, read or modify user A's exemption or component | 404 |
 | 16 | FR-017 | Run `rebuild-usage` twice | Identical totals |
+| 17 | SC-001 | Time recording all 27 positions on a fresh synthetic road bike, using front/rear pairs where offered | Under 15 minutes. Record the time |
 
 Check the bike workspace at 1440, 768 and 390 px wide. All three groups must be readable, and the
 page must not scroll horizontally.
