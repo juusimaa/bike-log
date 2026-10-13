@@ -7,7 +7,10 @@ import { MaintenanceForm } from '../src/features/maintenance/MaintenanceForm';
 import { ReminderCard } from '../src/features/reminders/ReminderCard';
 import { Workspace } from '../src/features/garage/Workspace';
 import { ReminderForm } from '../src/features/reminders/ReminderForm';
+import { catalog, overviewExtras } from './catalog-fixture';
 const api = vi.hoisted(() => ({
+    getComponentCatalog: vi.fn(),
+    listExemptions: vi.fn(),
     listBikes: vi.fn(),
     getBike: vi.fn(),
     getOverview: vi.fn(),
@@ -76,6 +79,8 @@ function date(value = '2024-06-01T12:00') {
 }
 beforeEach(() => {
     vi.resetAllMocks();
+    api.getComponentCatalog.mockResolvedValue(catalog);
+    api.listExemptions.mockResolvedValue([]);
     api.listInstallations.mockImplementation((_b, _s, p) =>
         Promise.resolve(
             p.cursor
@@ -454,6 +459,7 @@ it('workspaceConnectsMaintenanceAndReminderThroughDirtyGuard', async () => {
         id: '11111111-1111-1111-1111-111111111111',
         name: 'Bike',
         displayName: 'Bike',
+        missingPositions: [] as string[],
         make: null,
         model: null,
         kind: 'road',
@@ -473,6 +479,7 @@ it('workspaceConnectsMaintenanceAndReminderThroughDirtyGuard', async () => {
         unknownCostRecordCount: 0,
         maintenanceRecordCount: 0,
         recentActivity: [],
+        ...overviewExtras(),
     });
     window.history.replaceState(
         {},
@@ -656,6 +663,7 @@ it('workspaceReminderWriteLocksNavigationAndCapturesOriginalBike', async () => {
         id,
         name: 'Bike',
         displayName: 'Bike',
+        missingPositions: [] as string[],
         make: null,
         model: null,
         kind: 'road',
@@ -675,6 +683,7 @@ it('workspaceReminderWriteLocksNavigationAndCapturesOriginalBike', async () => {
         unknownCostRecordCount: 0,
         maintenanceRecordCount: 0,
         recentActivity: [],
+        ...overviewExtras(),
     });
     let resolve!: (e: typeof evaluation) => void;
     api.editReminder.mockImplementation(

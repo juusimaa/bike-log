@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@bikelog/api-client';
 import { BikeForm } from '../src/features/bikes/BikeForm';
 import { HomeClient as Home } from '../src/components/HomeClient';
+import { catalog, overviewExtras } from './catalog-fixture';
 const a = '11111111-1111-1111-1111-111111111111',
     b = '22222222-2222-2222-2222-222222222222';
 const bike = {
@@ -20,6 +21,8 @@ const bike = {
     missingPositions: [] as string[],
 };
 const api = vi.hoisted(() => ({
+    getComponentCatalog: vi.fn(),
+    listExemptions: vi.fn(),
     createBike: vi.fn(),
     editBike: vi.fn(),
     getBike: vi.fn(),
@@ -31,6 +34,8 @@ const api = vi.hoisted(() => ({
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 beforeEach(() => {
     vi.resetAllMocks();
+    api.getComponentCatalog.mockResolvedValue(catalog);
+    api.listExemptions.mockResolvedValue([]);
     api.getReminder.mockResolvedValue({
         ruleVersion: 0,
         state: 'disabled',
@@ -99,6 +104,7 @@ it('createsBikeWithoutInventedParts', async () => {
             kind: 'road',
             year: 2020,
             color: '#aabbcc',
+            frameWeightGrams: null,
         }),
     );
     expect(api.listInstallations).not.toHaveBeenCalled();
@@ -135,6 +141,7 @@ it('clearingNameUsesServerFallback', async () => {
             kind: 'road',
             year: 2020,
             color: null,
+            frameWeightGrams: null,
             expectedVersion: 9,
         }),
     );
@@ -224,6 +231,7 @@ it('dirtyBikeSwitchRequiresChoice', async () => {
         spendingByCurrency: [],
         unknownCostRecordCount: 0,
         recentActivity: [],
+        ...overviewExtras(),
     });
     api.listInstallations.mockResolvedValue({ items: [], nextCursor: null });
     render(<Home />);
@@ -257,6 +265,7 @@ function garageFixture() {
         spendingByCurrency: [],
         unknownCostRecordCount: 0,
         recentActivity: [],
+        ...overviewExtras(),
     }));
     api.listInstallations.mockResolvedValue({ items: [], nextCursor: null });
 }
@@ -356,6 +365,7 @@ it('serverDisplayNameReplacesCardsAndHeroAfterEdit', async () => {
             spendingByCurrency: [],
             unknownCostRecordCount: 0,
             recentActivity: [],
+            ...overviewExtras(),
         });
         return saved;
     });
@@ -419,7 +429,8 @@ it('emptyBikeLinksToFittingWithoutInventingParts', async () => {
     garageFixture();
     render(<Home />);
     const fit = await screen.findByRole('button', { name: 'Fit component →' });
-    expect(screen.getAllByText('Not fitted')).toHaveLength(5);
+    // Only the chain stat; empty positions live on the catalog-driven board.
+    expect(screen.getAllByText('Not fitted')).toHaveLength(1);
     fireEvent.click(fit);
     await waitFor(() =>
         expect(window.location.search).toContain('view=components'),

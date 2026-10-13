@@ -41,6 +41,15 @@ export function BikeSelector({
                                 .filter(Boolean)
                                 .join(' · ') || 'Metadata not provided'}
                         </small>
+                        {b.missingPositions.length > 0 && (
+                            <span className="incomplete">
+                                Incomplete · {b.missingPositions.length}{' '}
+                                {b.missingPositions.length === 1
+                                    ? 'part'
+                                    : 'parts'}{' '}
+                                missing
+                            </span>
+                        )}
                     </span>
                     {b.id === bikeId && <span className="choice-dot" />}
                 </button>

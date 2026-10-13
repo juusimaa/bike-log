@@ -1,10 +1,17 @@
 import type { ReactNode } from 'react';
 import type {
     Uuid,
-    Position,
     InstallationResponse,
     Validated,
 } from '@bikelog/api-client';
+import { useState } from 'react';
+import {
+    useComponentCatalog,
+    groupLabel,
+    positionLabel,
+} from '../components/catalog';
+import { formatDate } from '../../lib/dates';
+import { formatKilograms } from '../../lib/format';
 import { useOverview, useCurrentInstallations } from '../garage/queries';
 import { Stats } from './Stats';
 import { Activity } from './Activity';
@@ -29,6 +36,8 @@ export function Overview({
 }) {
     const overview = useOverview(bikeId);
     const fitted = useCurrentInstallations(bikeId);
+    const catalog = useComponentCatalog().data;
+    const [allGaps, setAllGaps] = useState(false);
     if (overview.error)
         return (
             <ReadError
@@ -109,12 +118,149 @@ export function Overview({
                     <Stats snapshot={s} />
                 </div>
             </div>
-            {s.allocationGaps.map((g, i) => (
-                <div className="gap-notice" key={i}>
-                    Allocation gap: ride {g.rideId} has no{' '}
-                    {g.position.replaceAll('-', ' ')} fitted.
+            {s.bike.missingPositions.length > 0 && (
+                <div className="notice" role="status">
+                    <p>
+                        This bike is incomplete:{' '}
+                        {s.bike.missingPositions.map((position, i) => {
+                            const since = s.positionStatuses.find(
+                                (x) => x.position === position,
+                            )?.sinceUtc;
+                            return (
+                                <span key={position}>
+                                    {i > 0 && ', '}
+                                    <strong>
+                                        {positionLabel(
+                                            catalog,
+                                            position,
+                                        ).toLowerCase()}
+                                    </strong>{' '}
+                                    missing
+                                    {since ? ` since ${formatDate(since)}` : ''}
+                                </span>
+                            );
+                        })}
+                        . Rides can still be logged; they will show a gap for
+                        the missing{' '}
+                        {s.bike.missingPositions.length === 1
+                            ? 'part'
+                            : 'parts'}
+                        .
+                    </p>
+                    {onViewComponents && (
+                        <div className="notice-actions">
+                            <button
+                                type="button"
+                                className="button small secondary"
+                                onClick={onViewComponents}
+                            >
+                                View parts
+                            </button>
+                        </div>
+                    )}
                 </div>
-            ))}
+            )}
+            <div className="overview-side">
+                <section className="gaps-card" aria-labelledby="gaps-title">
+                    <h2 id="gaps-title">Usage gaps</h2>
+                    <p>
+                        Rides that started while a position had no recorded
+                        part. Those rides add no usage for that position;
+                        nothing is estimated.
+                    </p>
+                    {s.positionGaps.length === 0 ? (
+                        <p className="no-gap">
+                            No gaps. Every ride is fully allocated.
+                        </p>
+                    ) : (
+                        <>
+                            {(allGaps
+                                ? s.positionGaps
+                                : s.positionGaps.slice(0, 3)
+                            ).map((g) => {
+                                const missing =
+                                    s.positionStatuses.find(
+                                        (x) => x.position === g.position,
+                                    )?.state === 'missing';
+                                return (
+                                    <div className="gap-line" key={g.position}>
+                                        <span
+                                            className={`pill ${missing ? 'missing' : 'quiet'}`}
+                                        >
+                                            {missing
+                                                ? 'Missing'
+                                                : 'Not recorded'}
+                                        </span>
+                                        <div>
+                                            <strong>
+                                                {positionLabel(
+                                                    catalog,
+                                                    g.position,
+                                                )}
+                                            </strong>{' '}
+                                            not recorded for {g.rideCount}{' '}
+                                            {g.rideCount === 1
+                                                ? 'ride'
+                                                : 'rides'}
+                                            <small>
+                                                {formatDate(
+                                                    g.firstRideStartUtc,
+                                                )}{' '}
+                                                –{' '}
+                                                {formatDate(g.lastRideStartUtc)}
+                                            </small>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            {s.positionGaps.length > 3 && (
+                                <button
+                                    type="button"
+                                    className="text-button"
+                                    aria-expanded={allGaps}
+                                    onClick={() => setAllGaps((v) => !v)}
+                                >
+                                    {allGaps
+                                        ? 'Show fewer'
+                                        : `Show all ${s.positionGaps.length} positions`}
+                                </button>
+                            )}
+                        </>
+                    )}
+                </section>
+                <section className="fitted-card" aria-labelledby="weight-title">
+                    <h2 id="weight-title">Weight by group</h2>
+                    {s.weights.groups.map((g) => (
+                        <div className="group-mini" key={g.group}>
+                            <span>{groupLabel(g.group)}</span>
+                            <span className="tabular">
+                                <strong>{formatKilograms(g.grams)}</strong>
+                                {g.missingCount > 0 && (
+                                    <small>
+                                        {g.missingCount}{' '}
+                                        {g.missingCount === 1
+                                            ? 'part'
+                                            : 'parts'}{' '}
+                                        without weight
+                                    </small>
+                                )}
+                            </span>
+                        </div>
+                    ))}
+                    <div className="group-mini">
+                        <span>Frame</span>
+                        <span className="tabular">
+                            {s.weights.frameGrams === null ? (
+                                <small>Weight not recorded</small>
+                            ) : (
+                                <strong>
+                                    {formatKilograms(s.weights.frameGrams)}
+                                </strong>
+                            )}
+                        </span>
+                    </div>
+                </section>
+            </div>
             <div className="content-grid">
                 <section className="card table-card">
                     <div className="card-title">
@@ -168,116 +314,103 @@ export function Overview({
                                 </tr>
                             </thead>
                             <tbody>
-                                {(
-                                    [
-                                        'chain',
-                                        'cassette',
-                                        'front-tyre',
-                                        'rear-tyre',
-                                    ] as Position[]
-                                ).map((position) => {
-                                    const usage = s.currentComponents.find(
-                                        (c) => c.position === position,
-                                    );
-                                    const identity = usage
-                                        ? identities.get(usage.installationId)
-                                        : undefined;
-                                    return (
-                                        <tr key={position}>
-                                            <td>
-                                                <div className="item-name">
+                                {s.currentComponents
+                                    .map(({ position }) => position)
+                                    .map((position) => {
+                                        const usage = s.currentComponents.find(
+                                            (c) => c.position === position,
+                                        );
+                                        const identity = usage
+                                            ? identities.get(
+                                                  usage.installationId,
+                                              )
+                                            : undefined;
+                                        return (
+                                            <tr key={position}>
+                                                <td>
+                                                    <div className="item-name">
+                                                        <span>
+                                                            <strong className="position-label">
+                                                                {positionLabel(
+                                                                    catalog,
+                                                                    position,
+                                                                )}
+                                                            </strong>
+                                                            <small>
+                                                                {!usage
+                                                                    ? '—'
+                                                                    : identity
+                                                                      ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
+                                                                      : 'Loading component identity…'}
+                                                            </small>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td className="number">
+                                                    {usage
+                                                        ? `${formatKilometres(usage.combinedLifetimeMetres)} km`
+                                                        : '—'}
+                                                    {usage &&
+                                                        usage.initialUsageEstimateMetres >
+                                                            0 && (
+                                                            <small className="estimate-label">
+                                                                Includes
+                                                                estimate
+                                                            </small>
+                                                        )}
+                                                </td>
+                                                <td>
                                                     <span
-                                                        className="part-icon"
-                                                        aria-hidden="true"
+                                                        className={`status ${!usage ? 'gray' : position === 'chain' && s.reminder?.due ? 'amber' : 'green'}`}
                                                     >
-                                                        {position === 'chain'
-                                                            ? '⌁'
+                                                        {!usage
+                                                            ? 'Not fitted'
                                                             : position ===
-                                                                'cassette'
-                                                              ? '⚙'
-                                                              : '◯'}
+                                                                    'chain' &&
+                                                                s.reminder?.due
+                                                              ? 'Service reminder'
+                                                              : 'Fitted'}
                                                     </span>
-                                                    <span>
-                                                        <strong className="position-label">
-                                                            {position.replaceAll(
-                                                                '-',
-                                                                ' ',
-                                                            )}
-                                                        </strong>
-                                                        <small>
-                                                            {!usage
-                                                                ? '—'
-                                                                : identity
-                                                                  ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
-                                                                  : 'Loading component identity…'}
-                                                        </small>
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="number">
-                                                {usage
-                                                    ? `${formatKilometres(usage.combinedLifetimeMetres)} km`
-                                                    : '—'}
-                                                {usage &&
-                                                    usage.initialUsageEstimateMetres >
-                                                        0 && (
-                                                        <small className="estimate-label">
-                                                            Includes estimate
-                                                        </small>
-                                                    )}
-                                            </td>
-                                            <td>
-                                                <span
-                                                    className={`status ${!usage ? 'gray' : position === 'chain' && s.reminder?.due ? 'amber' : 'green'}`}
-                                                >
-                                                    {!usage
-                                                        ? 'Not fitted'
-                                                        : position ===
-                                                                'chain' &&
-                                                            s.reminder?.due
-                                                          ? 'Service reminder'
-                                                          : 'Fitted'}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <div className="component-actions">
-                                                    {identity && (
-                                                        <>
-                                                            <button
-                                                                className="text-button"
-                                                                disabled={
-                                                                    !onReplace
-                                                                }
-                                                                onClick={() =>
-                                                                    onReplace?.(
-                                                                        identity.installation,
-                                                                    )
-                                                                }
-                                                                aria-label={`Replace ${position.replaceAll('-', ' ')}`}
-                                                            >
-                                                                Replace
-                                                            </button>
-                                                            <button
-                                                                className="row-button"
-                                                                disabled={
-                                                                    !onPassport
-                                                                }
-                                                                onClick={() =>
-                                                                    onPassport?.(
-                                                                        identity.installation,
-                                                                    )
-                                                                }
-                                                                aria-label={`View ${position.replaceAll('-', ' ')} history`}
-                                                            >
-                                                                ↗
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                </td>
+                                                <td>
+                                                    <div className="component-actions">
+                                                        {identity && (
+                                                            <>
+                                                                <button
+                                                                    className="text-button"
+                                                                    disabled={
+                                                                        !onReplace
+                                                                    }
+                                                                    onClick={() =>
+                                                                        onReplace?.(
+                                                                            identity.installation,
+                                                                        )
+                                                                    }
+                                                                    aria-label={`Replace ${positionLabel(catalog, position).toLowerCase()}`}
+                                                                >
+                                                                    Replace
+                                                                </button>
+                                                                <button
+                                                                    className="row-button"
+                                                                    disabled={
+                                                                        !onPassport
+                                                                    }
+                                                                    onClick={() =>
+                                                                        onPassport?.(
+                                                                            identity.installation,
+                                                                        )
+                                                                    }
+                                                                    aria-label={`View ${positionLabel(catalog, position).toLowerCase()} history`}
+                                                                >
+                                                                    ↗
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>

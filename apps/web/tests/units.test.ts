@@ -63,3 +63,19 @@ it('prose durations always have units and null is not recorded', async () => {
     expect(formatDuration(0)).toBe('0 min');
     expect(formatDuration(null)).toBe('Not recorded');
 });
+describe('weights', () => {
+    it('formatsPartGramsAndTotalKilograms', async () => {
+        const { formatGrams, formatKilograms } =
+            await import('../src/lib/format');
+        const { parseGrams } = await import('../src/lib/units');
+        expect(formatGrams(245)).toBe('245 g');
+        expect(formatGrams(1180)).toBe('1,180 g');
+        expect(formatKilograms(645)).toBe('0.65 kg');
+        expect(formatKilograms(8450)).toBe('8.45 kg');
+        expect(formatKilograms(0)).toBe('0.00 kg');
+        expect(parseGrams('')).toBeNull();
+        expect(parseGrams(' 20000 ')).toBe(20000);
+        for (const bad of ['0', '12.5', '20001', '-5'])
+            expect(() => parseGrams(bad)).toThrow();
+    });
+});

@@ -61,3 +61,9 @@ export function useComponentUsage(componentId: string) {
             getApi().getComponentUsage(componentId, signal),
     });
 }
+export function useExemptions(bikeId: string) {
+    return useQuery({
+        queryKey: queryKeys.exemptions(bikeId),
+        queryFn: ({ signal }) => getApi().listExemptions(bikeId, signal),
+    });
+}

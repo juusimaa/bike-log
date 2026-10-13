@@ -34,3 +34,14 @@ export function formatDuration(seconds: number | null): string {
     const text = formatMinutes(seconds);
     return text.includes(' min ') ? text : `${text} min`;
 }
+
+/** Whole grams for a single part, for example "1,180 g". */
+export function formatGrams(grams: number): string {
+    return `${integer(grams).toLocaleString('en-GB')} g`;
+}
+/** Group and bike totals in kilograms with two decimals, for example "8.45 kg". */
+export function formatKilograms(grams: number): string {
+    const value = integer(grams);
+    const hundredths = (value + 5n) / 10n;
+    return `${(hundredths / 100n).toLocaleString('en-GB')}.${String(hundredths % 100n).padStart(2, '0')} kg`;
+}

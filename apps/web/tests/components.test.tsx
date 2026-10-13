@@ -4,7 +4,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Components } from '../src/features/components/Components';
 import { ComponentPassport } from '../src/features/components/ComponentPassport';
 import { EstimateForm } from '../src/features/components/EstimateForm';
+import { catalog, overviewExtras, status } from './catalog-fixture';
 const api = vi.hoisted(() => ({
+    getComponentCatalog: vi.fn(),
+    listExemptions: vi.fn(),
+    getOverview: vi.fn(),
     listInstallations: vi.fn(),
     listComponents: vi.fn(),
     getComponent: vi.fn(),
@@ -49,6 +53,14 @@ function mount(node: React.ReactNode) {
 }
 beforeEach(() => {
     vi.resetAllMocks();
+    api.getComponentCatalog.mockResolvedValue(catalog);
+    api.listExemptions.mockResolvedValue([]);
+    api.getOverview.mockResolvedValue({
+        bike: { id: 'b1', displayName: 'Road', missingPositions: [] },
+        currentComponents: [],
+        allocationGaps: [],
+        ...overviewExtras(),
+    });
     api.listBikes.mockResolvedValue({
         items: [
             { id: 'b1', displayName: 'Road' },
@@ -325,7 +337,19 @@ it('unfittedCollectionIsExplicit', async () => {
     mount(<Components bikeId="b1" />);
     expect(await screen.findByText('Never fitted')).toBeInTheDocument();
 });
-it('vacancyWaitsForEveryAuthoritativeCurrentPage', async () => {
+it('boardRendersEveryCatalogPositionByGroupFromTheApi', async () => {
+    api.getOverview.mockResolvedValue({
+        bike: { id: 'b1', displayName: 'Road', missingPositions: [] },
+        currentComponents: [],
+        allocationGaps: [],
+        ...overviewExtras({
+            chain: status('chain', 'fitted', {
+                componentId: 'c1',
+                installationId: 'i1',
+                sinceUtc: '2025-01-01T00:00:00Z',
+            }),
+        }),
+    });
     api.listInstallations.mockImplementation((_id, _status, page) =>
         Promise.resolve(
             page.cursor
@@ -338,10 +362,77 @@ it('vacancyWaitsForEveryAuthoritativeCurrentPage', async () => {
     );
     const fit = vi.fn();
     mount(<Components bikeId="b1" onFit={fit} />);
-    await screen.findByRole('button', { name: 'Fit cassette' });
+    for (const group of ['Build', 'Groupset', 'Wheels'])
+        expect(
+            await screen.findByRole('heading', { name: group }),
+        ).toBeInTheDocument();
+    expect(document.querySelectorAll('.pos-row')).toHaveLength(27);
+    await waitFor(() =>
+        expect(
+            document.querySelector('.pos-row.state-fitted'),
+        ).toHaveTextContent('Synthetic Retained chain'),
+    );
     expect(
         screen.queryByRole('button', { name: 'Fit chain' }),
     ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fit cassette' }));
+    expect(fit).toHaveBeenCalledWith('cassette');
+});
+it('boardFollowsAnExtendedCatalogWithoutCodeChanges', async () => {
+    const extended = {
+        ...catalog,
+        groups: [...catalog.groups, 'accessories'],
+        positions: [
+            ...catalog.positions,
+            {
+                position: 'bottle-cage',
+                type: 'bottle-cage',
+                group: 'accessories',
+                end: null,
+                label: 'Bottle cage',
+                exemption: null,
+            },
+        ],
+    };
+    api.getComponentCatalog.mockResolvedValue(extended);
+    api.getOverview.mockResolvedValue({
+        bike: { id: 'b1', displayName: 'Road', missingPositions: [] },
+        currentComponents: [],
+        allocationGaps: [],
+        ...overviewExtras(),
+        positionStatuses: extended.positions.map((p) => status(p.position)),
+    });
+    mount(<Components bikeId="b1" onFit={() => {}} />);
+    expect(
+        await screen.findByRole('heading', { name: 'Accessories' }),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll('.pos-row')).toHaveLength(28);
+    expect(
+        screen.getByRole('button', { name: 'Fit bottle cage' }),
+    ).toBeInTheDocument();
+});
+it('emptyOnPurposeAndMissingPositionsExplainThemselves', async () => {
+    api.getOverview.mockResolvedValue({
+        bike: { id: 'b1', displayName: 'Road', missingPositions: ['saddle'] },
+        currentComponents: [],
+        allocationGaps: [],
+        ...overviewExtras({
+            saddle: status('saddle', 'missing', {
+                sinceUtc: '2026-10-12T10:00:00Z',
+            }),
+            'front-derailleur': status('front-derailleur', 'exempt', {
+                reason: 'none-fitted',
+                exemptionId: 'e1',
+                sinceUtc: '2026-03-01T10:00:00Z',
+            }),
+        }),
+    });
+    mount(<Components bikeId="b1" onFit={() => {}} />);
+    expect(await screen.findByText('None fitted')).toBeInTheDocument();
+    expect(screen.getByText('Missing since 12 Oct 2026')).toBeInTheDocument();
+    expect(screen.getByText(/This bike is incomplete/)).toHaveTextContent(
+        'saddle missing since 12 Oct 2026',
+    );
 });
 it('returningToAllFilterStartsFreshFirstPage', async () => {
     let firstReads = 0;

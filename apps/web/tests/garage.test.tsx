@@ -5,6 +5,7 @@ import { Garage, type GarageProps } from '../src/features/garage/Garage';
 import { ApiError, ClientRangeError } from '@bikelog/api-client';
 import { invalidateBike, queryKeys } from '../src/lib/query';
 import { readSelection } from '../src/features/garage/navigation';
+import { catalog, overviewExtras } from './catalog-fixture';
 const a = '11111111-1111-1111-1111-111111111111',
     b = '22222222-2222-2222-2222-222222222222';
 const bike = (id: string) => ({
@@ -17,6 +18,8 @@ const bike = (id: string) => ({
     year: null,
     color: null,
     version: 1,
+    frameWeightGrams: null,
+    missingPositions: [] as string[],
 });
 const snapshot = (id: string) => ({
     bike: bike(id),
@@ -31,12 +34,14 @@ const snapshot = (id: string) => ({
     ],
     unknownCostRecordCount: 2,
     recentActivity: [],
+    ...overviewExtras(),
 });
 const api = vi.hoisted(() => ({
     listBikes: vi.fn(),
     getBike: vi.fn(),
     getOverview: vi.fn(),
     listInstallations: vi.fn(),
+    getComponentCatalog: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 function mount(props: GarageProps = {}) {
@@ -59,6 +64,7 @@ function reset() {
     api.getBike.mockImplementation(async (id) => bike(id));
     api.getOverview.mockImplementation(async (id) => snapshot(id));
     api.listInstallations.mockResolvedValue({ items: [], nextCursor: null });
+    api.getComponentCatalog.mockResolvedValue(catalog);
 }
 describe('garage', () => {
     it('suppliedBikeBeyondFirstPageIsFetchedDirectly', async () => {
@@ -232,7 +238,9 @@ describe('garage', () => {
         expect(screen.getByText('€12.00')).toBeVisible();
         expect(screen.getByText('USD 34.00')).toBeVisible();
         expect(screen.getByText('2 records with unknown cost')).toBeVisible();
-        expect(screen.getAllByText('Not fitted').length).toBe(5);
+        // Only the chain stat; empty positions live on the catalog-driven board.
+        expect(screen.getAllByText('Not fitted').length).toBe(1);
+        expect(screen.getByText(/No components fitted yet/)).toBeVisible();
     });
     it('lateResponseCannotReplaceActiveBike', async () => {
         reset();
