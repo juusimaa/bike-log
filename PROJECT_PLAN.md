@@ -254,7 +254,7 @@ Generate the client from OpenAPI; do not duplicate mileage rules in either front
 
 - Choose the first mobile test platform and devices.
 - Validate the identity provider with web and native sign-in.
-- Set the Azure learning budget before provisioning, and choose the Azure and Aiven regions together so they are close.
+- Azure learning budget and regions: decided in [spec 004](specs/004-hosted-deployment/spec.md) clarifications on 2026-10-13 (€10 a month; Azure Sweden Central, with Aiven in the same or nearest region its free plan offers). Record the actual Aiven region at setup.
 - Choose whether to pursue another activity source; Strava is not feasible (decision 0004), and file import is deferred (decision 0005).
 - Choose the project name and actual first bike/components for acceptance checks.
 

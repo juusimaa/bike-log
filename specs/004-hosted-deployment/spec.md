@@ -24,6 +24,16 @@ the web app every day with real bikes, which is how the web UI is judged ready, 
 sign-in proof a real HTTPS endpoint instead of a temporary local-network setup. `PROJECT_PLAN.md` records
 this change.
 
+## Clarifications
+
+### Session 2026-10-13
+
+- Q: Where should the daily encrypted backups be stored, outside Aiven? → A: An Azure Storage account in the same subscription and region, written by a scheduled job that can write but not delete; lifecycle rules remove backups after 30 days.
+- Q: What monthly budget should the Azure environment have, and when should the alert email the owner? → A: €10 a month; alerts at 50% and 80% of actual spend and at 100% of forecast spend.
+- Q: How should Azure pull the container images that CI publishes? → A: Make the three GitHub Container Registry packages public, so no registry credential is needed.
+- Q: Where should the restore rehearsal, and a real recovery, put the restored database? → A: Rehearsals restore into a fresh local Docker PostgreSQL on the owner's machine; a real recovery recreates the Aiven service and restores into it.
+- Q: Which Azure region should host the app? → A: Azure Sweden Central; the Aiven database goes in the same Azure region if the free plan allows it, otherwise the nearest region the free plan offers, and the setup guide records the regions actually used.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Owner uses Bike Log from anywhere (Priority: P1)
@@ -67,14 +77,14 @@ restore has been rehearsed end to end, with the result recorded.
 documented and exercised. Without this story, User Story 1 can only be used with synthetic data.
 
 **Independent Test**: Enter a known set of records, let a backup run, restore that backup into a separate
-empty database, and compare record counts and a sample of records. Record the date, duration and outcome.
+empty local database, and compare record counts and a sample of records. Record the date, duration and outcome.
 
 **Acceptance Scenarios**:
 
 1. **Given** the hosted app has records, **When** a scheduled backup runs, **Then** an encrypted copy of
    all records is stored outside the database provider and the run's success or failure is visible to the
    owner.
-2. **Given** a backup, **When** the operator follows the documented restore procedure into a separate
+2. **Given** a backup, **When** the operator follows the documented restore procedure into a fresh local
    database, **Then** every bike, component, installation, ride, maintenance record, reminder and user record
    is present, and usage totals match the original.
 3. **Given** a backup fails, **When** the owner next checks, **Then** they are notified of the failure
@@ -206,10 +216,12 @@ thresholds and recipient, and after a month compare actual spend with the estima
   origin (and the local development origin in development), and its session cookie MUST be marked secure.
 - **FR-005**: Sign-in MUST keep the existing invite-only rules from spec 001: email code only, no public
   signup, unknown identities refused, and the local user check on every request.
-- **FR-006**: Secrets (database credentials, session key, identity provider secret, registry credential)
-  MUST be held in a managed secret store and supplied to the app at run time. They MUST NOT appear in the
+- **FR-006**: Secrets (database credentials, session key, identity provider secret) MUST be held in a managed secret store and supplied to the app at run time. They MUST NOT appear in the
   repository, infrastructure parameters, pipeline logs, application logs or the browser.
 - **FR-007**: Database connections MUST be encrypted and MUST verify the database server's certificate.
+- **FR-007a**: The published container images MUST be publicly readable so the hosting platform pulls them
+  without a registry credential. Images MUST contain no secrets, environment-specific settings or personal
+  data; everything sensitive is supplied at run time.
 
 **Deployment and operations**
 
@@ -236,11 +248,17 @@ thresholds and recipient, and after a month compare actual spend with the estima
 **Backup and recovery**
 
 - **FR-018**: All records MUST be backed up automatically at least once a day to encrypted storage held
-  outside the database provider.
-- **FR-019**: Backups MUST be kept for at least 30 days; older backups MUST be removed automatically.
+  outside the database provider: a storage account in the same cloud subscription and region as the app,
+  managed as code with the rest of the environment. The scheduled backup job MUST be able to write backups
+  but not delete or overwrite them.
+- **FR-019**: Backups MUST be kept for at least 30 days; older backups MUST be removed automatically by the
+  storage's own retention rules, not by the backup job.
 - **FR-020**: A failed or missed backup MUST alert the owner within one day.
 - **FR-021**: A documented restore procedure MUST restore a chosen backup into a separate database, and
-  MUST include a check that compares record counts and usage totals with the source.
+  MUST include a check that compares record counts and usage totals with the source. Rehearsals restore
+  into a fresh local database on the owner's machine, kept apart from the development database and deleted
+  after the check when it holds real records. A real recovery recreates the hosted database service and
+  restores into it; the guide covers both paths.
 - **FR-022**: The restore procedure MUST be rehearsed, with the date, duration and outcome recorded, before
   any real personal record is entered in the hosted app.
 
@@ -251,10 +269,10 @@ thresholds and recipient, and after a month compare actual spend with the estima
 
 **Cost**
 
-- **FR-024**: Before any cloud resource is created, a dated cost estimate and the owner's approved monthly
-  budget MUST be recorded in the repository.
-- **FR-025**: A budget alert MUST email the owner when actual or forecast spending crosses agreed
-  thresholds of the monthly budget.
+- **FR-024**: Before any cloud resource is created, a dated cost estimate MUST be recorded in the
+  repository and show the environment fitting within the approved monthly budget of €10.
+- **FR-025**: A budget alert MUST email the owner when actual spending reaches 50% and 80% of the monthly
+  budget, and when forecast spending reaches 100%.
 - **FR-026**: The environment MUST default to the free allowances: the database on its free plan and the
   app scaling down to zero instances when idle. Enabling any paid tier or always-on capacity MUST require a
   new estimate and the owner's approval.
@@ -273,13 +291,14 @@ thresholds and recipient, and after a month compare actual spend with the estima
   commit; the current and previous versions are kept so the operator can return to the previous one.
 - **Database change run**: one execution of pending database changes for a version, with outcome; it gates
   deployment of that version.
-- **Backup**: an encrypted, dated copy of all records stored outside the database provider, with its
-  outcome and expiry date.
+- **Backup**: an encrypted, dated copy of all records stored in the environment's backup storage, outside
+  the database provider, with its outcome and expiry date.
 - **Restore rehearsal record**: the date, backup used, duration, comparison result and any problems from a
   restore test.
 - **Secret**: a named credential held in the secret store, with its rotation procedure; never stored in the
   repository.
-- **Cost estimate and budget**: the dated estimate, approved monthly amount, alert thresholds and recipient.
+- **Cost estimate and budget**: the dated estimate, the approved monthly amount (€10), the alert thresholds
+  (50% and 80% actual, 100% forecast) and the recipient.
 
 ## Success Criteria *(mandatory)*
 
@@ -300,7 +319,7 @@ thresholds and recipient, and after a month compare actual spend with the estima
   an alert.
 - **SC-008**: A search of the repository, pipeline logs and application logs finds zero secrets.
 - **SC-009**: The environment can be recreated from the repository and the setup guide in under 2 hours.
-- **SC-010**: Monthly hosting cost stays within the approved budget for the first three months, and the
+- **SC-010**: Monthly hosting cost stays within the approved €10 budget for the first three months, and the
   database stays on its free plan.
 
 ## Assumptions
@@ -310,20 +329,25 @@ thresholds and recipient, and after a month compare actual spend with the estima
   no more than a DNS record and a managed certificate.
 - Scaling to zero when idle is accepted to stay within the free compute allowance; the start-up delay in
   SC-002 is the trade-off. Always-on capacity needs a new cost decision.
-- The database service is created by hand in an EU region close to the chosen cloud region, as decision
-  0003 requires; the infrastructure code covers only the cloud provider's resources.
+- The app and its backup storage run in Azure Sweden Central. The database service is created by hand in
+  the same region if its free plan allows, otherwise in the nearest EU region the free plan offers, as
+  decision 0003 requires; the infrastructure code covers only the cloud provider's resources.
 - The database provider's own backups are not counted as the tested recovery procedure, so a separate
   backup is kept outside it.
+- The database plan allows only one free database service per organization, so rehearsals cannot restore
+  into a second hosted service.
 - The existing container images, invite-only sign-in, operator provisioning commands and data-free health
   endpoint are reused; only the configuration and small code changes hosting needs (allowed origin, refusing
   synthetic mode, secure cookies) are added.
 - Basic platform logs are enough for this slice; richer telemetry and tracing come with the asynchronous
   slice and are added only if they fit the budget.
+- The repository is public, so publishing its container images publicly reveals nothing beyond the source.
 - The first deployment holds only synthetic or test records until the restore rehearsal passes (FR-022).
 
 ### Out of scope
 
-Message queue, transactional outbox, background worker, file storage for photos, full telemetry and tracing,
+Message queue, transactional outbox, background worker, file storage for photos and receipts (backup
+storage is in scope), full telemetry and tracing,
 the mobile app and native sign-in proof, a staging environment, multiple regions, and public signup.
 
 ### Dependencies
