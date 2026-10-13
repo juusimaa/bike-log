@@ -74,8 +74,8 @@ Rationale: scope and cost stay proportional to a personal tracker and a small pr
 ## Technology and Operational Constraints
 
 - Stack: ASP.NET Core and EF Core on .NET (SDK pinned in `global.json`), Next.js with React and
-  TypeScript, React Native with Expo, PostgreSQL (Docker locally, Neon for hosted), and Azure
-  for later cloud deployment. Changing a stack element requires a decision record.
+  TypeScript, React Native with Expo, PostgreSQL (Docker locally, Aiven for hosted), and Azure
+  Container Apps for later cloud deployment. Changing a stack element requires a decision record.
 - SDKs, packages, tools and container images MUST be pinned to explicit versions.
 - Database migrations MUST be explicit commands, never applied automatically at API startup, and
   hosted migrations MUST be additive and rollback-compatible.
@@ -111,4 +111,9 @@ a new principle or materially expanded guidance, PATCH for clarifications and wo
 Compliance is checked at each Spec Kit plan's Constitution Check and during code review.
 Unjustified violations block merging.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-12 | **Last Amended**: 2026-10-12
+Amendment 1.0.1 (2026-10-13): hosted PostgreSQL moved from Neon to the Aiven free plan, and
+Azure Container Apps is named as the hosting platform, because a European database provider was
+preferred ([decision 0003](../../docs/decisions/0003-aiven-postgres-and-container-apps-hosting.md)).
+Affected: `PROJECT_PLAN.md` and the 2026-10-01 design specification.
+
+**Version**: 1.0.1 | **Ratified**: 2026-10-12 | **Last Amended**: 2026-10-13
