@@ -1,6 +1,7 @@
 # V5: Strava import and bike links
 
-Status: **Draft for review, 2026-10-13.** Mock for [spec 003, Strava ride import](../../../../specs/003-strava-import/spec.md).
+Status: **Abandoned, 2026-10-13.** Strava integration is not feasible under Strava's current API terms
+([decision 0004](../../../decisions/0004-strava-integration-not-feasible.md)). Kept for reference only. Mock for [spec 003, Strava ride import](../../../../specs/003-strava-import/spec.md).
 Builds on [V4](../v4/README.md). Parts, maintenance and the bike switcher are unchanged and not repeated
 here; the Components and Maintenance views link back to V4.
 

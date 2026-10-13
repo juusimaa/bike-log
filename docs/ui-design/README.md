@@ -9,8 +9,8 @@ V3 adds the grouped parts view, weights, tubeless setup, incomplete bikes and pa
 Many bikes: [V4 draft](versions/v4/README.md) · [Open V4 mock](versions/v4/index.html).
 V4 replaces the bike card row with a searchable switcher and keeps parts panels open while fitting.
 
-Strava import: [V5 draft](versions/v5/README.md) · [Open V5 mock](versions/v5/index.html).
-V5 adds connecting Strava, linking Strava bikes to your bikes, and handling rides that need a bike.
+Strava import: [V5, abandoned 2026-10-13](versions/v5/README.md) · [Open V5 mock](versions/v5/index.html).
+V5 showed connecting Strava and linking Strava bikes. Not pursued: Strava's API terms rule it out ([decision 0004](../decisions/0004-strava-integration-not-feasible.md)).
 
 ## Version 1.0
 

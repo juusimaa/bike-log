@@ -4,7 +4,9 @@
 
 **Created**: 2026-10-13
 
-**Status**: Draft
+**Status**: Abandoned, 2026-10-13. Not feasible under Strava's current API terms; see
+[decision 0004](../../docs/decisions/0004-strava-integration-not-feasible.md). Kept for reference: the bike-matching
+design may be reused for another activity source.
 
 **Input**: User description: "Strava import: connect a Strava account and import rides into bike-log, matching each ride to a bike via Strava gear_id. First sync with no bikes: confirm list of Strava bikes; unticked bikes remembered as ignored. First sync with existing bikes: manual mapping (map to existing with suggestions, create new, or ignore); one Strava bike maps to at most one bike-log bike. Later syncs: rides with an unknown Strava bike import immediately as 'pending bike' and the owner chooses create, map to a bike without a Strava link, or ignore. Rides without a bike: leave unassigned, use a default bike, or pick per ride. Wrong mappings: remap or unmap later, and choose whether already-imported rides move. Strava does not report bike changes on existing rides; Strava has no component data; rate limits apply; Strava's bike total distance is not bike-log usage. A new UI mock is required."
 

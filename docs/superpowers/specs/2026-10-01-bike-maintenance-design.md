@@ -72,7 +72,7 @@ Expose pending, completed and failed calculation state plus last successful proc
 
 Offline mobile entry, SQLite operation queues and explicit conflict resolution; scoped photos/receipts and cleanup; wheelset assemblies and indoor configurations; optional push notifications; eligible activity imports; export/deletion and a small private pilot.
 
-Strava remains conditional on clarification of permitted calculation, storage and retention. Core development uses independently entered rides and synthetic fixtures. Resolve integration feasibility in its own spike before persistent implementation.
+Strava remains conditional on clarification of permitted calculation, storage and retention. Core development uses independently entered rides and synthetic fixtures. Resolve integration feasibility in its own spike before persistent implementation. (Resolved 2026-10-13: not feasible under Strava's API terms; see [decision 0004](../../decisions/0004-strava-integration-not-feasible.md).)
 
 ## Error handling and validation
 

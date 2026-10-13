@@ -81,34 +81,18 @@ Select supported framework versions when implementation begins and pin them. Exa
 - Offline mobile entry and explicit conflict resolution.
 - Photos and receipts.
 - Optional push notifications.
-- Eligible activity imports, including a conditional Strava integration.
+- Eligible activity imports from a source whose terms allow keeping ride history (not Strava; see section 5).
 - Data export, account deletion and a small private pilot.
 
 ### Deferred
 
 Marketplace, mechanic booking, payments, social feeds, training analytics, AI recommendations, Kubernetes, multi-region deployment, and a second mobile framework. These can be reconsidered if they serve an actual use case.
 
-## 5. Strava feasibility — resolve before persistent integration
+## 5. Strava integration — not feasible
 
-The API is technically suitable for fetching activity distance, time, date and the assigned bike identifier (`gear_id`). Users authorize access through OAuth. Activities marked Only Me need `activity:read_all`. Strava's documented gear API does not supply the component installation history required by this app. [API reference](https://developers.strava.com/docs/reference/), [authentication](https://developers.strava.com/docs/authentication/).
+Decided on 2026-10-13 ([decision 0004](docs/decisions/0004-strava-integration-not-feasible.md)): Bike Log does not integrate with Strava. Strava's API Policy (effective 1 June 2026) allows Strava data to be cached for at most seven days (§6.2), forbids keeping data derived from it (§5.5), and forbids combining it with other customer data (§5.4). Component usage and part history need ride data kept for years and combined with manually logged rides, so no compliant design exists. The abandoned [spec 003](specs/003-strava-import/spec.md) and V5 mock are kept for reference.
 
-However, current policy creates a material uncertainty for long-term component tracking: seven-day caching, restrictions on persistent storage including derived data, and restrictions on analytics/combining data. Persistent component totals must not be assumed permitted simply because raw rides are discarded. Clarify the intended maintenance calculations and retention model with Strava before implementing that path. This is a feasibility dependency, not a claim that Strava has rejected this app. [API policy, sections 5.4–5.5 and 6.2](https://www.strava.com/legal/api_policy).
-
-New API apps start with the developer's account. Current documentation requires a developer subscription, allows a dashboard upgrade to ten athletes, and requires review for expansion beyond that. [Getting started](https://developers.strava.com/docs/getting-started/).
-
-Integration spike:
-
-1. Verify account eligibility and application settings.
-2. Clarify permitted calculation, storage, reconciliation and deletion behavior for this use case; record the outcome.
-3. Exercise OAuth, minimal activity reads and bike matching in a disposable development environment with a transient cache.
-4. Prove webhook delivery, rate-limit handling and disconnect behavior.
-5. Decide whether to proceed, narrow the feature, or defer Strava while continuing the core app.
-
-If the retention/calculation model is supported, the proposed flow is webhook → API → durable work queue → Strava connector/worker → usage recalculation. Keep Strava credentials and API calls within the connector boundary and verify the deployment against provider credential-handling rules.
-
-Webhooks cover creation/deletion and selected activity changes; bike assignment changes are not among the documented update fields. A reconciliation strategy or explicit resync is required. OAuth refresh, duplicate events, revoked access, deletions and rate limits must be covered. [Webhooks](https://developers.strava.com/docs/webhooks/).
-
-For core development, use independently entered ride records and synthetic integration fixtures. Other import sources need their own permission/retention review; copying Strava API data into a manual record is not a proposed workaround.
+Rides are entered by hand. Any other activity source, whether a provider API or files a rider uploads, needs its own terms review and decision before work starts. Copying Strava API data into a manual record is not a workaround.
 
 ## 6. Architecture
 
@@ -128,8 +112,7 @@ flowchart TD
     API --> Blob[Blob Storage]
     API --> Telemetry[OpenTelemetry / Azure Monitor]
     Worker --> Telemetry
-    Strava[Strava - conditional] -. webhook .-> API
-    Worker -. eligible integration .-> Strava
+    Provider[Activity source - to be chosen] -. eligible integration .-> Worker
 ```
 
 The later outbox publisher uses scheduled, bounded polling so that it stays within the hosted database's small connection and compute limits. Service Bus drives recalculation work. Choose the polling interval and runtime arrangement during that milestone. Database arrows show dependencies, not a database-trigger implementation.
@@ -160,7 +143,7 @@ Distributed-system behaviors to implement:
 | UsageProjection | Calculated totals, calculation version and processing status |
 | Outbox / ProcessedEvent | Reliable publication and consumer deduplication state |
 
-External connection/cache records are conditional on the Strava feasibility outcome; do not design an indefinite provider activity archive by default.
+External connection records depend on a future activity source and its terms; do not design an indefinite provider activity archive by default.
 
 Domain rules:
 
@@ -178,9 +161,9 @@ Domain rules:
 
 ### Phase 0 — foundation and feasibility
 
-Record the initial backend/database decisions and the unresolved Strava feasibility questions. Set up the backend solution, local PostgreSQL in Docker with a named volume and developer commands for startup, migrations and an explicitly destructive reset. Describe the core workflows and API contracts in plain language; detailed UI design, screen layouts and visual styling come later. Use synthetic data for development and integration fixtures. Mobile and identity choices can be validated when client work begins.
+Record the initial backend/database decisions and the Strava feasibility questions (since resolved as not feasible, decision 0004). Set up the backend solution, local PostgreSQL in Docker with a named volume and developer commands for startup, migrations and an explicitly destructive reset. Describe the core workflows and API contracts in plain language; detailed UI design, screen layouts and visual styling come later. Use synthetic data for development and integration fixtures. Mobile and identity choices can be validated when client work begins.
 
-Done when: the API and database run locally, the core workflows are documented, and the Strava uncertainty has a clear next action. No cloud deployment or frontend is needed to begin.
+Done when: the API and database run locally, the core workflows are documented, and the Strava uncertainty has a clear next action (resolved by decision 0004). No cloud deployment or frontend is needed to begin.
 
 ### Phase 1 — backend maintenance workflow
 
@@ -212,7 +195,7 @@ Done when: maintenance can be entered offline, sync retries create one record, a
 
 ### Phase 5 — eligible activity integration
 
-Implement Strava only after Phase 0's calculation/retention questions are resolved. Otherwise continue using manual rides and evaluate another eligible source separately. Use queue-backed imports, pagination, retry/backoff, bike matching and reconciliation. Test deletions and authorization revocation.
+Strava is ruled out ([decision 0004](docs/decisions/0004-strava-integration-not-feasible.md)). Continue with manual rides, and start this phase only once another activity source has passed a terms review and has a recorded decision. Use queue-backed imports, pagination, retry/backoff, bike matching and reconciliation. Test deletions and authorization revocation. The bike-matching design in the abandoned spec 003 can be reused.
 
 Done when: an eligible imported ride updates the correct dated equipment configuration exactly once, and provider lifecycle rules are satisfied.
 
@@ -233,7 +216,7 @@ Focus tests on the rules and failure modes that make this app trustworthy:
 - Worker restart/replay and permanent failure handling.
 - Offline retry and stale-version conflicts.
 - Cross-user authorization attempts on bikes, photos and maintenance records.
-- Provider corrections/deletions/disconnect and cache expiry if integration proceeds.
+- Provider corrections/deletions/disconnect and cache expiry if an activity integration is added.
 
 Use domain unit tests, Docker PostgreSQL integration tests, focused web end-to-end tests and mobile device checks. Verify the Azure deployment and queue behavior separately from local tests. A successful build alone is not runtime evidence.
 
@@ -268,7 +251,7 @@ Generate the client from OpenAPI; do not duplicate mileage rules in either front
 - Choose the first mobile test platform and devices.
 - Validate the identity provider with web and native sign-in.
 - Set the Azure learning budget before provisioning, and choose the Azure and Aiven regions together so they are close.
-- Resolve Strava permission/retention feasibility for component calculations.
+- Choose whether to pursue another activity source; Strava is not feasible (decision 0004).
 - Choose the project name and actual first bike/components for acceptance checks.
 
 Recommended first implementation milestone: one bike, one chain, manual ride entry and maintenance logging through the ASP.NET Core API and local PostgreSQL in Docker, verified with integration tests. Detailed UI design and web/mobile implementation follow in Phase 2.
