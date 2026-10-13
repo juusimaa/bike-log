@@ -735,7 +735,10 @@ dialog::backdrop {
 }
 .dialog-heading h2 {
     font-size: 24px;
+    font-weight: 650;
+    line-height: 1.2;
     letter-spacing: -0.8px;
+    text-wrap: balance;
 }
 .icon-button {
     border: 0;
@@ -745,6 +748,137 @@ dialog::backdrop {
     height: 30px;
     font-size: 21px;
     line-height: 1;
+}
+/* Dialog frame: the heading stays put, the body scrolls, and form actions stick to
+   the bottom edge so Save/Cancel never scroll out of reach on long content or phones. */
+.form-dialog {
+    padding: 0;
+    max-height: calc(100dvh - 32px);
+    overflow: hidden;
+}
+.form-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+.form-dialog > .dialog-heading {
+    display: block;
+    flex: none;
+    margin: 0;
+    padding: 26px 64px 18px 28px;
+}
+.form-dialog > .dialog-heading h2 {
+    margin: 0;
+}
+.dialog-subtitle {
+    margin: 6px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--v3-muted);
+}
+.dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 28px 0;
+}
+.dialog-body:not(:has(.dialog-actions)) {
+    padding-bottom: 28px;
+}
+.dialog-body:has(+ .dialog-footer) {
+    padding-bottom: 4px;
+}
+.dialog-body .dialog-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--white);
+    padding-bottom: 24px;
+}
+.form-dialog > .dialog-footer {
+    flex: none;
+    margin: 0;
+    padding: 16px 28px 24px;
+}
+.dialog-close {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+}
+.dialog-close::before {
+    /* 44px touch target around the 30px mark. */
+    content: '';
+    position: absolute;
+    inset: -7px;
+}
+.dialog-close svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+.dialog-close:hover {
+    background: #eef3e6;
+}
+.dialog-close:focus-visible {
+    outline: 3px solid #7ba78a;
+    outline-offset: 2px;
+}
+/* Safety net: recovery and retry buttons without a class still read as product
+   buttons (small secondary), never as the browser's grey default. */
+.form-dialog button:not([class]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    margin: 6px 6px 0 0;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.form-dialog button:not([class]):hover {
+    background: #f0f3eb;
+}
+.form-dialog button:not([class]):disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+@media (max-width: 650px) {
+    .form-dialog > .dialog-heading {
+        padding: 20px 58px 14px 20px;
+    }
+    .dialog-body {
+        padding: 4px 20px 0;
+    }
+    .dialog-body:not(:has(.dialog-actions)) {
+        padding-bottom: 20px;
+    }
+    .dialog-body .dialog-actions {
+        padding-bottom: 20px;
+    }
+    .form-dialog > .dialog-footer {
+        padding: 14px 20px 20px;
+    }
+    .dialog-close {
+        top: 16px;
+        right: 16px;
+    }
+    .dialog-heading h2 {
+        font-size: 20px;
+        letter-spacing: -0.5px;
+    }
 }
 .field {
     display: block;
@@ -774,9 +908,9 @@ dialog::backdrop {
 }
 .field small {
     font-weight: 400;
-    font-size: 10px;
-    line-height: 1.6;
-    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--v3-muted);
     display: block;
     margin-top: 7px;
 }
@@ -787,6 +921,7 @@ dialog::backdrop {
 }
 .dialog-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 8px;
     margin-top: 22px;
@@ -800,8 +935,8 @@ dialog::backdrop {
 }
 .dialog-description {
     font-size: 12px;
-    color: var(--muted);
-    line-height: 1.7;
+    color: var(--v3-muted);
+    line-height: 1.6;
     margin-bottom: 20px;
 }
 .detail-stats {
@@ -1330,11 +1465,6 @@ dialog fieldset {
     padding: 0;
     min-width: 0;
 }
-dialog > h2 {
-    margin-bottom: 22px;
-    font-size: 24px;
-    letter-spacing: -0.8px;
-}
 dialog p {
     line-height: 1.7;
     font-size: 12px;
@@ -1385,8 +1515,8 @@ dialog button[type='submit'] {
     margin-top: 7px;
     font-weight: 400;
     font-size: 11px;
-    line-height: 1.6;
-    color: var(--muted);
+    line-height: 1.5;
+    color: var(--v3-muted);
 }
 .field .field-error {
     margin-top: 7px;
@@ -1992,11 +2122,130 @@ dialog button[type='submit'] {
     color: var(--v3-muted);
     margin: -6px 0 16px;
 }
+/* Component history (V3 passport): figures first, then service status, then dated history. */
+dialog.wide {
+    max-width: 640px;
+}
+.passport-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.passport-stats > div {
+    min-width: 0;
+    background: var(--v3-sage);
+    border-radius: 10px;
+    padding: 14px;
+}
+.passport-stats span {
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.passport-stats strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+.passport-stats small {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--v3-muted);
+}
+.passport-service {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.passport-service:empty {
+    display: none;
+}
+.passport-service p {
+    flex: 1 1 260px;
+    margin: 0;
+    color: var(--v3-muted);
+}
+.form-dialog h3 {
+    margin: 26px 0 4px;
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+}
+.form-dialog h4 {
+    margin: 14px 0 2px;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1.35;
+}
+.passport-note {
+    margin: 0 0 6px;
+    color: var(--v3-muted);
+}
+.history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.history li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 11px 0;
+    border-top: 1px solid var(--v3-row-line);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.history li strong {
+    font-weight: 650;
+}
+.history li small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.history li small .pill {
+    margin-top: 4px;
+}
+.history-figure {
+    text-align: right;
+    white-space: nowrap;
+}
 .passport-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 12px 0 16px;
+    margin: 24px 0 12px;
+}
+.passport-technical {
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.passport-technical summary {
+    width: max-content;
+    cursor: pointer;
+}
+.passport-technical p {
+    margin: 6px 0 0;
+}
+@media (max-width: 650px) {
+    .passport-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+    .passport-stats > div:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
+    }
 }
 .stats {
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -2107,6 +2356,7 @@ dialog button[type='submit'] {
 .choice > span,
 .pos-row .part,
 .form-dialog h2,
+.form-dialog h3,
 .form-dialog h4,
 .toast {
     overflow-wrap: anywhere;
@@ -2427,9 +2677,6 @@ dialog button[type='submit'] {
 .fitted-tag .icon {
     width: 13px;
     height: 13px;
-}
-.dialog-actions {
-    flex-wrap: wrap;
 }
 @media (prefers-reduced-motion: reduce) {
     .pos-row.just-fitted {

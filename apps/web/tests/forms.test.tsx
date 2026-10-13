@@ -7,6 +7,30 @@ import { FormError } from '../src/components/FormError';
 import { DirtyFormGuard } from '../src/components/DirtyFormGuard';
 import { Toast } from '../src/components/Toast';
 import { ConflictPanel } from '../src/components/ConflictPanel';
+it('dialogCloseButtonCancelsAndComesAfterTheContent', () => {
+    let cancelled = 0;
+    render(
+        <Dialog
+            open
+            title="Edit"
+            description="Chain · on Road"
+            onCancel={() => cancelled++}
+        >
+            <input aria-label="First field" />
+        </Dialog>,
+    );
+    const dialog = screen.getByRole('dialog', { name: 'Edit' });
+    expect(dialog).toHaveAccessibleDescription('Chain · on Road');
+    const close = screen.getByRole('button', { name: 'Close' });
+    expect(
+        screen
+            .getByLabelText('First field')
+            .compareDocumentPosition(close) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(close);
+    expect(cancelled).toBe(1);
+});
 it('dialogRestoresFocus', async () => {
     function Harness() {
         const [open, setOpen] = useState(false);

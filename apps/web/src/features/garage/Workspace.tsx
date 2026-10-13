@@ -591,7 +591,6 @@ export function Workspace(
                                 <ComponentPassport
                                     key={editor.key}
                                     componentId={editor.componentId}
-                                    selectedBikeId={editor.bikeId}
                                     onClose={() => context.requestCancel(close)}
                                     onEditEstimate={(component) =>
                                         context.requestCancel(() =>

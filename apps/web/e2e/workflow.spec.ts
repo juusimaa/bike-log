@@ -236,13 +236,16 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
             exact: true,
         })
         .click();
+    await reload.getByText('Technical details', { exact: true }).click();
     await expect(
-        reload.getByText(`Component identity: ${old.component.id}`, {
+        reload.getByText(`Component ID: ${old.component.id}`, {
             exact: true,
         }),
     ).toBeVisible();
     await expect(
-        reload.getByText('Calculated lifetime: 65 km', { exact: true }),
+        reload.getByText('65 km from rides + 120 km estimate', {
+            exact: true,
+        }),
     ).toBeVisible();
     await expect(reload.getByRole('dialog').getByText(/€0\.00/)).toBeVisible();
     await expect(
