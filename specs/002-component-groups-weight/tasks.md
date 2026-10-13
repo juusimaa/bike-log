@@ -141,10 +141,10 @@ the ride's distance. Unfitted positions show "not recorded". Quickstart scenario
   - Add `PositionGapResponse(string Position, int RideCount, DateTimeOffset FirstRideStartUtc, DateTimeOffset LastRideStartUtc)`.
   - Add both to `BikeUsageResponse`.
 - [ ] T026 [US1] Add `PositionStatuses` and `PositionGaps` to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs and BikeOverviewEndpoints.cs, reusing the reader logic from T025.
-- [ ] T027 [US1] Regenerate the client: run the API, then `npm run api:generate`. Update the hand-written unions in packages/api-client/src/dto.ts: `Position` (27 values), new `ComponentType` (20), `ComponentGroup`, `ExemptionReason` and `PositionState`. Run `npm run test --workspace @bikelog/api-client` and `npm run api:check`.
+- [ ] T027 [US1] Regenerate the client: run the API, then `npm run api:generate`. Update packages/api-client/src/dto.ts: `ExemptionReason` and `PositionState` as unions; `Position`, `ComponentType` and `ComponentGroup` as `string` aliases whose valid values come from the catalog (D13), so adding a type or position needs no client code change. Run `npm run test --workspace @bikelog/api-client` and `npm run api:check`.
 - [ ] T028 [P] [US1] Add a catalog query (`useComponentCatalog`, long `staleTime`) to apps/web/src/features/components/queries.ts, and an exemption mutation (`useCreateExemption`) to apps/web/src/features/components/mutations.ts that invalidates installations, overview and usage queries for the bike.
 - [ ] T029 [US1] Rework apps/web/src/features/components/Components.tsx into a position board:
-  - Three sections (Build, Groupset, Wheels) rendered from the catalog and `positionStatuses`.
+  - One section per catalog group, in catalog order (Build, Groupset and Wheels today), rendered from the catalog and `positionStatuses`. Do not hard-code group names, position names or counts anywhere in the web app (D13).
   - Each row shows the label, the state (fitted part with make/model/weight and lifetime, "Not recorded", or "None fitted since …"), and actions (Fit, Replace, history).
   - Remove the hard-coded four-position vacant list and the chain/cassette/tyre icon switch.
   - Keep the "Include replaced parts" filter and "Other parts in your garage".
@@ -156,7 +156,7 @@ the ride's distance. Unfitted positions show "not recorded". Quickstart scenario
   - The reuse list filters existing parts to the same type.
 - [ ] T031 [US1] Replace the per-gap notices in apps/web/src/features/overview/Overview.tsx with one notice per `positionGaps` entry ("Saddle not recorded for 12 rides, 2026-01-03 – 2026-05-30"), using catalog labels. In apps/web/src/features/rides/Rides.tsx, replace the per-ride list of gap labels with a count ("3 positions not recorded"). The count is a disclosure button that lists the catalog labels; rides with no gaps show nothing. In the overview, collapse more than 3 gapped positions behind a "Show all" disclosure.
 - [ ] T032 [P] [US1] Add Vitest coverage in apps/web/tests/components.test.tsx:
-  - The board renders 27 rows in 3 groups from a mocked catalog.
+  - The board renders 27 rows in 3 groups from a mocked catalog, and, without code changes, renders an extra group with an extra position when the mocked catalog adds them (D13).
   - The fit form sends `type` derived from position and `weightGrams`.
   - Weight 0 shows a field error.
   - Gap notices are summarised per position (apps/web/tests/garage.test.tsx or a new overview test).
@@ -233,7 +233,7 @@ Quickstart scenario 1.
 ### Implementation for User Story 6
 
 - [ ] T047 [US6] Add a weight display and an "Edit details" form (make, model, weight, using `PUT /components/{id}` from T036) to apps/web/src/features/components/ComponentPassport.tsx. Show "Weight not recorded" when null. On 409, use the existing apps/web/src/components/ConflictPanel.tsx pattern.
-- [ ] T048 [US6] Append an "Explicit compatible upgrade (component groups)" note to docs/backend-workflows.md. It must say: migrate, then `rebuild-usage`; existing parts keep their totals; weight starts unrecorded; and rollback is compatible code, not a schema downgrade (D10).
+- [ ] T048 [US6] Append an "Explicit compatible upgrade (component groups)" note to docs/backend-workflows.md. It must say: migrate, then `rebuild-usage`; existing parts keep their totals; weight starts unrecorded; and rollback is compatible code, not a schema downgrade (D10). Add an "Adding a group, type or position" checklist from research D13: catalog entry and enum member, additive migration widening `CK_Component_Type`/`CK_Installation_Position`, `npm run api:generate`, update ComponentCatalogTests counts, no web code change expected.
 
 **Checkpoint**: Quickstart scenario 1 passes.
 
@@ -322,7 +322,7 @@ scenarios 10–12.
 
 ### Implementation for User Story 5
 
-- [ ] T060 [US5] Create src/Domain/Weights/WeightSummary.cs: `static WeightSummary Calculate(IEnumerable<Component> fitted, int? frameGrams)` returning `GroupWeight[] Groups` (always three, in catalog group order), `int? FrameGrams`, `int TotalGrams` and `int MissingCount` (D9).
+- [ ] T060 [US5] Create src/Domain/Weights/WeightSummary.cs: `static WeightSummary Calculate(IEnumerable<Component> fitted, int? frameGrams)` returning `GroupWeight[] Groups` (one per catalog group, in catalog order; never a fixed count, D13), `int? FrameGrams`, `int TotalGrams` and `int MissingCount` (D9).
 - [ ] T061 [US5] Add `int? FrameWeightGrams` to `CreateBike`, `EditBike` and `BikeResponse` in src/Api/Features/Bikes/BikeContracts.cs, validated with `ComponentValues.Weight` in src/Api/Features/Bikes/BikeEndpoints.cs.
 - [ ] T062 [US5] Add `Weights` (`{ groups: [{ group, grams, missingCount }], frameGrams, totalGrams, missingCount }`) to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs, computed in BikeOverviewEndpoints.cs from installations current at `EvaluatedAtUtc`.
 - [ ] T063 [US5] Regenerate the client (`npm run api:generate`, `npm run api:check`).

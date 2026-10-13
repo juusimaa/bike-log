@@ -106,6 +106,24 @@ the design questions the spec leaves to planning. Each one is grounded in the cu
 - **Rationale**: Two client calls could leave a part half-moved, and the sequencing is a domain rule that
   belongs in the API (constitution II).
 
+## D13. The catalog will grow
+
+- **Decision**: Treat the catalog as open-ended. Adding a group, type or position means: one catalog entry
+  and enum member, an additive migration that widens the type/position check constraints, and a client
+  regeneration. Nothing else should need to change:
+  - The web renders whatever groups and positions `GET /component-catalog` returns, in its order, with its
+    labels. It never switches over group, type or position names, and never hard-codes their counts.
+  - The weight summary returns one entry per catalog group, not a fixed three.
+  - A new position is `not-recorded` on every existing bike, so it creates gaps but never `missing`
+    states; no existing bike becomes incomplete.
+  - Wire values, once published, are never renamed, so stored rows and clients stay valid.
+- **Rationale**: The owner plans more groups and component types. Keeping every rule in one catalog (D1)
+  makes each addition a small, reviewable change.
+- **Alternatives**: A database-driven or user-editable catalog was rejected for now: positions are still
+  app-defined, and editable types would be a separate feature with its own migration and validation
+  rules. Dropping the check constraints to avoid a migration per addition was rejected; the constraints
+  guard stored data, and the migrations are explicit and additive (constitution).
+
 ## D12. Taking parts from another bike, and incomplete bikes
 
 - **Decision**: Extend the move endpoint (D7a) to accept an occupied destination when the request carries

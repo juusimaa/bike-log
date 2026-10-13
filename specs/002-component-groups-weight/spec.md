@@ -290,8 +290,8 @@ usage totals are identical before and after.
 - **Component**: An individual physical part owned by a user. Type, group (derived from type), make,
   model, weight in grams (may be unrecorded), starting usage estimate, lifetime usage. Not tied to a
   bike: it is linked to bikes only through its installations, and may currently be unfitted.
-- **Component group**: Build, Groupset or Wheels. A fixed classification used for display and weight
-  subtotals.
+- **Component group**: Build, Groupset or Wheels in this feature. A classification used for display and
+  weight subtotals. More groups will be added in later releases.
 - **Position**: A place on a bike where one component of a matching type can be fitted at a time (for
   example rear brake, front rim, handlebar tape).
 - **Installation**: A component fitted in a position on a bike for a dated period; unchanged in meaning.
@@ -320,7 +320,10 @@ usage totals are identical before and after.
 
 ## Assumptions
 
-- Positions are a fixed list defined by the app; owners cannot add custom positions in this feature.
+- Groups, component types and positions are a list defined by the app; owners cannot add custom ones in
+  this feature. The list will grow in later releases (more groups and component types), so adding one
+  must be a contained change that needs no rework of existing data, history or screens. A newly added
+  position starts as "not recorded" on every bike and never makes an existing bike incomplete.
 - Pairs that are normally bought as a set (pedals, shifters, handlebar tape, crankset) are tracked as a
   single component and position.
 - Inner tubes are tracked per wheel (front and rear) even though the description lists "inner tube" once,

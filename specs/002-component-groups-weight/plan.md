@@ -152,6 +152,10 @@ The order follows the user story priorities. Each step leaves the suite passing.
 
 ## Risks
 
+- **Catalog growth**: more groups and component types are planned (D13). Each addition costs an additive
+  migration and a client regeneration; the web and the weight summary must stay catalog-driven so no
+  screen code changes. Gap volume grows with every position, which D6's per-position summary absorbs.
+
 - **Gap volume**: positions that are never recorded produce gaps on every ride. D6 summarises them in the
   UI. If payloads become a problem, page `allocationGaps` later.
 - **Integrated road levers**: an owner may record the same unit in Shifters and Brake levers. This is
