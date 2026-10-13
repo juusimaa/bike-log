@@ -1,3 +1,4 @@
+using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
 using BikeLog.Domain.Rides;
 
@@ -7,15 +8,17 @@ public sealed class UsageCalculator : IUsageCalculator
 {
     public UsageCalculation Calculate(
         IReadOnlyList<Ride> rides,
-        IReadOnlyList<Installation> installations
+        IReadOnlyList<Installation> installations,
+        IReadOnlyList<PositionExemption>? exemptions = null
     )
     {
-        InstallationRules.Validate(installations);
+        exemptions ??= [];
+        InstallationRules.Validate(installations, exemptions);
         var totals = installations.ToDictionary(
             x => x.Id,
             x => new InstallationUsage(x.Id, 0, 0, false)
         );
-        var gaps = new List<AllocationGap>();
+        var gaps = new List<(Ride Ride, InstallationPosition Position)>();
         foreach (var ride in rides)
         {
             if (ride.DistanceMetres <= 0 || ride.DurationSeconds is <= 0)
@@ -33,11 +36,21 @@ public sealed class UsageCalculator : IUsageCalculator
                     && (!x.EndUtc.HasValue || ride.StartUtc < x.EndUtc)
                 )
                 .ToArray();
-            foreach (var position in Enum.GetValues<InstallationPosition>())
+            foreach (var entry in ComponentCatalog.Entries)
             {
-                if (!matches.Any(x => x.Position == position))
+                // An intentionally empty position needs no component; it is never a gap.
+                if (
+                    !matches.Any(x => x.Position == entry.Position)
+                    && !exemptions.Any(x =>
+                        x.OwnerId == ride.OwnerId
+                        && x.BikeId == ride.BikeId
+                        && x.Position == entry.Position
+                        && x.StartUtc <= ride.StartUtc
+                        && (!x.EndUtc.HasValue || ride.StartUtc < x.EndUtc)
+                    )
+                )
                 {
-                    gaps.Add(new(ride.Id, position));
+                    gaps.Add((ride, entry.Position));
                 }
             }
 
@@ -75,10 +88,24 @@ public sealed class UsageCalculator : IUsageCalculator
             components,
             totals.Values.OrderBy(x => x.InstallationId).ToArray(),
             gaps.Where(x => x.Position == InstallationPosition.Chain)
-                .Select(x => x.RideId)
+                .Select(x => x.Ride.Id)
                 .Order()
                 .ToArray(),
-            gaps.OrderBy(x => x.RideId).ThenBy(x => x.Position).ToArray()
+            gaps.Select(x => new AllocationGap(x.Ride.Id, x.Position))
+                .OrderBy(x => x.RideId)
+                .ThenBy(x => ComponentCatalog.OrderOf(x.Position))
+                .ToArray(),
+            gaps.GroupBy(x => (x.Ride.BikeId, x.Position))
+                .Select(g => new PositionGap(
+                    g.Key.BikeId,
+                    g.Key.Position,
+                    g.Count(),
+                    g.Min(x => x.Ride.StartUtc),
+                    g.Max(x => x.Ride.StartUtc)
+                ))
+                .OrderBy(x => x.BikeId)
+                .ThenBy(x => ComponentCatalog.OrderOf(x.Position))
+                .ToArray()
         );
     }
 }

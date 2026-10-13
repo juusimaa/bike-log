@@ -1,6 +1,7 @@
 using System.Text;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain;
+using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
 
@@ -16,6 +17,7 @@ public static class ComponentValues
     private static readonly WireMap<ComponentGroup> Groups = new("Unknown component group.");
     private static readonly WireMap<ExemptionReason> Reasons = new("Unknown exemption reason.");
     private static readonly WireMap<WheelEnd> Ends = new("Unknown wheel end.");
+    private static readonly WireMap<PositionState> States = new("Unknown position state.");
 
     public static IReadOnlyList<string> TypeValues => Types.Values;
     public static IReadOnlyList<string> PositionValues => Positions.Values;
@@ -46,6 +48,8 @@ public static class ComponentValues
     public static string Group(ComponentGroup value) => Groups.Wire(value);
 
     public static string Reason(ExemptionReason value) => Reasons.Wire(value);
+
+    public static string State(PositionState value) => States.Wire(value);
 
     public static string? End(WheelEnd? value) => value is { } v ? Ends.Wire(v) : null;
 

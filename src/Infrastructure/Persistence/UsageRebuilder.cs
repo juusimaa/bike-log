@@ -12,7 +12,12 @@ public sealed class UsageRebuilder(BikeLogDbContext db, IUsageCalculator calcula
             .Installations.AsNoTracking()
             .Where(x => x.OwnerId == ownerId)
             .ToListAsync(ct);
-        var result = calculator.Calculate(rides, installations);
+        // Exemptions are loaded to validate history; stored totals depend only on rides and installations.
+        var exemptions = await db
+            .PositionExemptions.AsNoTracking()
+            .Where(x => x.OwnerId == ownerId)
+            .ToListAsync(ct);
+        var result = calculator.Calculate(rides, installations, exemptions);
         var calculated = result.ComponentUsages.ToDictionary(
             x => x.ComponentId,
             x => x.LifetimeMetres

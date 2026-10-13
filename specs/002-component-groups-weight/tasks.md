@@ -94,17 +94,17 @@ the ride's distance. Unfitted positions show "not recorded". Quickstart scenario
 
 ### Tests for User Story 1
 
-- [ ] T019 [P] [US1] Extend tests/Domain.Tests/UsageCalculatorTests.cs:
+- [X] T019 [P] [US1] Extend tests/Domain.Tests/UsageCalculatorTests.cs:
   - A ride with a saddle fitted allocates its metres to the saddle.
   - A ride inside a `NoneFitted` exemption on `FrontDerailleur` produces no `AllocationGap` for that position, but still does for unrecorded positions.
   - `PositionGaps` reports one entry per gapped position with `RideCount`, `FirstRideStartUtc` and `LastRideStartUtc`.
-- [ ] T020 [P] [US1] Write tests/Domain.Tests/ExemptionRulesTests.cs:
+- [X] T020 [P] [US1] Write tests/Domain.Tests/ExemptionRulesTests.cs:
   - Overlapping `NoneFitted` exemptions are rejected.
   - An exemption overlapping an installation in the same position is rejected.
   - An adjacent exemption (`[a,b)` then `[b,…)`) is accepted.
   - A `Tubeless` reason on `FrontDerailleur` is rejected.
   - An exemption on a non-empty-able position (for example `Saddle`) is rejected.
-- [ ] T021 [P] [US1] Write tests/Integration.Tests/FullPositionsApiTests.cs (PostgreSQL, `ApiScenario`):
+- [X] T021 [P] [US1] Write tests/Integration.Tests/FullPositionsApiTests.cs (PostgreSQL, `ApiScenario`):
   - `POST /api/components` accepts every type with an optional `weightGrams`, returning `group` and `weightGrams`.
   - Weights 0, −5, 20001 and 12.5 return 400.
   - Fitting a saddle in `handlebar` returns 400.
@@ -120,16 +120,16 @@ the ride's distance. Unfitted positions show "not recorded". Quickstart scenario
 
 ### Implementation for User Story 1
 
-- [ ] T022 [US1] In src/Domain/Usage/UsageCalculator.cs and src/Domain/Usage/UsageCalculation.cs, add an `exemptions` parameter to `Calculate` (default empty) and do the following:
+- [X] T022 [US1] In src/Domain/Usage/UsageCalculator.cs and src/Domain/Usage/UsageCalculation.cs, add an `exemptions` parameter to `Calculate` (default empty) and do the following:
   - Skip gaps for a position when an exemption on that bike and position covers the ride's start.
   - Add `record PositionGap(Guid BikeId, InstallationPosition Position, int RideCount, DateTimeOffset FirstRideStartUtc, DateTimeOffset LastRideStartUtc)` and return `PositionGaps` ordered by catalog order.
   - Keep `UnallocatedRideIds` meaning chain gaps.
   - Update `IUsageCalculator` and src/Infrastructure/Persistence/UsageRebuilder.cs. The rebuilder loads exemptions for validation only; stored totals depend only on rides and installations (FR-017).
-- [ ] T023 [US1] Update src/Api/Features/Components/ComponentContracts.cs and ComponentEndpoints.cs:
+- [X] T023 [US1] Update src/Api/Features/Components/ComponentContracts.cs and ComponentEndpoints.cs:
   - `CreateComponent` gains `int? WeightGrams`, validated with `ComponentValues.Weight`.
   - `ComponentResponse` and `ComponentEstimateResponse` gain `string Group` and `int? WeightGrams`.
   - Populate the new fields everywhere these responses are built, including src/Api/Features/Collections/CollectionEndpoints.cs and ComponentEstimateEndpoints.cs.
-- [ ] T024 [US1] Create src/Api/Features/Exemptions/ExemptionContracts.cs and ExemptionEndpoints.cs:
+- [X] T024 [US1] Create src/Api/Features/Exemptions/ExemptionContracts.cs and ExemptionEndpoints.cs:
   - `POST /bikes/{bikeId}/position-exemptions` with `{ position, startUtc, expectedInstallationVersion? }`: the reason comes from the catalog, and the request returns 400 if the position cannot be empty. In one `OwnerMutation`:
     - If an installation is open in that position, require `expectedInstallationVersion` and check it with `ApiInput.Version`. A missing or stale version returns 409, and nothing changes.
     - Close that installation at `startUtc`. Return 409 if it started at or after `startUtc`.
@@ -137,12 +137,12 @@ the ride's distance. Unfitted positions show "not recorded". Quickstart scenario
   - `PUT /position-exemptions/{id}` with `{ startUtc, endUtc?, expectedVersion }`.
   - `GET /bikes/{bikeId}/position-exemptions`, newest first.
   - Response: `{ id, bikeId, position, reason, startUtc, endUtc, version }`. Map the routes in src/Api/Program.cs.
-- [ ] T025 [US1] Update src/Api/Features/Usage/UsageContracts.cs and BikeUsageReader.cs:
+- [X] T025 [US1] Update src/Api/Features/Usage/UsageContracts.cs and BikeUsageReader.cs:
   - Pass exemptions to the calculator.
   - Add `PositionStatusResponse(string Position, string State, Guid? ComponentId, Guid? InstallationId, Guid? ExemptionId, string? Reason, DateTimeOffset? SinceUtc)`, where `State` is `fitted|exempt|missing|not-recorded` (`missing` = empty now, no exemption covers `now`, and the bike either had an installation in that position before or had an exemption there that has ended; `SinceUtc` = the later of the latest ended installation's `EndUtc` and the latest ended exemption's `EndUtc`) evaluated at `now` for all 27 positions in catalog order.
   - Add `PositionGapResponse(string Position, int RideCount, DateTimeOffset FirstRideStartUtc, DateTimeOffset LastRideStartUtc)`.
   - Add both to `BikeUsageResponse`.
-- [ ] T026 [US1] Add `PositionStatuses` and `PositionGaps` to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs and BikeOverviewEndpoints.cs, reusing the reader logic from T025.
+- [X] T026 [US1] Add `PositionStatuses` and `PositionGaps` to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs and BikeOverviewEndpoints.cs, reusing the reader logic from T025.
 - [ ] T027 [US1] Regenerate the client: run the API, then `npm run api:generate`. Update packages/api-client/src/dto.ts: `ExemptionReason` and `PositionState` as unions; `Position`, `ComponentType` and `ComponentGroup` as `string` aliases whose valid values come from the catalog (D13), so adding a type or position needs no client code change. Run `npm run test --workspace @bikelog/api-client` and `npm run api:check`.
 - [ ] T028 [P] [US1] Add a catalog query (`useComponentCatalog`, long `staleTime`) to apps/web/src/features/components/queries.ts, and an exemption mutation (`useCreateExemption`) to apps/web/src/features/components/mutations.ts that invalidates installations, overview and usage queries for the bike.
 - [ ] T029 [US1] Rework apps/web/src/features/components/Components.tsx into a position board (design: V3 Components screen: grouped sections with subtotals, full rows for fitted/missing/empty-on-purpose, "N not recorded" fold per group, row menu):

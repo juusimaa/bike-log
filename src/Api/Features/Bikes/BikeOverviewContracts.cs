@@ -21,6 +21,8 @@ public sealed record BikeOverviewResponse(
     long RecordedDistanceMetres,
     IReadOnlyList<CurrentComponentUsage> CurrentComponents,
     IReadOnlyList<AllocationGapResponse> AllocationGaps,
+    IReadOnlyList<PositionStatusResponse> PositionStatuses,
+    IReadOnlyList<PositionGapResponse> PositionGaps,
     IReadOnlyList<CurrencySpend> SpendingByCurrency,
     int UnknownCostRecordCount,
     int MaintenanceRecordCount,

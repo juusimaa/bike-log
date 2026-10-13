@@ -23,6 +23,7 @@ public static class ComponentEndpoints
                 ) =>
                 {
                     var type = ComponentValues.ParseType(request.Type);
+                    var weight = ComponentValues.Weight(request.WeightGrams);
                     var c = await mutation.ExecuteAsync(
                         owner.OwnerId,
                         _ =>
@@ -33,6 +34,7 @@ public static class ComponentEndpoints
                                 Type = type,
                                 Make = ComponentValues.IdentityText(request.Make, "make"),
                                 Model = ComponentValues.IdentityText(request.Model, "model"),
+                                WeightGrams = weight,
                             };
                             db.Components.Add(c);
                             return Task.FromResult(c);
@@ -42,15 +44,7 @@ public static class ComponentEndpoints
                     );
                     return Results.Created(
                         $"/api/components/{c.Id}",
-                        new ComponentResponse(
-                            c.Id,
-                            ComponentValues.Type(c.Type),
-                            c.Make,
-                            c.Model,
-                            c.Version,
-                            [],
-                            c.InitialUsageEstimateMetres
-                        )
+                        ComponentResponse.From(c, [])
                     );
                 }
             )
@@ -73,14 +67,9 @@ public static class ComponentEndpoints
                     .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
                     .OrderBy(x => x.StartUtc)
                     .ToListAsync(ct);
-                return new ComponentResponse(
-                    c.Id,
-                    ComponentValues.Type(c.Type),
-                    c.Make,
-                    c.Model,
-                    c.Version,
-                    history.Select(InstallationResponse.From).ToArray(),
-                    c.InitialUsageEstimateMetres
+                return ComponentResponse.From(
+                    c,
+                    history.Select(InstallationResponse.From).ToArray()
                 );
             }
         );

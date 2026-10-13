@@ -97,15 +97,7 @@ public static class ReplacementEndpoints
                             db.MaintenanceRecords.Add(maintenance);
                             var nextResponse = InstallationResponse.From(next);
                             return new ReplacementWithServiceResponse(
-                                new ComponentResponse(
-                                    component.Id,
-                                    ComponentValues.Type(component.Type),
-                                    component.Make,
-                                    component.Model,
-                                    component.Version,
-                                    [nextResponse],
-                                    component.InitialUsageEstimateMetres
-                                ),
+                                ComponentResponse.From(component, [nextResponse]),
                                 InstallationResponse.From(old),
                                 nextResponse,
                                 MaintenanceResponse.From(maintenance)

@@ -88,6 +88,8 @@ public static class BikeOverviewEndpoints
                     distance,
                     usage.CurrentComponents,
                     usage.AllocationGaps,
+                    usage.PositionStatuses,
+                    usage.PositionGaps,
                     spending,
                     maintenance.Count(x => !x.Cost.HasValue),
                     maintenance.Count,

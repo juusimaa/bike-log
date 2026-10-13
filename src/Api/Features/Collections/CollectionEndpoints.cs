@@ -121,18 +121,14 @@ public static class CollectionEndpoints
             .ToListAsync(ct);
         return rows.ToDictionary(
             x => x.Id,
-            x => new ComponentResponse(
-                x.Id,
-                ComponentValues.Type(x.Type),
-                x.Make,
-                x.Model,
-                x.Version,
-                history
-                    .Where(i => i.ComponentId == x.Id)
-                    .Select(InstallationResponse.From)
-                    .ToArray(),
-                x.InitialUsageEstimateMetres
-            )
+            x =>
+                ComponentResponse.From(
+                    x,
+                    history
+                        .Where(i => i.ComponentId == x.Id)
+                        .Select(InstallationResponse.From)
+                        .ToArray()
+                )
         );
     }
 
