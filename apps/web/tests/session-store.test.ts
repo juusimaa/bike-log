@@ -22,12 +22,12 @@ const base = {
 };
 const admin = new Pool({ ...base, database: 'postgres' });
 const pool = new Pool({ ...base, database });
-// DROP ... WITH (FORCE) in afterAll can terminate a client that is still closing.
-pool.on('connect', (client) =>
-    client.on('error', (error: Error & { code?: string }) => {
-        if (error.code !== '57P01') throw error;
-    }),
-);
+// pool.end() resolves before its clients' sockets close, so DROP ... WITH (FORCE)
+// in afterAll can terminate one that is still closing. The pool re-emits that idle
+// client's error on itself, so the handler has to live on the pool.
+pool.on('error', (error: Error & { code?: string }) => {
+    if (error.code !== '57P01') throw error;
+});
 let store: SessionStore;
 
 beforeAll(async () => {

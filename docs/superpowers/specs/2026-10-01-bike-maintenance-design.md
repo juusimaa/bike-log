@@ -10,7 +10,7 @@ Build a bicycle maintenance tracker the owner can use for real riding, while dem
 
 Success means the owner can identify fitted parts, explain their accumulated usage, retain replacement and maintenance history, and enter rides and maintenance from both web and native mobile. Mileage must remain correct after component moves and historical corrections.
 
-Confirmed constraints: backend first; React Native is required; local PostgreSQL runs in Docker; hosted PostgreSQL uses Neon; the first useful release tracks individual parts. Detailed UI design follows validated backend workflows.
+Confirmed constraints: backend first; React Native is required; local PostgreSQL runs in Docker; hosted PostgreSQL uses Aiven (Neon until 2026-10-13); the first useful release tracks individual parts. Detailed UI design follows validated backend workflows.
 
 ## Architecture and boundaries
 
@@ -60,11 +60,11 @@ Add multiple bikes, individual component moves, starting estimates, maintenance 
 
 ### Azure and asynchronous processing
 
-Host web, API and a separate worker on Azure Container Apps. Use a dedicated Neon project for this application's hosted database. Select region, service tiers and a measured budget before provisioning. Bicep manages Azure infrastructure; document Neon setup separately. Use managed identities for compatible Azure services and protected secrets for Neon database credentials.
+Host web, API and a separate worker on Azure Container Apps (Consumption plan, within the monthly free grant). Use an Aiven for PostgreSQL free-plan service in an EU region for this application's hosted database. Select regions, service tiers and a measured budget before provisioning. Bicep manages Azure infrastructure; document Aiven setup separately. Use managed identities for compatible Azure services and protected secrets for Aiven database credentials.
 
 Move usage recalculation into the worker only after the core workflow is reliable. Persist each edit and its outbox event in one database transaction. Publish through Service Bus with at-least-once delivery. Use transactional consumer deduplication and source-version checks so replay or older work cannot overwrite newer totals. Rebuild from authoritative history rather than repeatedly incrementing totals.
 
-Run the outbox publisher with scheduled, bounded polling; avoid a continuously active database polling loop. Service Bus drives recalculation execution. Select the polling interval and runtime arrangement during this milestone's design, explicitly balancing update delay against Neon compute usage.
+Run the outbox publisher with scheduled, bounded polling; avoid a continuously active database polling loop. Service Bus drives recalculation execution. Select the polling interval and runtime arrangement during this milestone's design, explicitly balancing update delay against the hosted database's 20-connection limit and small compute allowance.
 
 Expose pending, completed and failed calculation state plus last successful processing time to clients. Add bounded retries, dead-letter inspection, controlled replay and correlation across API, outbox and worker. Keep credentials and sensitive record payloads out of telemetry.
 
@@ -80,18 +80,18 @@ Return actionable validation errors for overlap, invalid references and invalid 
 
 Use focused domain tests for allocation, replacement, moves, maintenance baselines and reminders. Docker PostgreSQL integration tests verify real constraints, transactions, migrations and historical corrections. Check web/native sign-in, ownership rejection and cross-client persistence separately from builds.
 
-During the asynchronous milestone, verify saved work survives worker downtime, duplicate delivery does not double usage, stale work cannot replace current totals, publication failure recovers, and dead-letter replay is controlled. Verify hosted behavior separately from local tests, including Neon reconnection after inactivity. Deployment rollback must remain compatible with database changes; use additive migrations and an explicit migration step.
+During the asynchronous milestone, verify saved work survives worker downtime, duplicate delivery does not double usage, stale work cannot replace current totals, publication failure recovers, and dead-letter replay is controlled. Verify hosted behavior separately from local tests, including reconnection after an Aiven maintenance restart and behavior at the connection limit. Deployment rollback must remain compatible with database changes; use additive migrations and an explicit migration step.
 
 Before relying on the hosted application for maintenance history, document backups and exercise restoration. Free-tier provider restore features alone do not constitute a tested application recovery procedure.
 
 ## Cost and unresolved choices
 
-Neon Free is the starting hosted database plan; account eligibility, quotas, region availability and actual usage must be checked before deployment. Monitor storage, compute and network transfer. No automatic paid upgrade is authorized. Budget alerts do not cap Azure spending.
+The Aiven free plan is the starting hosted database plan; account eligibility, quotas, region availability and actual usage must be checked before deployment. Monitor storage, compute and network transfer. No automatic paid upgrade is authorized. Budget alerts do not cap Azure spending.
 
-Framework versions, identity provider, first mobile platform/device, project name, Azure/Neon regions, exact cloud tiers, polling interval and budget are milestone-specific decisions. They do not block approval of this overall architecture. No cloud resources or product code are created by this specification.
+Framework versions, identity provider, first mobile platform/device, project name, Azure/Aiven regions, exact cloud tiers, polling interval and budget are milestone-specific decisions. They do not block approval of this overall architecture. No cloud resources or product code are created by this specification.
 
 ## Approval record and next stage
 
-The owner approved the balanced priority, individual-parts scope, modular synchronous API approach, core model, web/native release boundary, Docker PostgreSQL, Neon hosted PostgreSQL and final validation/recovery section in conversation on 2026-10-01.
+The owner approved the balanced priority, individual-parts scope, modular synchronous API approach, core model, web/native release boundary, Docker PostgreSQL, Neon hosted PostgreSQL and final validation/recovery section in conversation on 2026-10-01. On 2026-10-13 the owner replaced Neon with the Aiven free plan and confirmed Azure Container Apps within its free grant for hosting ([decision 0003](../../decisions/0003-aiven-postgres-and-container-apps-hosting.md)).
 
 The owner explicitly approved this written specification on 2026-10-01. Create the implementation plan for foundation and the first backend slice using the writing-plans skill. The implementation plan still requires review and selection of an execution method before implementation. Later milestones receive their own detailed design and plan before implementation.

@@ -42,8 +42,8 @@ These are draft recommendations, not implementation commitments.
 | React / Next.js | Next.js with React and TypeScript | Web dashboard, bike configuration, component history, reminders and cost views |
 | React Native mobile app (required) | React Native with Expo and TypeScript | Android/iOS maintenance logging, camera uploads and later offline operation |
 | .NET backend | ASP.NET Core with EF Core | Shared API, domain rules, authorization and background processing |
-| Microsoft Azure | Azure Container Apps | Deploy web, API and worker as containers; practice revisions, health checks and scaling |
-| Relational persistence | PostgreSQL in Docker locally; a dedicated Neon Free project for cloud deployment | Installation history, transactions, constraints and migrations |
+| Microsoft Azure | Azure Container Apps (Consumption plan, within the monthly free grant) | Deploy web, API and worker as containers; practice revisions, health checks and scaling |
+| Relational persistence | PostgreSQL in Docker locally; an Aiven for PostgreSQL free-plan service in an EU region for cloud deployment | Installation history, transactions, constraints and migrations |
 | Messaging | Azure Service Bus | Durable work queues, retries, dead-letter handling and idempotent consumers |
 | File storage | Azure Blob Storage | Optional component photos and receipts |
 | Identity | Standards-based OIDC provider; Microsoft Entra External ID as an Azure candidate | Shared user identity for web/mobile; validate consumer sign-in and mobile support in an early spike |
@@ -120,7 +120,7 @@ flowchart TD
     Mobile[React Native app] --> API
     Identity[OIDC identity provider] --> Web
     Identity --> Mobile
-    API --> DB[(Neon PostgreSQL)]
+    API --> DB[(Aiven PostgreSQL)]
     DB --> Outbox[Outbox publisher]
     Outbox --> Queue[Azure Service Bus]
     Queue --> Worker[Background worker]
@@ -132,7 +132,7 @@ flowchart TD
     Worker -. eligible integration .-> Strava
 ```
 
-The later outbox publisher uses scheduled, bounded polling to avoid keeping Neon compute active through continuous database polling. Service Bus drives recalculation work. Choose the polling interval and runtime arrangement during that milestone. Database arrows show dependencies, not a database-trigger implementation.
+The later outbox publisher uses scheduled, bounded polling so that it stays within the hosted database's small connection and compute limits. Service Bus drives recalculation work. Choose the polling interval and runtime arrangement during that milestone. Database arrows show dependencies, not a database-trigger implementation.
 
 Proposed modules: bikes/components, installation history, rides/usage, maintenance/reminders, and external integrations. One PostgreSQL database is sufficient initially; enforce module ownership in code. Extract another service only when there is an independently useful scaling, reliability or ownership boundary.
 
@@ -198,7 +198,7 @@ Done when: you can use both the Next.js web app and React Native app for your ac
 
 ### Phase 3 — Azure and asynchronous processing
 
-Containerize web/API/worker on Azure Container Apps, using a dedicated Neon project for hosted PostgreSQL; create Bicep infrastructure for Azure resources and GitHub Actions delivery. Document Neon setup separately. Introduce Service Bus, the transactional outbox, idempotent recalculation, trace correlation and health checks. Add managed identities, secret storage and a measured cost baseline.
+Containerize web/API/worker on Azure Container Apps, using an Aiven for PostgreSQL free-plan service in an EU region for hosted PostgreSQL; create Bicep infrastructure for Azure resources and GitHub Actions delivery. Document Aiven setup separately ([decision 0003](docs/decisions/0003-aiven-postgres-and-container-apps-hosting.md)). Introduce Service Bus, the transactional outbox, idempotent recalculation, trace correlation and health checks. Add managed identities, secret storage and a measured cost baseline.
 
 Done when: a ride saved while the worker is stopped processes after restart; replaying work does not duplicate mileage; a failed deployment can roll back without incompatible database changes.
 
@@ -241,7 +241,7 @@ Use domain unit tests, Docker PostgreSQL integration tests, focused web end-to-e
 
 Develop locally first. Provision one Azure development environment after the core workflow is usable. Use a budget alert, resource tags, bounded telemetry retention and scheduled cleanup for disposable environments.
 
-Container Apps can scale based on workload, but messaging, container registry, telemetry and storage can create ongoing charges. Start hosted PostgreSQL on Neon Free, verify current quotas before deployment and monitor actual usage. No automatic paid upgrade is authorized. Budget alerts do not cap spending. Before provisioning, calculate a current estimate for the selected region/SKUs and agree on an acceptable monthly learning budget; this draft makes no price claim.
+Run Container Apps on the Consumption plan and stay within its monthly free grant; messaging, container registry, telemetry and storage are outside that grant and can create ongoing charges. Start hosted PostgreSQL on the Aiven free plan (single node, 1 GB disk, at most 20 connections, no pooling), verify current quotas before deployment and monitor actual usage. Cap connection pools to stay under the connection limit. No automatic paid upgrade is authorized. Budget alerts do not cap spending. Before provisioning, calculate a current estimate for the selected region/SKUs and agree on an acceptable monthly learning budget; this draft makes no price claim.
 
 Use additive database migrations and a clear migration job. Plan rollback compatibility, backup retention and restoration. Cloud deployment is a later task; this document creates no resources or subscriptions.
 
@@ -267,7 +267,7 @@ Generate the client from OpenAPI; do not duplicate mileage rules in either front
 
 - Choose the first mobile test platform and devices.
 - Validate the identity provider with web and native sign-in.
-- Set the Azure learning budget and deployment region before provisioning.
+- Set the Azure learning budget before provisioning, and choose the Azure and Aiven regions together so they are close.
 - Resolve Strava permission/retention feasibility for component calculations.
 - Choose the project name and actual first bike/components for acceptance checks.
 
