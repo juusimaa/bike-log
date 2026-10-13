@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Bike Log — Strava import (V5)</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="v3.css">
+  <link rel="stylesheet" href="v4.css">
+  <link rel="stylesheet" href="v5.css">
+  <script src="v5.js" defer></script>
+</head>
+<body>
+  <svg class="svg-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="bike-art" viewBox="0 0 600 300">
+      <ellipse cx="300" cy="273" rx="244" ry="10" fill="currentColor" opacity=".06"/>
+      <g fill="none" stroke="#343c3b">
+        <g stroke-width="9"><circle cx="130" cy="185" r="80"/><circle cx="470" cy="185" r="80"/></g>
+        <g stroke="#9badaa" stroke-width="1.5"><circle cx="130" cy="185" r="70"/><circle cx="470" cy="185" r="70"/><path d="M130 115v140m-70-70h140m-120-50 100 100m-100 0 100-100M470 115v140m-70-70h140m-120-50 100 100m-100 0 100-100"/></g>
+        <g stroke="var(--bike-color, #789b8c)" stroke-width="13" stroke-linejoin="round"><path d="M130 185 230 74 284 204ZM230 74 415 82 284 204M411 61 470 185"/></g>
+        <path d="m224 67-10-30m-24 0h55m169 40-8-40 38 1q30 2 24 23-3 10-17 11" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="284" cy="204" r="20" stroke-width="4"/><path d="m131 176 155 9m-155 10 153 26" stroke-width="2"/>
+        <path d="M256 188 284 204 312 220M247 188h18m38 32h18" stroke-width="5" stroke-linecap="round"/>
+        <path d="m418 80 35-12q-43-12-38-27" stroke-width="2"/>
+      </g>
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 20 20"><path d="M10 3.2 17.4 16H2.6Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8.2v3.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="13.9" r=".95" fill="currentColor"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 20 20"><path d="M10 4.5v11M4.5 10h11" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-more" viewBox="0 0 20 20"><circle cx="4.5" cy="10" r="1.5" fill="currentColor"/><circle cx="10" cy="10" r="1.5" fill="currentColor"/><circle cx="15.5" cy="10" r="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-check" viewBox="0 0 20 20"><path d="m5 10.4 3.2 3.1L15 6.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 20 20"><path d="m5.5 5.5 9 9m0-9-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-sync" viewBox="0 0 20 20"><path d="M15.5 8.5A5.8 5.8 0 0 0 5 6.6M4.5 11.5A5.8 5.8 0 0 0 15 13.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.6 3.8v3.1h3.1M15.4 16.2v-3.1h-3.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-link" viewBox="0 0 20 20"><path d="M8.6 11.4a3 3 0 0 0 4.2 0l2.6-2.6a3 3 0 0 0-4.2-4.2l-.9.9M11.4 8.6a3 3 0 0 0-4.2 0l-2.6 2.6a3 3 0 0 0 4.2 4.2l.9-.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-external" viewBox="0 0 20 20"><path d="M11 4.5h4.5V9M15.3 4.7 9 11M13.5 12v3.5h-9v-9H8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </svg>
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="Bike Log home"><span class="brand-mark">b<span>↗</span></span>bike log<span class="brand-dot">.</span></a>
+    <div class="workspace"><span class="avatar">JU</span><div>Your garage<small>Personal workspace</small></div><span class="workspace-arrow">⌄</span></div>
+    <p class="nav-label">WORKSPACE</p>
+    <nav aria-label="Main navigation">
+      <a href="#overview" data-view="overview"><span class="nav-icon">▦</span>Overview</a>
+      <a href="#components" data-view="components"><span class="nav-icon">⚙</span>Components</a>
+      <a href="#rides" data-view="rides"><span class="nav-icon">↗</span>Rides<span class="nav-count" id="rides-count" hidden></span></a>
+      <a href="#maintenance" data-view="maintenance"><span class="nav-icon">⌁</span>Maintenance</a>
+      <a href="#strava" data-view="strava" class="nav-connections"><span class="nav-icon">⇄</span>Strava<span class="nav-state" id="strava-state"></span></a>
+    </nav>
+    <div class="sidebar-note"><span class="little-leaf">✳</span><strong>A little care.<br>A lot more miles.</strong><p>Keep the history. Enjoy the ride.</p></div>
+    <div class="sidebar-footer"><span class="demo-dot"></span>V5 preview<button id="reset-demo" type="button">Reset</button></div>
+  </aside>
+  <div class="main-shell">
+    <header class="topbar">
+      <div>Your garage <span>/</span> <strong id="breadcrumb">Overview</strong></div>
+      <div class="topbar-right">
+        <label class="scenario">Preview scenario
+          <select id="scenario">
+            <option value="empty">New owner, empty garage</option>
+            <option value="existing">Existing garage, not connected</option>
+            <option value="connected">Connected, needs attention</option>
+          </select>
+        </label>
+        <span class="avatar small">JU</span>
+      </div>
+    </header>
+    <main>
+      <section class="page-heading"><div><h1 id="page-title"></h1><p id="page-subtitle"></p></div><div class="heading-actions" id="heading-actions"></div></section>
+      <div id="attention"></div>
+      <div id="view-content"></div>
+      <footer class="page-footer"><span>Made for the miles ahead.</span><span>Interactive design preview, reference date 13 Oct 2026 · <button type="button" data-reset>Reset demo</button></span></footer>
+    </main>
+  </div>
+  <dialog id="dialog" aria-labelledby="dialog-title">
+    <form id="dialog-form" method="dialog" novalidate>
+      <div class="dialog-heading"><h2 id="dialog-title"></h2><button class="icon-button" type="button" data-close aria-label="Close dialog"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+      <div id="dialog-body"></div>
+      <p id="dialog-error" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button class="button secondary" id="dialog-cancel" type="button" data-close>Cancel</button><button class="button primary" id="dialog-submit" type="submit">Save</button></div>
+    </form>
+  </dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
