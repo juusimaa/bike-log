@@ -1,6 +1,6 @@
 'use client';
 import { errorText } from '../../lib/errors';
-import { useEffect, useState, useId } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
     Position,
@@ -37,6 +37,11 @@ type Source = 'new' | 'garage' | 'bike';
 type Part = Validated<ComponentResponse>;
 /** Pair types fitted to both ends by default (owner-approved V3 design). */
 const PAIR_BY_DEFAULT = new Set(['brake', 'brake-lever', 'disc-rotor']);
+/** What a save fitted, and where to carry on when "Fit, then …" was chosen (V4). */
+export type FitOutcome = {
+    positions: Position[];
+    next?: { position: Position; wall: string; offset: string };
+};
 export function FitComponentForm({
     bikeId,
     position,
@@ -45,12 +50,17 @@ export function FitComponentForm({
     onCancel,
     onDirtyChange,
     onBusyChange,
+    initialWall,
+    initialOffset = '',
 }: {
     bikeId: string;
     position: Position;
+    /** The fitting date carried over from the previous fit in a "Fit, then …" run. */
+    initialWall?: string;
+    initialOffset?: string;
     /** An open "none fitted" period that fitting a part ends at the fitting date. */
     exemption?: Validated<PositionExemptionResponse>;
-    onSaved: (r: Validated<InstallationResponse>) => void;
+    onSaved: (r: Validated<InstallationResponse>, outcome: FitOutcome) => void;
     onCancel: () => void;
     onDirtyChange?: (v: boolean) => void;
     onBusyChange?: (v: boolean) => void;
@@ -80,11 +90,32 @@ export function FitComponentForm({
         pairOffered &&
         source === 'new' &&
         (pairChoice ?? PAIR_BY_DEFAULT.has(entry?.type ?? ''));
-    const [wall, setWall] = useState(() =>
-        formatLocal(new Date().toISOString()),
+    // The next empty or missing position in this group, after this one and wrapping round.
+    const group = catalog.data?.positions.filter(
+        (p) => p.group === entry?.group,
+    );
+    const at =
+        group?.findIndex((p) => p.position === destination.position) ?? -1;
+    const next =
+        group && at >= 0
+            ? [...group.slice(at + 1), ...group.slice(0, at)].find(
+                  (p) =>
+                      !(pair && p.position === opposite?.position) &&
+                      ['not-recorded', 'missing'].includes(
+                          overview.data?.positionStatuses.find(
+                              (s) => s.position === p.position,
+                          )?.state ?? '',
+                      ),
+              )
+            : undefined;
+    const [wall, setWall] = useState(
+        () => initialWall ?? formatLocal(new Date().toISOString()),
     );
     const [initial] = useState(wall);
-    const [offset, setOffset] = useState('');
+    const [offset, setOffset] = useState(initialOffset);
+    const form = useRef<HTMLFormElement>(null);
+    /** Set by "Fit, then …" just before it submits the form; Enter keeps meaning "Fit part". */
+    const continuing = useRef(false);
     const [existing, setExisting] = useState('');
     const [donor, setDonor] = useState('');
     const [createdComponentId, setCreated] = useState<string>();
@@ -165,6 +196,14 @@ export function FitComponentForm({
     const chosenDonor = fittedElsewhere.find(
         (d) => d.installation.id === donor,
     );
+    function outcome(fitted: Position[], goOn: boolean): FitOutcome {
+        return {
+            positions: fitted,
+            ...(goOn && next
+                ? { next: { position: next.position, wall, offset } }
+                : {}),
+        };
+    }
     async function invalidateParts(componentIds: string[], bikeIds: string[]) {
         for (const affected of new Set([destination.bikeId, ...bikeIds]))
             await invalidateBike(client, affected, componentIds);
@@ -200,7 +239,7 @@ export function FitComponentForm({
         }
         return { weightGrams, estimateMetres };
     }
-    async function submit() {
+    async function submit(goOn = false) {
         setValidationAttempt((attempt) => attempt + 1);
         if (busy) return;
         setErrors([]);
@@ -220,7 +259,7 @@ export function FitComponentForm({
             return;
         }
         if (source === 'bike' && !createdComponentId)
-            return void moveFromBike(startUtc);
+            return void moveFromBike(startUtc, goOn);
         let componentId = createdComponentId || existing;
         try {
             if (source === 'garage' && !componentId && !createdComponentId)
@@ -244,7 +283,12 @@ export function FitComponentForm({
                 }
                 const { weightGrams, estimateMetres } = parseInputs();
                 if (pair)
-                    return void fitPair(startUtc, weightGrams, estimateMetres);
+                    return void fitPair(
+                        startUtc,
+                        weightGrams,
+                        estimateMetres,
+                        goOn,
+                    );
                 setPhase('creating');
                 const part = await getApi().createComponent({
                     type,
@@ -291,7 +335,7 @@ export function FitComponentForm({
             );
             setPhase('saved');
             onDirtyChange?.(false);
-            onSaved(result);
+            onSaved(result, outcome([destination.position], goOn));
         } catch (e) {
             setErrors([problemText(e)]);
             if (e instanceof ApiError && e.uncertain) {
@@ -305,6 +349,7 @@ export function FitComponentForm({
         startUtc: string,
         weightGrams: number | null,
         estimateMetres: number,
+        goOn: boolean,
     ) {
         setPhase('fitting');
         try {
@@ -327,6 +372,13 @@ export function FitComponentForm({
                 result.front.installation.position === destination.position
                     ? result.front.installation
                     : result.rear.installation,
+                outcome(
+                    [
+                        result.front.installation.position,
+                        result.rear.installation.position,
+                    ],
+                    goOn,
+                ),
             );
         } catch (e) {
             setErrors([
@@ -341,7 +393,7 @@ export function FitComponentForm({
             setPhase('incomplete');
         }
     }
-    async function moveFromBike(startUtc: string) {
+    async function moveFromBike(startUtc: string, goOn: boolean) {
         if (!chosenDonor) {
             setErrors(['Choose a part from another bike.']);
             return;
@@ -365,7 +417,10 @@ export function FitComponentForm({
             );
             setPhase('saved');
             onDirtyChange?.(false);
-            onSaved(result.newInstallation);
+            onSaved(
+                result.newInstallation,
+                outcome([destination.position], goOn),
+            );
         } catch (e) {
             setErrors([problemText(e)]);
             setDonor('');
@@ -393,9 +448,12 @@ export function FitComponentForm({
                 </p>
             )}
             <form
+                ref={form}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    if (!uncertain) void submit();
+                    const goOn = continuing.current;
+                    continuing.current = false;
+                    if (!uncertain) void submit(goOn);
                 }}
             >
                 <FormError key={validationAttempt} errors={errors} />
@@ -640,6 +698,19 @@ export function FitComponentForm({
                     >
                         Cancel
                     </button>
+                    {!createdComponentId && !uncertain && next && (
+                        <button
+                            className="button secondary fit-next"
+                            type="button"
+                            disabled={busy}
+                            onClick={() => {
+                                continuing.current = true;
+                                form.current?.requestSubmit();
+                            }}
+                        >
+                            Fit, then {next.label.toLowerCase()}
+                        </button>
+                    )}
                     {!createdComponentId && (
                         <button
                             className="button primary"

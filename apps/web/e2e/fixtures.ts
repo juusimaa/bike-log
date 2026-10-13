@@ -337,17 +337,52 @@ export async function apiRead(request: APIRequestContext, path: string) {
     expect(response.ok(), `${path}: ${response.status()}`).toBeTruthy();
     return response.json();
 }
+/** A position's Fit button, opening its "not recorded" panel first if it is folded (V4). */
+export async function fitButton(page: Page, position: string) {
+    const button = page.getByRole('button', {
+        name: `Fit ${position}`,
+        exact: true,
+    });
+    const panel = page.locator('details.unrecorded', { has: button });
+    await expect(page.locator('details.unrecorded').first()).toBeAttached();
+    if ((await panel.count()) && (await panel.getAttribute('open')) === null)
+        await panel.locator('summary').click();
+    return button;
+}
+/** Opens the V4 bike switcher; resolves once its panel is showing. */
+export async function openSwitcher(page: Page) {
+    await page.getByRole('button', { name: /Change bike/ }).click();
+    const panel = page.getByRole('dialog', { name: 'Choose a bike' });
+    await expect(panel).toBeVisible();
+    return panel;
+}
+/** Picks a bike through the switcher panel. */
+export async function chooseBike(page: Page, name: RegExp) {
+    const panel = await openSwitcher(page);
+    await panel.getByRole('button', { name }).first().click();
+}
+/** Create bike sits at the foot of the switcher, or alone in an empty garage. */
+export async function startCreateBike(page: Page) {
+    const entry = page
+        .getByRole('button', { name: /Change bike|^Create bike$/ })
+        .first();
+    await expect(entry).toBeVisible();
+    if ((await entry.textContent())?.includes('Change bike'))
+        await openSwitcher(page);
+    await page.getByRole('button', { name: 'Create bike' }).click();
+}
 export async function discoverBike(page: Page, marker: string) {
     await page.goto('/');
-    await page.locator('.bike-choice').first().waitFor();
+    const panel = await openSwitcher(page);
+    await panel.getByRole('searchbox', { name: 'Search bikes' }).fill(marker);
     for (let i = 0; i < 100; i++) {
-        const choice = page.getByRole('button', { name: new RegExp(marker) });
+        const choice = panel.getByRole('button', { name: new RegExp(marker) });
         if (await choice.count()) {
-            await choice.click();
+            await choice.first().click();
             await expect(page).toHaveURL(/bike=/);
             return new URL(page.url()).searchParams.get('bike')!;
         }
-        const more = page.getByRole('button', { name: 'Load more bikes' });
+        const more = panel.getByRole('button', { name: 'Load more bikes' });
         if (!(await more.count())) break;
         const read = page.waitForResponse(
             (response) =>
@@ -357,13 +392,7 @@ export async function discoverBike(page: Page, marker: string) {
         await more.click();
         const result = await (await read).json();
         if (result.items.length)
-            await expect(
-                page
-                    .getByRole('button', {
-                        name: new RegExp(result.items.at(-1).displayName),
-                    })
-                    .last(),
-            ).toBeVisible();
+            await expect(more.or(panel.getByRole('status'))).toBeVisible();
     }
     throw new Error(
         `Synthetic bike ${marker} not discovered through garage pages`,

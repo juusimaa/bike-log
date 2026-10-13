@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { mockVisual, bikeId, bike } from './fixtures';
+import { mockVisual, bikeId, bike, startCreateBike } from './fixtures';
 for (const status of [400, 404, 409, 500, 503])
     test(`adapter ${status} preserves attempted fields and never retries a write`, async ({
         page,
@@ -53,7 +53,7 @@ test('dropped successful adapter response: persists once, preserves input, expli
 }, info) => {
     const marker = `${process.env.BIKELOG_E2E_RUN ?? 'task9'}-${info.project.name}-${Date.now()}-lost`;
     await page.goto('/');
-    await page.getByRole('button', { name: 'Create bike' }).click();
+    await startCreateBike(page);
     await page.getByLabel('Bike name', { exact: true }).fill(marker);
     await page.getByLabel('Make', { exact: true }).fill('Synthetic');
     await page.getByLabel('Model', { exact: true }).fill('Dropped response');

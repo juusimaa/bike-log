@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach } from 'vitest';
-afterEach(cleanup);
+afterEach(() => {
+    cleanup();
+    // The bike switcher remembers recently viewed bikes for the tab.
+    if (typeof window !== 'undefined') window.sessionStorage.clear();
+});
 // jsdom lacks native dialog methods. This shim models open state only; real
 // browser focus trapping and Escape handling are verified in the browser task.
 if (typeof HTMLDialogElement !== 'undefined') {

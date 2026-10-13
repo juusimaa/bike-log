@@ -4,7 +4,7 @@ import type {
     RideResponse,
 } from '@bikelog/api-client';
 import { test, expect, type Page } from '@playwright/test';
-import { apiRead, discoverBike, positions } from './fixtures';
+import { apiRead, discoverBike, positions, startCreateBike } from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
     console.log(`Browser ${info.project.name}: ${browser.version()}`);
 });
@@ -13,7 +13,7 @@ async function close(page: Page) {
     await expect(page.getByRole('dialog')).toHaveCount(0);
 }
 async function create(page: Page, name: string) {
-    await page.getByRole('button', { name: 'Create bike' }).click();
+    await startCreateBike(page);
     for (const [label, value] of [
         ['Bike name', name],
         ['Make', 'Synthetic'],
@@ -79,7 +79,7 @@ test('color names persist through bike creation, editing and clearing', async ({
 }, info) => {
     const marker = `${process.env.BIKELOG_E2E_RUN ?? 'color'}-${info.project.name}-${Date.now()}`;
     await page.goto('/');
-    await page.getByRole('button', { name: 'Create bike' }).click();
+    await startCreateBike(page);
     for (const [label, value] of [
         ['Bike name', marker],
         ['Make', 'Canyon'],

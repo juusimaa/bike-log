@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+    render,
+    screen,
+    fireEvent,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Garage, type GarageProps } from '../src/features/garage/Garage';
 import { ApiError, ClientRangeError } from '@bikelog/api-client';
@@ -21,6 +27,16 @@ const bike = (id: string) => ({
     frameWeightGrams: null,
     missingPositions: [] as string[],
 });
+/** Opens the V4 bike switcher and picks a bike from its panel. */
+function chooseBike(name: RegExp) {
+    fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
+    fireEvent.click(
+        within(screen.getByRole('dialog', { name: 'Choose a bike' })).getByRole(
+            'button',
+            { name },
+        ),
+    );
+}
 const snapshot = (id: string) => ({
     bike: bike(id),
     rideCount: 123,
@@ -82,6 +98,12 @@ describe('garage', () => {
             await screen.findByRole('heading', { name: 'Bike B' }),
         ).toBeVisible();
         expect(api.getBike).toHaveBeenCalledWith(b, expect.any(AbortSignal));
+        // The selected bike is shown even though it is not on a loaded page.
+        expect(
+            screen.getByRole('button', { name: /Bike B.*Change bike/ }),
+        ).toBeEnabled();
+        expect(screen.getByText('50+ bikes in your garage')).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
         expect(
             screen.getByRole('button', { name: 'Load more bikes' }),
         ).toBeEnabled();
@@ -130,14 +152,14 @@ describe('garage', () => {
         reset();
         mount({ dirty: true });
         await screen.findByRole('heading', { name: 'Bike A' });
-        fireEvent.click(screen.getByRole('button', { name: /Bike B/ }));
+        chooseBike(/Bike B/);
         expect(
             screen.getByRole('dialog', { name: 'Discard unsaved changes?' }),
         ).toBeVisible();
         expect(screen.getByRole('heading', { name: 'Bike A' })).toBeVisible();
         fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
         expect(screen.getByRole('heading', { name: 'Bike A' })).toBeVisible();
-        fireEvent.click(screen.getByRole('button', { name: /Bike B/ }));
+        chooseBike(/Bike B/);
         fireEvent.click(
             screen.getByRole('button', { name: 'Discard changes' }),
         );
@@ -154,12 +176,16 @@ describe('garage', () => {
         );
         mount();
         fireEvent.click(
+            await screen.findByRole('button', { name: /Change bike/ }),
+        );
+        fireEvent.click(
             await screen.findByRole('button', { name: 'Load more bikes' }),
         );
-        await screen.findByRole('button', { name: /Bike B/ });
-        expect(screen.getAllByRole('button', { name: /Bike A/ })).toHaveLength(
-            1,
-        );
+        const panel = screen.getByRole('dialog', { name: 'Choose a bike' });
+        await within(panel).findByRole('button', { name: /Bike B/ });
+        expect(
+            within(panel).getAllByRole('button', { name: /Bike A/ }),
+        ).toHaveLength(1);
         expect(api.listBikes).toHaveBeenCalledWith(
             { pageSize: 50, cursor: 'opaque-token' },
             expect.any(AbortSignal),
@@ -255,9 +281,9 @@ describe('garage', () => {
                 : Promise.resolve(snapshot(id)),
         );
         mount();
-        await screen.findByRole('button', { name: /Bike B/ });
+        await screen.findByText('2 bikes in your garage');
         await waitFor(() => expect(resolve).toBeTypeOf('function'));
-        fireEvent.click(screen.getByRole('button', { name: /Bike B/ }));
+        chooseBike(/Bike B/);
         await screen.findByRole('heading', { name: 'Bike B' });
         resolve(snapshot(a));
         await screen.findByText(

@@ -1,5 +1,11 @@
 import { beforeEach, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {
+    render,
+    screen,
+    fireEvent,
+    waitFor,
+    within,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@bikelog/api-client';
 import { BikeForm } from '../src/features/bikes/BikeForm';
@@ -20,6 +26,21 @@ const bike = {
     frameWeightGrams: null,
     missingPositions: [] as string[],
 };
+/** Opens the V4 bike switcher and picks a bike from its panel. */
+function chooseBike(name: RegExp) {
+    fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
+    fireEvent.click(
+        within(screen.getByRole('dialog', { name: 'Choose a bike' })).getByRole(
+            'button',
+            { name },
+        ),
+    );
+}
+/** Create bike now lives at the foot of the switcher panel. */
+function createBike() {
+    fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Create bike' }));
+}
 const api = vi.hoisted(() => ({
     getComponentCatalog: vi.fn(),
     listExemptions: vi.fn(),
@@ -237,12 +258,12 @@ it('dirtyBikeSwitchRequiresChoice', async () => {
     render(<Home />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
-    fireEvent.click(screen.getByRole('button', { name: /Other/ }));
+    chooseBike(/Other/);
     await screen.findByRole('dialog', { name: 'Discard unsaved changes?' });
     expect(screen.getByLabelText('Bike name')).toHaveValue('Attempt');
     fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(window.location.search).toContain(a);
-    fireEvent.click(screen.getByRole('button', { name: /Other/ }));
+    chooseBike(/Other/);
     fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
     await waitFor(() =>
         expect(screen.queryByLabelText('Bike name')).not.toBeInTheDocument(),
@@ -285,14 +306,15 @@ it('pendingWriteCannotNavigateOrReplaceCapturedDestination', async () => {
     await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled(),
     );
-    expect(screen.getByRole('button', { name: /Other/ })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Create bike' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /Change bike/ })).toBeDisabled();
     expect(screen.getByRole('link', { name: 'Components' })).toHaveAttribute(
         'aria-disabled',
         'true',
     );
-    fireEvent.click(screen.getByRole('button', { name: /Other/ }));
-    fireEvent.click(screen.getByRole('button', { name: 'Create bike' }));
+    fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
+    expect(
+        screen.queryByRole('dialog', { name: 'Choose a bike' }),
+    ).not.toBeInTheDocument();
     expect(
         screen.queryByRole('dialog', { name: 'Discard unsaved changes?' }),
     ).not.toBeInTheDocument();
@@ -310,7 +332,8 @@ it('pendingWriteCannotNavigateOrReplaceCapturedDestination', async () => {
 it('successfulCreationSelectsReturnedIdAfterInvalidation', async () => {
     garageFixture();
     render(<Home />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Create bike' }));
+    await screen.findByRole('button', { name: /Change bike/ });
+    createBike();
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Save bike' }));
     await waitFor(() => expect(window.location.search).toContain(b));
@@ -322,11 +345,11 @@ it('newActionRetainsDirtyEditorUntilExplicitChoice', async () => {
     render(<Home />);
     fireEvent.click(await screen.findByRole('button', { name: 'Edit bike' }));
     change('Bike name', 'Attempt');
-    fireEvent.click(screen.getByRole('button', { name: 'Create bike' }));
+    createBike();
     expect(screen.getByLabelText('Bike name')).toHaveValue('Attempt');
     fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
     expect(screen.getByLabelText('Bike name')).toHaveValue('Attempt');
-    fireEvent.click(screen.getByRole('button', { name: 'Create bike' }));
+    createBike();
     fireEvent.click(screen.getByRole('button', { name: 'Discard changes' }));
     expect(screen.getByLabelText('Bike name')).toHaveValue('');
 });
