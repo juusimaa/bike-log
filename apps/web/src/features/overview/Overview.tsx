@@ -115,7 +115,7 @@ export function Overview({
                                 </button>
                             </div>
                         </div>
-                        <BikeArt color={s.bike.color} />
+                        <BikeArt color={s.bike.color} kind={s.bike.kind} />
                         <div className="hero-bottom">
                             <span>
                                 ● {s.currentComponents.length}{' '}

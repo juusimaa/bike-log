@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bike art from geometry</title>
+<!--
+  Draft: default bike pictures drawn from real frame geometry (size M), one reference bike per kind.
+  Each drawing is computed from the published numbers (wheel and tyre size, chainstay, BB drop,
+  wheelbase, stack, reach, head and seat angles), then drawn in the chosen thin-line style.
+  All five share one scale, so a mountain bike is really longer and taller than a road bike.
+  Nothing is traced from photographs; no logos or brand marks.
+-->
+<style>
+:root{--ink:#24332d;--muted:#59675d;--paper:#f7f8f5;--line:#e5e8e1;--sage:#edf1e7;--tyre:#2f3a36;--metal:#7d8a84;--soft:#f1ead8;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);background:var(--paper)}
+*{box-sizing:border-box}body{margin:0;padding:40px 42px 64px}
+::selection{background:#e4efb0}
+h1{font-size:28px;font-weight:650;letter-spacing:-.02em;margin:0 0 8px}
+h2{font-size:18px;font-weight:650;letter-spacing:-.02em;margin:0 0 4px}
+p{margin:0;line-height:1.5;color:var(--muted);font-size:14px;max-width:72ch}
+.intro{margin-bottom:28px}
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px 26px 26px;margin-bottom:24px}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.cell{background:var(--sage);border-radius:12px;padding:12px 12px 14px;min-width:0}
+.cell .hero{width:100%;aspect-ratio:2/1;display:block}
+.cell strong{display:block;font-size:13px;font-weight:650;margin-top:8px}
+.cell small{display:block;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45}
+.cell .ref{color:var(--ink)}
+.sizes{display:flex;align-items:center;gap:10px;margin-top:10px}
+.sizes svg{display:block;background:#fff;border-radius:6px}
+.s57{width:57px;height:33px}.s44{width:44px;height:26px}
+.list{margin-top:22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.mock{border:1px solid var(--line);border-radius:14px;padding:6px;background:#fff}
+.mock .row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;align-items:center;padding:8px 10px;border-radius:9px}
+.mock .row:nth-child(2){background:#f3f6ec}
+.mock .row strong{display:block;font-size:13px;font-weight:650}
+.mock .row small{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.mock h3{font-size:12px;font-weight:600;color:var(--muted);margin:8px 10px 4px}
+table{border-collapse:collapse;font-size:12px;margin-top:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:right;padding:5px 10px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--muted);font-weight:600}
+
+svg.bike *{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.bike .frame{stroke:var(--c)}
+.bike .tyre{stroke:var(--tyre)}
+.bike .knob{stroke:var(--tyre)}
+.bike .rim{stroke:#a9b7b2;stroke-width:2}
+.bike .part{stroke:var(--tyre);stroke-width:5}
+.bike .metal{stroke:var(--metal);stroke-width:5}
+.bike .solid{fill:var(--tyre);stroke:var(--tyre);stroke-width:2}
+.bike .soft{fill:var(--soft);stroke:var(--tyre);stroke-width:2.5}
+.bike .hub{fill:var(--tyre);stroke:none}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.list{grid-template-columns:1fr}body{padding:24px 16px 48px}}
+</style>
+</head>
+<body>
+<div class="intro">
+  <h1>Default bike pictures from real geometry</h1>
+  <p>Each picture is computed from a real reference bike's size M frame numbers and drawn in the thin-line style. The type shows through proportions, not decoration: the mountain bike's long, slack front and fat tyres; the road bikes' short wheelbase and thin tyres; the city bike's mudguards and rack. All five share one scale.</p>
+</div>
+<section class="card">
+  <div class="grid" id="grid"></div>
+  <div class="list" id="list"></div>
+</section>
+<section class="card">
+  <h2>Numbers used (size M, mm and degrees)</h2>
+  <p>From Canyon's published geometry as listed on bikeinsights.com. The Citylite has no published geometry yet, so its frame uses Canyon's Commuter 5 (2024) numbers with the Citylite's 650b × 47 tyres.</p>
+  <table id="numbers"></table>
+</section>
+<script>
+const BIKES = {
+  road: {
+    label: 'Road', ref: 'Canyon Endurace CF (2026)', color: '#a3564c',
+    note: 'Drop bar, thin 32 mm tyres, short wheelbase.',
+    bsd: 622, tyre: 32, cs: 420, drop: 74, wb: 1014, stack: 584, reach: 392, hta: 72.5, ht: 158, sta: 73.5, st: 500,
+    bar: 'drop', stem: [110, -6], spacer: 25, tube: 10,
+  },
+  gravel: {
+    label: 'Gravel', ref: 'Canyon Grizl (2025)', color: '#6f8f6c',
+    note: 'Flared drop bar, 45 mm knobbly tyres, longer and lower.',
+    bsd: 622, tyre: 45, cs: 435, drop: 75, wb: 1045, stack: 579, reach: 402, hta: 71.5, ht: 141, sta: 73.5, st: 522,
+    bar: 'flare', stem: [90, -6], spacer: 30, tube: 11, knobs: [4, 9],
+  },
+  mountain: {
+    label: 'Mountain', ref: 'Canyon Spectral 29 (2023)', color: '#b27a2f',
+    note: 'Full suspension, 2.4″ tyres, slack 64° front, riser bar.',
+    bsd: 622, tyre: 61, cs: 438, drop: 32, wb: 1222, stack: 621, reach: 456, hta: 64, ht: 105, sta: 76.5, st: 430,
+    bar: 'riser', stem: [40, 0], spacer: 15, tube: 14, knobs: [7, 9], suspension: true,
+  },
+  hybrid: {
+    label: 'Hybrid / city', ref: 'Canyon Citylite (2025) *', color: '#4c7e86',
+    note: '650b × 47 tyres, mudguards, rear rack, swept-back bar.',
+    bsd: 584, tyre: 47, cs: 450, drop: 60, wb: 1054, stack: 557, reach: 423, hta: 71.5, ht: 150, sta: 73.5, st: 470,
+    bar: 'swept', stem: [70, 20], spacer: 40, tube: 11, city: true,
+  },
+  other: {
+    label: 'Other / not set', ref: 'Canyon Roadlite CF (2025)', color: '#789b8c',
+    note: 'Flat bar on a road-fast frame, 30 mm tyres.',
+    bsd: 622, tyre: 30, cs: 415, drop: 73, wb: 1029, stack: 573, reach: 417, hta: 72.5, ht: 155, sta: 73.5, st: 510,
+    bar: 'flat', stem: [90, -6], spacer: 25, tube: 10,
+  },
+};
+
+const S = 0.255; // svg units per millimetre, shared so sizes compare honestly
+const rad = (d) => (d * Math.PI) / 180;
+const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
+const along = (p, deg, len) => [p[0] + Math.cos(rad(deg)) * len, p[1] + Math.sin(rad(deg)) * len];
+const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+function draw(g, color, cls = 'hero') {
+  // Millimetres with the bottom bracket at the origin, x forward, y up.
+  const R = g.bsd / 2 + g.tyre;
+  const rear = [-Math.sqrt(g.cs ** 2 - g.drop ** 2), g.drop];
+  const front = [rear[0] + g.wb, g.drop];
+  const ground = g.drop - R, mid = (rear[0] + front[0]) / 2;
+  const P = ([x, y]) => `${(300 + (x - mid) * S).toFixed(1)} ${(292 - (y - ground) * S).toFixed(1)}`;
+  const line = (...pts) => 'M' + pts.map(P).join('L');
+  const curve = (a, c1, c2, b) => `M${P(a)}C${P(c1)} ${P(c2)} ${P(b)}`;
+  const circle = ([x, y], r) => { const [cx, cy] = P([x, y]).split(' ').map(Number); return `<circle cx="${cx}" cy="${cy}" r="${(r * S).toFixed(1)}"`; };
+
+  const htTop = [g.reach, g.stack];
+  const back = 180 - g.hta; // the head tube leans back toward the rider
+  const htBottom = along(htTop, -g.hta, g.ht);
+  const stDir = 180 - g.sta;
+  const stTop = along([0, 0], stDir, g.st);
+  const saddle = along([0, 0], stDir, g.suspension ? 700 : 735);
+  const steerTop = along(htTop, back, g.spacer);
+  const stemEnd = along(steerTop, g.stem[1], g.stem[0]);
+  const parts = [];
+
+  // Wheels: tyre width is the real width; rims sit at the bead seat.
+  for (const c of [rear, front]) {
+    parts.push(`${circle(c, R - g.tyre / 2)} class="tyre" style="stroke-width:${(g.tyre * S * 1.15).toFixed(1)}"/>`);
+    parts.push(`${circle(c, g.bsd / 2 - 18)} class="rim"/>`);
+    if (g.knobs) parts.push(`${circle(c, R + 2)} class="knob" style="stroke-width:${(g.knobs[0] * 1.3).toFixed(1)};stroke-dasharray:${g.knobs[0]} ${g.knobs[1]}"/>`);
+  }
+  if (g.city) {
+    // Mudguards follow the tyre; the rack sits flat over the rear wheel.
+    for (const c of [rear, front]) {
+      const r = R + 22, a0 = c === rear ? 200 : 150, a1 = c === rear ? 30 : -20;
+      const s = along(c, a0, r), e = along(c, a1, r);
+      parts.push(`<path class="metal" d="M${P(s)}A${(r * S).toFixed(1)} ${(r * S).toFixed(1)} 0 0 1 ${P(e)}"/>`);
+    }
+    const deck = rear[1] + R + 60;
+    parts.push(`<path class="metal" d="${line([rear[0] - 150, deck], [rear[0] + 120, deck])}${line([rear[0] - 90, deck], rear)}${line([rear[0] + 110, deck], along([0, 0], stDir, g.st - 60))}"/>`);
+  }
+
+  // Frame
+  const f = [];
+  const ttRear = along([0, 0], stDir, g.st - 25);
+  if (g.suspension) {
+    const pivot = along([0, 0], stDir, 120), rocker = along([0, 0], stDir, g.st - 70);
+    f.push(line(rear, pivot), line(rear, rocker), line([0, 0], stTop), line(along(htTop, -g.hta, 20), ttRear), line([0, 0], along(htBottom, back, 25)));
+    parts.push(`<path class="part" style="stroke-width:12" d="${line(lerp([0, 0], along(htBottom, back, 25), 0.32), lerp(rocker, ttRear, 0.4))}"/>`);
+    parts.push(`<path class="metal" style="stroke-width:6;stroke-dasharray:3 6" d="${line(lerp([0, 0], along(htBottom, back, 25), 0.35), lerp(rocker, ttRear, 0.35))}"/>`);
+  } else {
+    f.push(line(rear, [0, 0]), line(rear, ttRear), line([0, 0], stTop), line(along(htTop, -g.hta, 15), ttRear), line([0, 0], along(htBottom, back, 25)));
+  }
+  f.push(line(htTop, htBottom));
+  parts.push(`<path class="frame" style="stroke-width:${g.tube}" d="${f.join('')}"/>`);
+
+  // Fork: a suspension fork has a thin upper and thick lower legs.
+  if (g.suspension) {
+    const knee = lerp(htBottom, front, 0.45);
+    parts.push(`<path class="metal" style="stroke-width:9" d="${line(htBottom, knee)}"/>`);
+    parts.push(`<path class="part" style="stroke-width:15" d="${line(lerp(htBottom, front, 0.4), front)}"/>`);
+  } else {
+    // Rake: the fork bows slightly forward toward the axle.
+    const bend = add(lerp(htBottom, front, 0.55), [-12, 0]);
+    parts.push(`<path class="frame" style="stroke-width:${g.tube - 2}" d="M${P(htBottom)}Q${P(bend)} ${P(front)}"/>`);
+  }
+
+  // Seat post, saddle, steerer and stem
+  parts.push(`<path class="metal" d="${line(stTop, saddle)}${line(htTop, steerTop, stemEnd)}"/>`);
+  parts.push(`<path class="solid" d="M${P(add(saddle, [-150, 8]))}Q${P(add(saddle, [-60, 22]))} ${P(add(saddle, [100, 6]))}L${P(add(saddle, [100, -4]))}Q${P(add(saddle, [-40, -6]))} ${P(add(saddle, [-150, -6]))}Z"/>`);
+
+  // Handlebar, in side view
+  const E = stemEnd, o = (dx, dy) => add(E, [dx, dy]);
+  const bar = {
+    drop: curve(E, o(55, 0), o(90, -25), o(80, -70)) + curve(o(80, -70), o(70, -115), o(30, -130), o(-10, -118)),
+    flare: curve(E, o(50, 0), o(85, -20), o(80, -60)) + curve(o(80, -60), o(78, -105), o(45, -128), o(0, -125)),
+    riser: line(E, o(-15, 35), o(-35, 40)),
+    swept: curve(E, o(-10, 45), o(-60, 70), o(-130, 65)),
+    flat: line(E, o(-30, -4)),
+  }[g.bar];
+  parts.push(`<path class="part" d="${bar}"/>`);
+  const grip = { riser: [o(-35, 40), o(-110, 40)], swept: [o(-110, 66), o(-175, 62)], flat: [o(-25, -4), o(-110, -10)] }[g.bar];
+  if (grip) parts.push(`<path class="part" style="stroke-width:9" d="${line(...grip)}"/>`);
+
+  // Drivetrain
+  parts.push(`${circle([0, 0], g.suspension ? 70 : 95)} class="soft"/>`);
+  parts.push(`<path class="part" d="${line([0, 0], along([0, 0], -62, 170))}${line(add(along([0, 0], -62, 170), [-45, 0]), add(along([0, 0], -62, 170), [45, 0]))}"/>`);
+  for (const c of [rear, front]) parts.push(`${circle(c, 14)} class="hub"/>`);
+
+  return `<svg class="bike ${cls}" viewBox="0 0 600 300" style="--c:${color ?? g.color}" aria-hidden="true">${parts.join('')}</svg>`;
+}
+
+document.getElementById('grid').innerHTML = Object.values(BIKES).map((g) => `
+  <div class="cell">${draw(g)}
+    <strong>${g.label}</strong><small class="ref">${g.ref}</small><small>${g.note}</small>
+    <div class="sizes">${draw(g, null, 's57')}${draw(g, null, 's44')}${draw(g, '#345b43', 's44')}</div>
+  </div>`).join('');
+
+const garage = [
+  ['Gravel race', 'Specialized Crux · gravel · 2025', 'gravel'],
+  ['The everyday escape', 'Canyon Grizl 7 · gravel · 2025', 'gravel', '#829c83'],
+  ['Enduro', 'YT Capra · mountain · 2023', 'mountain'],
+  ['Commuter', 'Brompton C Line · hybrid · 2021', 'hybrid'],
+  ['Race day', 'Cervélo R5 Disc · road · 2024', 'road'],
+  ['New build', 'Metadata not provided', 'other'],
+];
+const rows = (items) => items.map(([n, m, k, c]) =>
+  `<div class="row">${draw(BIKES[k], c, 's44')}<span><strong>${n}</strong><small>${m}</small></span></div>`).join('');
+document.getElementById('list').innerHTML =
+  `<div class="mock"><h3>In the switcher · default colours</h3>${rows(garage)}</div>
+   <div class="mock"><h3>In the switcher · every bike the same colour</h3>${rows(garage.map((g) => [...g.slice(0, 3), '#6e8e6c']))}</div>`;
+
+const cols = [['Wheel', (g) => `${g.bsd === 584 ? '650b' : '700c'} × ${g.tyre}`], ['Stack', 'stack'], ['Reach', 'reach'], ['Head angle', 'hta'],
+  ['Seat angle', 'sta'], ['Chainstay', 'cs'], ['BB drop', 'drop'], ['Wheelbase', 'wb']];
+document.getElementById('numbers').innerHTML =
+  `<tr><th>Bike</th>${cols.map(([h]) => `<th>${h}</th>`).join('')}</tr>` +
+  Object.values(BIKES).map((g) => `<tr><td>${g.ref}</td>${cols.map(([, k]) => `<td>${typeof k === 'function' ? k(g) : g[k]}</td>`).join('')}</tr>`).join('');
+</script>
+</body>
+</html>
