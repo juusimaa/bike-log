@@ -88,14 +88,16 @@ A dated declaration that a position is intentionally empty (D5).
 **State transitions for a wheel's tube setup**:
 
 ```text
-tubed ──switch-to-tubeless(T)──▶ tubeless      ends any open inner tube installation at T,
+tubed ──switch-to-tubeless(T)──▶ tubeless      ends any open inner tube installation at T
+                                                (requires its version; stale returns 409),
   ▲                                │            opens a Tubeless exemption [T, ∞)
   └────switch-to-tubed(T)──────────┘            ends the open exemption at T; the inner tube
                                                 position then shows "not recorded" until fitted
 ```
 
 The front derailleur works the same way with `none-fitted`. Marking it as none fitted ends any open
-installation at T.
+installation at T. The request must carry that installation's version as `expectedInstallationVersion`;
+a missing or stale version returns 409 and nothing changes.
 
 ## Bike (changed)
 
@@ -107,9 +109,13 @@ installation at T.
 ## Read models (not stored)
 
 - **PositionStatus** (per bike position, at evaluation time): `fitted` (with component and installation),
-  `exempt` (with reason and since when), or `not-recorded`.
+  `exempt` (with reason and since when), `missing` (empty now, but this bike had a part in this position
+  before and the position is not exempt; `sinceUtc` is when the last part's installation ended), or
+  `not-recorded` (never had a part on this bike).
   Display labels: `exempt` + `none-fitted` → "None fitted"; `exempt` + `tubeless` → "Not applicable
-  (tubeless)"; `not-recorded` → "Not recorded".
+  (tubeless)"; `missing` → "Missing since …"; `not-recorded` → "Not recorded".
+- **Bike completeness** (D12): `missingPositions` — the positions currently in the `missing` state. A bike
+  with at least one is incomplete. It never blocks rides.
 - **PositionGap** (D6): position, ride count without a recorded component, first and last such ride
   start.
 - **WeightSummary** (D9): for each group, `grams` and `missingCount`; `frameGrams` (nullable);

@@ -12,9 +12,10 @@ This feature extends a bike from 4 tracked positions (chain, cassette, two tyres
 The design is anchored on one domain `ComponentCatalog`. It drives type-to-position compatibility,
 groups, labels and which positions may be intentionally empty, and the web reads it from the API. Front
 derailleur "none fitted" and per-wheel "tubeless" are dated `PositionExemption` periods. They share the
-existing half-open overlap rule with installations and suppress allocation gaps. A new pair endpoint
-fits matching front and rear parts atomically. The overview gains per-position status, a gap summary
-per position and weight subtotals.
+existing half-open overlap rule with installations and suppress allocation gaps. New pair and move
+endpoints fit matching front and rear parts, and move a part between positions or bikes, each as one
+atomic step; a move can take a part fitted on another bike, which then shows as incomplete (warned,
+never blocked) until it gets a part. The overview gains per-position status, a gap summary per position and weight subtotals.
 
 Existing chains, cassettes and tyres keep their stored values. The single migration is additive. See
 [research.md](research.md) for decisions D1–D11.
@@ -140,8 +141,8 @@ The order follows the user story priorities. Each step leaves the suite passing.
 
 1. **Foundation**: catalog, extended enums, weight fields, `PositionExemption`, migration and upgrade test.
    Existing behaviour must be unchanged (US6).
-2. **US1 and US2 (API)**: create/fit/replace for all positions, component details edit, gap summary and
-   position statuses.
+2. **US1 and US2 (API)**: create/fit/replace/remove for all positions, the atomic move endpoint, component
+   details edit, gap summary and position statuses.
 3. **US3 and US4 (API)**: pair endpoint; exemption endpoints with the tubeless switch.
 4. **US5 (API)**: frame weight and overview weight summary.
 5. **Client**: regenerate the OpenAPI client, then build the grouped position board, fit/pair form,

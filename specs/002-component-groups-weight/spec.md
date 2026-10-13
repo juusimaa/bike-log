@@ -84,7 +84,19 @@ the old tyre's total is unchanged and the new tyre carries only the new ride.
    cassette and later fits the old cassette to bike B, **Then** the old cassette keeps its 4,000 km and
    its bike A history, rides on bike B after the fit date add to the old cassette, and rides on bike A
    add only to the new cassette.
-4. **Given** the owner wants to change the frame, **When** they look for a frame position, **Then**
+4. **Given** a saddle fitted on bike A and an unfitted spare saddle in the garage, **When** the owner
+   replaces the saddle and chooses "Part from your garage", **Then** only unfitted saddles are offered
+   (never pedals, and never a saddle fitted elsewhere), the spare is fitted from the replacement date,
+   and the removed saddle returns to the garage with its history and usage.
+5. **Given** a saddle fitted on bike A and another saddle on bike B, **When** the owner replaces bike B's
+   saddle and chooses bike A's saddle under "From another bike", **Then** in one step bike A's saddle
+   installation ends, bike B's old saddle returns to the garage, and bike A's saddle is fitted on bike B
+   with its lifetime usage continuing.
+6. **Given** bike A's saddle was taken for bike B and nothing replaced it, **When** the owner views the
+   garage or bike A, **Then** bike A is marked "Incomplete: saddle missing since <date>"; **and when**
+   they log a ride on bike A, **then** they are warned that the ride will have a saddle gap but can still
+   save it.
+7. **Given** the owner wants to change the frame, **When** they look for a frame position, **Then**
    none exists; the frame is edited as bike details, and a new frame is recorded by creating a new bike.
 
 ---
@@ -180,8 +192,8 @@ usage totals are identical before and after.
 
 - A position with no recorded installation for part of a ride's date range shows an allocation gap for
   that period, as existing positions do; it is not filled with guessed usage.
-- A position marked "none fitted" (front derailleur, inner tube on a tubeless wheel) shows no gap and
-  receives no usage.
+- A position declared intentionally empty (the front derailleur marked "none fitted", or the inner tube
+  on a tubeless wheel) shows no gap and receives no usage.
 - Switching a wheel from tubeless back to tubed reopens the inner tube position from that date; the
   period before it remains not applicable.
 - Fitting matching front and rear parts in one step where one of the two positions is already occupied
@@ -193,6 +205,10 @@ usage totals are identical before and after.
 - Rim-brake or quick-release bikes: disc rotor and through-axle positions simply remain not recorded; see
   Assumptions.
 - A component moved between bikes keeps its weight and type, and must go into a matching position.
+- A part taken from another bike leaves that bike incomplete. The bike stays usable: rides can still be
+  logged (with a warning) and imported, and the missing period shows as a gap, never as guessed usage.
+- A position that was never recorded does not make a bike incomplete; only a position that had a part
+  and is now empty (and not declared intentionally empty) does.
 - Editing the frame's make, model or weight changes bike details only; it never creates usage history.
 
 ## Requirements *(mandatory)*
@@ -261,6 +277,13 @@ usage totals are identical before and after.
   changeable by only its owner, as for existing records.
 - **FR-017**: Usage totals for every position MUST be rebuildable from rides and installation history, and
   give the same result before and after a rebuild.
+- **FR-018**: When replacing or moving a part, the owner MUST be able to take a compatible part that is
+  currently fitted on another of their bikes. Ending its installation there, removing the destination's
+  current part (which returns to the garage) and fitting it MUST happen as one step that succeeds or
+  fails as a whole, and MUST be rejected if either bike's history changed since the owner viewed it.
+- **FR-019**: A bike MUST be shown as incomplete while any position that previously had a part is empty
+  and not declared intentionally empty. The garage and the bike view MUST show which parts are missing
+  and since when. Logging a ride on an incomplete bike MUST warn the owner but MUST NOT be blocked.
 
 ### Key Entities
 

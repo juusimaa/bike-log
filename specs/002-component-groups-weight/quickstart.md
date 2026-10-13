@@ -48,6 +48,8 @@ section).
 | 16 | FR-017 | Run `rebuild-usage` twice | Identical totals |
 | 17 | SC-001 | Time recording all 27 positions on a fresh synthetic road bike, using front/rear pairs where offered | Under 15 minutes. Record the time |
 | 18 | US2-3 | Replace the cassette on bike A. Fit the old cassette to bike B. Ride both bikes | The old cassette keeps its bike A total and adds the bike B ride; the new cassette has only the bike A ride |
+| 19 | US2-5, FR-018 | Replace bike B's saddle with bike A's saddle ("From another bike") | One step: bike A's saddle ends on A, bike B's old saddle is in the garage, and the saddle's lifetime continues on B |
+| 20 | US2-6, FR-019 | View the garage, then log a ride on bike A | Bike A shows "Incomplete: saddle missing since …"; the ride form warns but saves; the ride shows a saddle gap. A bike with only never-recorded positions is not flagged |
 
 Check the bike workspace at 1440, 768 and 390 px wide. All three groups must be readable, and the
 page must not scroll horizontally.

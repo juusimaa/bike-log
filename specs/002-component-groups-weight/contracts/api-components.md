@@ -48,11 +48,14 @@ overlaps; in either case nothing is saved.
 Closes an open installation and fits the same component on another bike (or the same bike), all or
 nothing.
 
-Request: `{ "toBikeId", "toPosition"?, "movedAtUtc", "expectedInstallationVersion" }`. `toPosition`
-defaults to the current position and must be compatible with the component's type.
+Request: `{ "toBikeId", "toPosition"?, "movedAtUtc", "expectedInstallationVersion",
+"expectedDestinationInstallationVersion"? }`. `toPosition` defaults to the current position and must be
+compatible with the component's type. If the destination position has an open installation, the
+destination version is required: that installation is ended at `movedAtUtc` and its part returns to the
+garage. This is how "take a part from another bike" works (FR-018).
 
-Response 200: `{ oldInstallation, newInstallation }`. Errors: 400 for an incompatible position; 404 for a
-bike that isn't the owner's; 409 for a stale version or an overlap at the destination. On any error,
+Response 200: `{ oldInstallation, newInstallation, displacedInstallation? }`. Errors: 400 for an incompatible position; 404 for a
+bike that isn't the owner's; 409 for a stale or missing version (source or destination) or an overlap at the destination. On any error,
 nothing changes.
 
 ### `POST /bikes/{bikeId}/position-exemptions`
@@ -94,7 +97,8 @@ Lists the bike's exemption history, newest first. This is the wheel setup histor
 | `CreateInstallation`, `InstallationResponse` | `position` accepts all 27 values. Compatibility comes from the catalog |
 | `ReplaceWithService` | Adds optional `newWeightGrams`. Maintenance task is `"Replace " + label` (lower-case label) |
 | `CreateBike`, `EditBike`, `BikeResponse` | Add optional `frameWeightGrams` |
-| `BikeUsageResponse`, `BikeOverviewResponse` | Add `positionStatuses[]` (`{ position, state: fitted\|exempt\|not-recorded, componentId?, installationId?, exemptionId?, reason?, sinceUtc? }`) and `positionGaps[]` (`{ position, rideCount, firstRideStartUtc, lastRideStartUtc }`). `allocationGaps` is kept but omits exempt positions |
+| `BikeResponse` (bike list, bike detail, overview) | Adds `missingPositions: string[]` (FR-019, D12). Empty means complete |
+| `BikeUsageResponse`, `BikeOverviewResponse` | Add `positionStatuses[]` (`{ position, state: fitted\|exempt\|missing\|not-recorded, componentId?, installationId?, exemptionId?, reason?, sinceUtc? }`) and `positionGaps[]` (`{ position, rideCount, firstRideStartUtc, lastRideStartUtc }`). `allocationGaps` is kept but omits exempt positions |
 | `BikeOverviewResponse` | Adds `weights`: `{ groups: [{ group, grams, missingCount }], frameGrams, totalGrams, missingCount }` |
 
 ## Error codes

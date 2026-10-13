@@ -106,6 +106,22 @@ the design questions the spec leaves to planning. Each one is grounded in the cu
 - **Rationale**: Two client calls could leave a part half-moved, and the sequencing is a domain rule that
   belongs in the API (constitution II).
 
+## D12. Taking parts from another bike, and incomplete bikes
+
+- **Decision**: Extend the move endpoint (D7a) to accept an occupied destination when the request carries
+  the destination installation's version. One transaction ends the source installation, ends the
+  destination's current installation (that part returns to the garage) and opens the new one. A bike is
+  *incomplete* while any position is in the `missing` state: it had a part on this bike before, is empty
+  now, and is not exempt. `BikeResponse.missingPositions` lists them. Incomplete bikes are flagged in
+  the garage and bike view, and ride entry warns but is never blocked.
+- **Rationale**: The owner asked for "take the saddle from bike A" as one action, with bike A clearly
+  marked until it gets a part. Separating `missing` from `not-recorded` stops bikes with unentered
+  positions (for example through-axles) from being flagged forever. Warning instead of blocking keeps
+  real rides and future imports recordable; the gap stays visible, as constitution I requires.
+- **Alternatives**: Blocking ride entry on an incomplete bike was rejected by the owner, because real
+  rides would become unrecordable and imports would need parking. A badge without a ride warning was
+  rejected as too easy to miss.
+
 ## D8. Frame stays on the bike
 
 - **Decision**: The bike's existing `Make`/`Model` are presented as the frame's. Add only
