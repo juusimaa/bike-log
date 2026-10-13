@@ -156,3 +156,32 @@ Run `./scripts/dev.sh migrate`, then `./scripts/dev.sh rebuild-usage`. The `Comp
 3. Regenerate the client: run the API, then `npm run api:generate`.
 4. Update the counts in `ComponentCatalogTests`.
 5. No web code change is expected: the board, weights and labels render from the catalog. New positions are `not-recorded` on existing bikes, so they add gaps but never make a bike incomplete.
+
+### Local verification on 2026-10-13
+
+Automated gates on branch `002-component-groups-weight`: CSharpier and `dotnet build --warnaserror` lint with 0 warnings and 0 errors; 72 domain and 214 PostgreSQL/API tests passed; Vitest 188 web and 29 api-client tests passed, plus 9 Node auth tests; web lint and typecheck clean; `npm run api:check` matched the local API; `git diff --check` clean. Playwright: 36 visual checks (desktop 1440, tablet 768, mobile 390, including the grouped board, wheel setup, fit/replace dialogs, overview and rides with no horizontal page scroll) and 8 live workflow checks in Chromium and WebKit against the local API and PostgreSQL. `migrate` applied `ComponentGroupsWeight` once and nothing on the second run.
+
+| # | Result | Evidence |
+| --- | --- | --- |
+| 1 | Pass | `ComponentGroupsUpgradeTests`: foundation-era totals identical after migrate and rebuild; groups `groupset`/`wheels`; weights null |
+| 2 | Pass | `FullPositionsApiTests` (27 statuses), web board tests, visual board check |
+| 3 | Pass | API saddle test (40 km); live workflow saddle with 215 g carries the ride |
+| 4 | Pass | API and live workflow: no front derailleur gap after "none fitted" |
+| 5 | Pass | API: saddle in `handlebar` returns 400 |
+| 6 | Pass | `AnyPositionReplacementTests` (handlebar tape, rear derailleur, rear tyre) |
+| 7 | Pass | `MoveAndRefitTests`: pedals move keeps lifetime; occupied move without its version returns 409 and nothing changes |
+| 8 | Pass | `PairInstallationTests`; live workflow brake pair |
+| 9 | Pass | Rotor pair with rear occupied: 409, counts unchanged |
+| 10 | Pass | `TubelessTests`; live workflow rear wheel tubeless |
+| 11 | Pass | Front tube during tubeless period: 409 `installation_overlap` |
+| 12 | Pass | Back to tubed: history lists the period, `rear-inner-tube` missing, bike incomplete |
+| 13 | Pass | `BikeOverviewTests` weights: build 645 g with 1 missing, total includes frame |
+| 14 | Pass | API 400 for 0, −5, 20001, 12.5; web field errors for 0 and 12.5 |
+| 15 | Pass | `AuthenticatedOwnershipTests`: exemption, component edit, pair and move routes return 404 for another user |
+| 16 | Pass | Two `rebuild-usage` runs on the local database (3 owners): identical usage digest |
+| 17 | Not run | Timed SC-001 walkthrough needs a person; pending owner check |
+| 18 | Pass | `MoveAndRefitTests` old cassette refit to bike B |
+| 19 | Pass | Move taking an occupied saddle: one call, displaced saddle to garage, lifetime continues |
+| 20 | Pass | `missingPositions` on bike, list and overview; ride still saves with a saddle gap; web badge and non-blocking ride warning |
+
+Defect found and fixed during verification: the Next.js API proxy allowlist did not include the new routes, so the live board could not load the catalog. A proxy test now checks every client-callable OpenAPI operation is forwarded.

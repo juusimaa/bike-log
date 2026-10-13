@@ -27,6 +27,30 @@ async function create(page: Page, name: string) {
     await expect(page).toHaveURL(/bike=/);
     return new URL(page.url()).searchParams.get('bike')!;
 }
+/** Opens every "N not recorded" fold so position rows are reachable. */
+async function revealPositions(page: Page) {
+    await page.locator('section.group').first().waitFor();
+    const folds = page.locator('details.unrecorded:not([open]) > summary');
+    while (await folds.count()) await folds.first().click();
+}
+async function fitNew(
+    page: Page,
+    label: string,
+    model: string,
+    when: string,
+    weight?: string,
+) {
+    await revealPositions(page);
+    await page
+        .getByRole('button', { name: `Fit ${label}`, exact: true })
+        .click();
+    await page.getByLabel('Make', { exact: true }).fill('Synthetic');
+    await page.getByLabel('Model', { exact: true }).fill(model);
+    if (weight) await page.getByLabel('Weight (g)').fill(weight);
+    await page.getByLabel('Date and time', { exact: true }).fill(when);
+    await page.getByRole('button', { name: 'Fit part', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+}
 async function logRide(
     page: Page,
     name: string,
@@ -100,22 +124,13 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
     await create(page, marker + '-B');
     await discoverBike(page, marker + '-A');
     await page.getByRole('link', { name: 'Components', exact: true }).click();
-    for (const position of positions) {
-        await page
-            .getByRole('button', { name: `Fit ${position}`, exact: true })
-            .click();
-        await page.getByLabel('Make', { exact: true }).fill('Synthetic');
-        await page
-            .getByLabel('Model', { exact: true })
-            .fill(`${marker}-${position}`);
-        await page
-            .getByLabel('Date and time', { exact: true })
-            .fill('2026-09-01T10:00');
-        await page
-            .getByRole('button', { name: 'Fit component', exact: true })
-            .click();
-        await expect(page.getByRole('dialog')).toHaveCount(0);
-    }
+    for (const position of positions)
+        await fitNew(
+            page,
+            position.replaceAll('-', ' '),
+            `${marker}-${position}`,
+            '2026-09-01T10:00',
+        );
     await logRide(page, marker + '-65', '65', '2026-09-02T10:00');
     await page
         .getByRole('button', { name: 'Log maintenance', exact: true })
@@ -164,9 +179,7 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
             .combinedLifetimeMetres,
     ).toBe(185000);
     await page
-        .getByRole('row')
-        .filter({ hasText: `${marker}-rear-tyre` })
-        .getByRole('button', { name: 'Replace', exact: true })
+        .getByRole('button', { name: 'Replace rear tyre', exact: true })
         .click();
     await page.getByLabel('Make', { exact: true }).fill('Synthetic');
     await page.getByLabel('Model', { exact: true }).fill(marker + '-new-rear');
@@ -174,7 +187,7 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
         .getByLabel('Date and time', { exact: true })
         .fill('2026-09-03T10:00');
     await page.getByLabel('Cost (EUR)', { exact: true }).fill('0');
-    await page.getByRole('button', { name: 'Replace component' }).click();
+    await page.getByRole('button', { name: 'Replace part' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await logRide(page, marker + '-10', '10', '2026-09-04T10:00');
     const current = (
@@ -288,7 +301,7 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
             .filter({ hasText: marker + '-10' })
             .getByRole('cell')
             .nth(2),
-    ).toHaveText('11');
+    ).toHaveText('11 km');
     expect(
         (await apiRead(request, `bikes/${found}/overview`))
             .recordedDistanceMetres,
@@ -321,16 +334,7 @@ test('separate 160km reminder fixture: methods preserve baseline and lifetime, a
     await page.goto('/');
     const id = await create(page, marker);
     await page.getByRole('link', { name: 'Components', exact: true }).click();
-    await page.getByRole('button', { name: 'Fit chain', exact: true }).click();
-    await page.getByLabel('Make', { exact: true }).fill('Synthetic');
-    await page.getByLabel('Model', { exact: true }).fill(marker + '-chain');
-    await page
-        .getByLabel('Date and time', { exact: true })
-        .fill('2026-09-01T10:00');
-    await page
-        .getByRole('button', { name: 'Fit component', exact: true })
-        .click();
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await fitNew(page, 'chain', marker + '-chain', '2026-09-01T10:00');
     await logRide(page, marker + '-160', '160', '2026-09-02T10:00');
     await page.getByRole('link', { name: 'Overview', exact: true }).click();
     await configure(page, 'oil', '300');
@@ -398,4 +402,72 @@ test('separate 160km reminder fixture: methods preserve baseline and lifetime, a
         cost: 0,
         currency: 'EUR',
     });
+});
+
+test('full positions: weighed saddle, none-fitted front derailleur, brake pair and tubeless rear wheel', async ({
+    page,
+    request,
+}, info) => {
+    const marker = `${process.env.BIKELOG_E2E_RUN ?? 'task002'}-${info.project.name}-${Date.now()}-groups`;
+    await page.goto('/');
+    const id = await create(page, marker);
+    await page.getByRole('link', { name: 'Components', exact: true }).click();
+    await fitNew(page, 'saddle', `${marker}-saddle`, '2026-09-01T10:00', '215');
+    await revealPositions(page);
+    await page.getByLabel('More actions for front derailleur').click();
+    await page.getByRole('button', { name: 'Mark none fitted…' }).click();
+    await page.getByLabel('From', { exact: true }).fill('2026-09-01T10:00');
+    await page.getByRole('button', { name: 'Mark none fitted' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await revealPositions(page);
+    await page
+        .getByRole('button', { name: 'Fit front brake', exact: true })
+        .click();
+    await expect(
+        page.getByRole('checkbox', { name: /Also fit to the rear brake/ }),
+    ).toBeChecked();
+    await page.getByLabel('Make', { exact: true }).fill('Synthetic');
+    await page.getByLabel('Model', { exact: true }).fill(`${marker}-brake`);
+    await page
+        .getByLabel('Date and time', { exact: true })
+        .fill('2026-09-01T10:00');
+    await page.getByRole('button', { name: 'Fit part', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page
+        .getByRole('button', { name: 'Switch rear wheel to tubeless' })
+        .click();
+    await page.getByLabel('From', { exact: true }).fill('2026-09-01T10:00');
+    await page.getByRole('button', { name: 'Switch to tubeless' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByText('Rear wheel: tubeless')).toBeVisible();
+    await logRide(page, marker + '-40', '40', '2026-09-02T10:00');
+
+    const usage = await apiRead(request, `bikes/${id}/usage`);
+    const state = (position: string) =>
+        usage.positionStatuses.find(
+            (s: { position: string }) => s.position === position,
+        );
+    for (const position of ['saddle', 'front-brake', 'rear-brake']) {
+        expect(state(position).state).toBe('fitted');
+        expect(
+            (
+                await apiRead(
+                    request,
+                    `components/${state(position).componentId}/usage`,
+                )
+            ).lifetimeMetres,
+        ).toBe(40000);
+    }
+    expect(state('front-derailleur').state).toBe('exempt');
+    expect(state('rear-inner-tube').reason).toBe('tubeless');
+    const gapped = usage.positionGaps.map(
+        (g: { position: string }) => g.position,
+    );
+    expect(gapped).not.toContain('front-derailleur');
+    expect(gapped).not.toContain('rear-inner-tube');
+    expect(gapped).toContain('front-inner-tube');
+    expect(
+        (await apiRead(request, `components/${state('saddle').componentId}`))
+            .weightGrams,
+    ).toBe(215);
 });

@@ -10,19 +10,25 @@ const routes: [RegExp, string[]][] = [
     [new RegExp(`^bikes/${uuid}$`, 'i'), ['GET', 'PUT']],
     [
         new RegExp(
-            `^bikes/${uuid}/(overview|rides|installations|maintenance)$`,
+            `^bikes/${uuid}/(overview|usage|rides|installations|maintenance)$`,
             'i',
         ),
         ['GET'],
     ],
     [new RegExp(`^bikes/${uuid}/reminder$`, 'i'), ['GET', 'PUT']],
-    [new RegExp(`^components/${uuid}$`, 'i'), ['GET']],
+    [new RegExp(`^bikes/${uuid}/position-exemptions$`, 'i'), ['GET', 'POST']],
+    [/^component-catalog$/, ['GET']],
+    [/^installations\/pair$/, ['POST']],
+    [new RegExp(`^components/${uuid}$`, 'i'), ['GET', 'PUT']],
     [new RegExp(`^components/${uuid}/(usage|maintenance)$`, 'i'), ['GET']],
     [new RegExp(`^components/${uuid}/estimate$`, 'i'), ['PUT']],
     [
         new RegExp(`^installations/${uuid}/replacement-with-service$`, 'i'),
         ['POST'],
     ],
+    [new RegExp(`^installations/${uuid}$`, 'i'), ['GET', 'PUT']],
+    [new RegExp(`^installations/${uuid}/(replacement|move)$`, 'i'), ['POST']],
+    [new RegExp(`^position-exemptions/${uuid}$`, 'i'), ['PUT']],
     [new RegExp(`^rides/${uuid}$`, 'i'), ['GET', 'PUT', 'DELETE']],
 ];
 function problem(status: number, code: string): Response {

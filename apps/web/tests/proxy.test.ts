@@ -245,3 +245,48 @@ it('authenticated proxy forwards only the server-held bearer and no browser cred
     expect(received?.headers.has('x-forwarded-host')).toBe(false);
     expect(received?.url).toBe('http://127.0.0.1:5080/api/me');
 });
+it('forwards every operation the generated client can call', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const snapshot = JSON.parse(
+        await readFile(
+            new URL(
+                '../../../packages/api-client/openapi.json',
+                import.meta.url,
+            ),
+            'utf8',
+        ),
+    ) as { paths: Record<string, Record<string, unknown>> };
+    const forwarded: string[] = [];
+    vi.stubGlobal('fetch', async (input: RequestInfo | URL) => {
+        forwarded.push(new Request(input).url);
+        return Response.json({});
+    });
+    const blocked: string[] = [];
+    // API routes the web client has no wrapper for and deliberately does not proxy.
+    const unused = new Set(['GET /api/maintenance/{id}']);
+    for (const [route, operations] of Object.entries(snapshot.paths)) {
+        if (!route.startsWith('/api/')) continue;
+        const path = route.slice(5).replace('{id}', id).split('/');
+        for (const method of Object.keys(operations)) {
+            const write = method !== 'get';
+            const response = await forwardApi(
+                new Request(`http://127.0.0.1:3000${route}`, {
+                    method: method.toUpperCase(),
+                    headers: write
+                        ? {
+                              origin: 'http://127.0.0.1:3000',
+                              'content-type': 'application/json',
+                          }
+                        : undefined,
+                    body: write && method !== 'delete' ? '{}' : undefined,
+                }),
+                path,
+            );
+            const name = `${method.toUpperCase()} ${route}`;
+            if ([404, 405].includes(response.status) && !unused.has(name))
+                blocked.push(name);
+        }
+    }
+    expect(blocked).toEqual([]);
+    expect(forwarded.length).toBeGreaterThan(0);
+});

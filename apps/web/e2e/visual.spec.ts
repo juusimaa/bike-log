@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { mockVisual, bikeId } from './fixtures';
+import { mockVisual, bikeId, secondId } from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
     console.log(`Browser ${info.project.name}: ${browser.version()}`);
 });
@@ -295,11 +295,12 @@ test('blank component model has explicit label and fit validation refocuses ever
         });
     });
     await page.goto(`/?bike=${bikeId}&view=components`);
-    await page.getByRole('button', { name: 'Fit chain', exact: true }).click();
+    await page.locator('details.unrecorded > summary').first().click();
+    await page.getByRole('button', { name: 'Fit fork', exact: true }).click();
     for (let i = 0; i < 2; i++) {
         await page.getByLabel('Model', { exact: true }).focus();
         await page
-            .getByRole('button', { name: 'Fit component', exact: true })
+            .getByRole('button', { name: 'Fit part', exact: true })
             .click();
         await expect(page.locator('.form-error')).toBeFocused();
     }
@@ -521,7 +522,7 @@ test('design action placement, spacing and component replacement remain usable',
         .getByRole('button', { name: 'Cancel', exact: true })
         .boundingBox())!;
     const save = (await dialog
-        .getByRole('button', { name: 'Replace component', exact: true })
+        .getByRole('button', { name: 'Replace part', exact: true })
         .boundingBox())!;
     expect(save.y).toBe(cancel.y);
     expect(save.x - cancel.x - cancel.width).toBeGreaterThanOrEqual(8);
@@ -539,4 +540,68 @@ test('design action placement, spacing and component replacement remain usable',
     await expect(
         page.getByRole('combobox', { name: 'Filter components' }),
     ).toHaveValue('all');
+});
+
+test('grouped position board, wheel setup and part dialogs fit every viewport', async ({
+    page,
+}, info) => {
+    await mockVisual(page);
+    const noSideScroll = async () =>
+        expect(
+            await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(page.viewportSize()!.width);
+    for (const id of [bikeId, secondId]) {
+        await page.goto(`/?bike=${id}&view=components`);
+        for (const group of ['Build', 'Groupset', 'Wheels'])
+            await expect(
+                page.getByRole('heading', { name: group, exact: true }),
+            ).toBeVisible();
+        await expect(
+            page.getByRole('group', { name: 'Wheel setup' }),
+        ).toBeVisible();
+        await expect(page.locator('.board-summary')).toBeVisible();
+        await noSideScroll();
+        await page.screenshot({
+            path: info.outputPath(`board-${id === bikeId ? 'a' : 'b'}.png`),
+            fullPage: true,
+        });
+    }
+    await expect(
+        page.getByText(/This bike is incomplete/).first(),
+    ).toBeVisible();
+    await expect(page.getByText(/Missing since/).first()).toBeVisible();
+    await page.goto(`/?bike=${bikeId}&view=components`);
+    await expect(page.getByText('None fitted', { exact: true })).toBeVisible();
+    await expect(
+        page.getByText('Not applicable (tubeless)', { exact: true }),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Replace chain' }).click();
+    await expect(
+        page
+            .getByRole('radiogroup', { name: 'Source of the new part' })
+            .or(page.getByText('From your garage'))
+            .first(),
+    ).toBeVisible();
+    await noSideScroll();
+    await page.screenshot({ path: info.outputPath('replace-dialog.png') });
+    await page.keyboard.press('Escape');
+    await page.locator('details.unrecorded > summary').first().click();
+    await page.getByRole('button', { name: 'Fit saddle', exact: true }).click();
+    await expect(page.getByLabel('Weight (g)')).toBeVisible();
+    await noSideScroll();
+    await page.screenshot({ path: info.outputPath('fit-dialog.png') });
+    await page.keyboard.press('Escape');
+    for (const view of ['overview', 'rides']) {
+        await page.goto(`/?bike=${bikeId}&view=${view}`);
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+        if (view === 'overview')
+            await expect(
+                page.getByRole('heading', { name: 'Weight by group' }),
+            ).toBeVisible();
+        await noSideScroll();
+        await page.screenshot({
+            path: info.outputPath(`v3-${view}.png`),
+            fullPage: true,
+        });
+    }
 });

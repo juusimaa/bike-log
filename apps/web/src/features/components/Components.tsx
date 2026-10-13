@@ -55,7 +55,7 @@ function Lifetime({ componentId }: { componentId: string }) {
         <>
             {usage.data ? (
                 <>
-                    {formatKilometres(usage.data.combinedLifetimeMetres)} km
+                    {formatKilometres(usage.data.combinedLifetimeMetres)} km{' '}
                     {usage.data.initialUsageEstimateMetres > 0 ? (
                         <small className="estimate-label">
                             Includes estimate
