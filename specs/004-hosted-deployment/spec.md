@@ -329,9 +329,11 @@ thresholds and recipient, and after a month compare actual spend with the estima
   no more than a DNS record and a managed certificate.
 - Scaling to zero when idle is accepted to stay within the free compute allowance; the start-up delay in
   SC-002 is the trade-off. Always-on capacity needs a new cost decision.
-- The app and its backup storage run in Azure Sweden Central. The database service is created by hand in
-  the same region if its free plan allows, otherwise in the nearest EU region the free plan offers, as
-  decision 0003 requires; the infrastructure code covers only the cloud provider's resources.
+- The app and its backup storage run in Azure Sweden Central. The database service is created by hand;
+  its free plan does not let the owner choose the cloud or region (found during planning, research D16),
+  so the region it gets is recorded at setup and must be in the EU, as decision 0003 requires. A non-EU
+  placement stops setup for a cost decision on a paid plan in Sweden Central. The infrastructure code
+  covers only the cloud provider's resources.
 - The database provider's own backups are not counted as the tested recovery procedure, so a separate
   backup is kept outside it.
 - The database plan allows only one free database service per organization, so rehearsals cannot restore
