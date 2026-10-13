@@ -20,6 +20,8 @@ import { useRideMutations, type RideSave } from './mutations';
 import { RideSummary } from './RideSummary';
 import { RideRecovery } from './RideRecovery';
 import { RideFields } from './RideFields';
+import { useBike } from '../garage/queries';
+import { useComponentCatalog, positionLabel } from '../components/catalog';
 export type RideFormProps = {
     bikeId: string;
     ride?: Validated<RideResponse>;
@@ -58,6 +60,9 @@ export function RideForm({
     const [attemptCount, setAttemptCount] = useState(0);
     const prefix = useId();
     const { save } = useRideMutations(original.bikeId);
+    const bike = useBike(original.bikeId).data;
+    const catalog = useComponentCatalog().data;
+    const missing = bike?.missingPositions ?? [];
     const busy = save.state.phase === 'saving' || save.state.refreshing;
     const recovery = ['conflict', 'uncertain'].includes(save.state.phase);
     const dirty =
@@ -251,6 +256,24 @@ export function RideForm({
                             : []),
                     ]}
                 />
+                {missing.length > 0 && (
+                    <div className="notice inline" role="note">
+                        <p>
+                            This bike is missing{' '}
+                            {missing
+                                .map(
+                                    (p) =>
+                                        `a ${positionLabel(catalog, p).toLowerCase()}`,
+                                )
+                                .join(' and ')}
+                            . The ride will be saved, and{' '}
+                            {missing.length === 1
+                                ? `the ${positionLabel(catalog, missing[0]).toLowerCase()} will show a gap`
+                                : 'those parts will show a gap'}
+                            .
+                        </p>
+                    </div>
+                )}
                 <fieldset disabled={busy || recovery}>
                     <RideFields
                         prefix={prefix}

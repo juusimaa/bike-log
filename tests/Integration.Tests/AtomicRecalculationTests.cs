@@ -15,7 +15,8 @@ public class AtomicRecalculationTests(PostgresFixture fixture) : IClassFixture<P
     {
         public UsageCalculation Calculate(
             IReadOnlyList<Ride> rides,
-            IReadOnlyList<Installation> installations
+            IReadOnlyList<Installation> installations,
+            IReadOnlyList<PositionExemption>? exemptions = null
         ) => throw new InvalidOperationException("Injected calculation failure");
     }
 

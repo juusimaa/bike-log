@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { RideResponse, Validated } from '@bikelog/api-client';
 import { useRidePages } from './queries';
 import { useOverview } from '../garage/queries';
+import { useComponentCatalog, positionLabel } from '../components/catalog';
 import { queryKeys } from '../../lib/query';
 import { formatDateTime } from '../../lib/dates';
 import { formatKilometres, formatDuration } from '../../lib/format';
@@ -22,6 +23,8 @@ export function Rides({
     const client = useQueryClient();
     const pages = useRidePages(bikeId);
     const overview = useOverview(bikeId);
+    const catalog = useComponentCatalog().data;
+    const missing = new Set(overview.data?.bike.missingPositions ?? []);
     const rides = [
         ...new Map(
             pages.data?.pages
@@ -120,12 +123,33 @@ export function Rides({
                                             overview.error ? (
                                                 'Allocation not checked'
                                             ) : gaps?.length ? (
-                                                gaps.map((gap) => (
-                                                    <p key={gap.position}>
-                                                        {gap.position}: missing
-                                                        installation history
-                                                    </p>
-                                                ))
+                                                <details className="gap-count">
+                                                    <summary>
+                                                        {gaps.length}{' '}
+                                                        {gaps.length === 1
+                                                            ? 'position'
+                                                            : 'positions'}{' '}
+                                                        not recorded
+                                                    </summary>
+                                                    <ul>
+                                                        {gaps.map((gap) => (
+                                                            <li
+                                                                key={
+                                                                    gap.position
+                                                                }
+                                                            >
+                                                                {positionLabel(
+                                                                    catalog,
+                                                                    gap.position,
+                                                                )}
+                                                                {missing.has(
+                                                                    gap.position,
+                                                                ) &&
+                                                                    ' (missing now)'}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </details>
                                             ) : (
                                                 <span className="status green">
                                                     Fully allocated

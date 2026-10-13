@@ -991,7 +991,400 @@ export interface paths {
                 };
             };
         };
+        /** @description Edit make, model and weight with expectedVersion. Type, installations and usage never change. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["EditComponent"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComponentResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/component-catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Fixed positions, component types, groups and labels. Clients render from this and never copy it. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ComponentCatalogResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/bikes/{id}/position-exemptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The bike's intentionally empty periods, newest first. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PositionExemptionResponse"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** @description Declare a position intentionally empty from startUtc (front derailleur none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CreatePositionExemption"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PositionExemptionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/position-exemptions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Correct or end an exemption with expectedVersion. Ending it means the position needs a part again. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["CorrectPositionExemption"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PositionExemptionResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         post?: never;
         delete?: never;
         options?: never;
@@ -1440,6 +1833,178 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ReplacementWithServiceResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/installations/{id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Move a fitted part to another bike or position in one step. An occupied destination needs expectedDestinationInstallationVersion; its part returns to the garage. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["MoveInstallation"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MoveInstallationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/installations/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Create two parts of one front/rear type and fit them to both ends from startUtc, all or nothing. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["FitPair"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["FitPairResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -2373,8 +2938,7 @@ export interface components {
         AllocationGapResponse: {
             /** Format: uuid */
             rideId: string;
-            /** @enum {string} */
-            position: "chain" | "cassette" | "front-tyre" | "rear-tyre";
+            position: string;
         };
         AnonymousTypeOfInstallationResponseAndInstallationResponse: {
             oldInstallation: components["schemas"]["InstallationResponse"];
@@ -2393,6 +2957,8 @@ export interface components {
             recordedDistanceMetres: number | string;
             currentComponents: components["schemas"]["CurrentComponentUsage"][];
             allocationGaps: components["schemas"]["AllocationGapResponse"][];
+            positionStatuses: components["schemas"]["PositionStatusResponse"][];
+            positionGaps: components["schemas"]["PositionGapResponse"][];
             spendingByCurrency: components["schemas"]["CurrencySpend"][];
             /** Format: int32 */
             unknownCostRecordCount: number | string;
@@ -2400,6 +2966,7 @@ export interface components {
             maintenanceRecordCount: number | string;
             recentActivity: components["schemas"]["RecentActivity"][];
             reminder: components["schemas"]["ReminderEvaluation"];
+            weights: components["schemas"]["WeightSummaryResponse"];
         };
         BikeResponse: {
             /** Format: uuid */
@@ -2415,6 +2982,9 @@ export interface components {
             year: null | number | string;
             color: null | string;
             displayName: string;
+            /** Format: int32 */
+            frameWeightGrams: null | number | string;
+            missingPositions: string[];
         };
         BikeUsageResponse: {
             /** Format: uuid */
@@ -2425,12 +2995,28 @@ export interface components {
             calculatedAtUtc: string | null;
             currentComponents: components["schemas"]["CurrentComponentUsage"][];
             allocationGaps: components["schemas"]["AllocationGapResponse"][];
+            positionStatuses: components["schemas"]["PositionStatusResponse"][];
+            positionGaps: components["schemas"]["PositionGapResponse"][];
+        };
+        CatalogPositionResponse: {
+            position: string;
+            type: string;
+            group: string;
+            /** @enum {null|string} */
+            end: "front" | "rear" | null;
+            label: string;
+            /** @enum {null|string} */
+            exemption: "none-fitted" | "tubeless" | null;
+        };
+        ComponentCatalogResponse: {
+            groups: string[];
+            positions: components["schemas"]["CatalogPositionResponse"][];
+            pairTypes: string[];
         };
         ComponentEstimateResponse: {
             /** Format: uuid */
             id: string;
-            /** @enum {string} */
-            type: "chain" | "cassette" | "tyre";
+            type: string;
             make: string;
             model: string;
             /** Format: int64 */
@@ -2450,12 +3036,14 @@ export interface components {
              * @description Integer metres; estimates are separate from recorded usage.
              */
             combinedLifetimeMetres: number | string;
+            group: string;
+            /** Format: int32 */
+            weightGrams: null | number | string;
         };
         ComponentResponse: {
             /** Format: uuid */
             id: string;
-            /** @enum {string} */
-            type: "chain" | "cassette" | "tyre";
+            type: string;
             make: string;
             model: string;
             /** Format: int64 */
@@ -2466,6 +3054,9 @@ export interface components {
              * @description Integer metres; estimates are separate from recorded usage.
              */
             initialUsageEstimateMetres: number | string;
+            group: string;
+            /** Format: int32 */
+            weightGrams: null | number | string;
         };
         ComponentUsageResponse: {
             /** Format: uuid */
@@ -2503,6 +3094,14 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number | string;
         };
+        CorrectPositionExemption: {
+            /** Format: date-time */
+            startUtc: string;
+            /** Format: date-time */
+            endUtc?: string | null;
+            /** Format: int64 */
+            expectedVersion: number | string;
+        };
         CorrectRide: {
             /** Format: uuid */
             bikeId: string;
@@ -2531,20 +3130,22 @@ export interface components {
             /** Format: int32 */
             year: number | string;
             color?: null | string;
+            /** Format: int32 */
+            frameWeightGrams?: null | number | string;
         };
         CreateComponent: {
-            /** @enum {string} */
-            type: "chain" | "cassette" | "tyre";
+            type: string;
             make: null | string;
             model: null | string;
+            /** Format: int32 */
+            weightGrams?: null | number | string;
         };
         CreateInstallation: {
             /** Format: uuid */
             bikeId: string;
             /** Format: uuid */
             componentId: string;
-            /** @enum {string} */
-            position: "chain" | "cassette" | "front-tyre" | "rear-tyre";
+            position: string;
             /** Format: date-time */
             startUtc: string;
             /** Format: date-time */
@@ -2563,6 +3164,13 @@ export interface components {
             cost?: null | number | string;
             currency?: null | string;
             taskKey?: null | string;
+        };
+        CreatePositionExemption: {
+            position: string;
+            /** Format: date-time */
+            startUtc: string;
+            /** Format: int64 */
+            expectedInstallationVersion?: null | number | string;
         };
         CreateRide: {
             /** Format: uuid */
@@ -2629,8 +3237,7 @@ export interface components {
             componentId: string;
             /** Format: uuid */
             installationId: string;
-            /** @enum {string} */
-            position: "chain" | "cassette" | "front-tyre" | "rear-tyre";
+            position: string;
             /**
              * Format: int64
              * @description Integer metres; estimates are separate from recorded usage.
@@ -2675,6 +3282,16 @@ export interface components {
             color?: null | string;
             /** Format: int64 */
             expectedVersion: number | string;
+            /** Format: int32 */
+            frameWeightGrams?: null | number | string;
+        };
+        EditComponent: {
+            make: null | string;
+            model: null | string;
+            /** Format: int32 */
+            weightGrams?: null | number | string;
+            /** Format: int64 */
+            expectedVersion: number | string;
         };
         EditComponentEstimate: {
             /**
@@ -2702,6 +3319,37 @@ export interface components {
             /** Format: int64 */
             expectedVersion: number | string;
         };
+        FitPair: {
+            /** Format: uuid */
+            bikeId: string;
+            type: string;
+            make: null | string;
+            model: null | string;
+            /** Format: int32 */
+            weightGrams?: null | number | string;
+            /** Format: date-time */
+            startUtc: string;
+            /**
+             * Format: int64
+             * @description Integer metres; estimates are separate from recorded usage.
+             */
+            initialUsageEstimateMetres?: null | number | string;
+        };
+        FitPairResponse: {
+            front: components["schemas"]["FittedPart"];
+            rear: components["schemas"]["FittedPart"];
+        };
+        FittedPart: {
+            component: components["schemas"]["ComponentResponse"];
+            installation: components["schemas"]["InstallationResponse"];
+        };
+        GroupWeightResponse: {
+            group: string;
+            /** Format: int32 */
+            grams: number | string;
+            /** Format: int32 */
+            missingCount: number | string;
+        };
         InstallationListItem: {
             installation: components["schemas"]["InstallationResponse"];
             component: components["schemas"]["ComponentResponse"];
@@ -2713,8 +3361,7 @@ export interface components {
             bikeId: string;
             /** Format: uuid */
             componentId: string;
-            /** @enum {string} */
-            position: "chain" | "cassette" | "front-tyre" | "rear-tyre";
+            position: string;
             /** Format: date-time */
             startUtc: string;
             /** Format: date-time */
@@ -2752,6 +3399,22 @@ export interface components {
             email: null | string;
             displayName: null | string;
         };
+        MoveInstallation: {
+            /** Format: uuid */
+            toBikeId: string;
+            toPosition?: null | string;
+            /** Format: date-time */
+            movedAtUtc: string;
+            /** Format: int64 */
+            expectedInstallationVersion: number | string;
+            /** Format: int64 */
+            expectedDestinationInstallationVersion?: null | number | string;
+        };
+        MoveInstallationResponse: {
+            oldInstallation: components["schemas"]["InstallationResponse"];
+            newInstallation: components["schemas"]["InstallationResponse"];
+            displacedInstallation: null | components["schemas"]["InstallationResponse"];
+        };
         PageResponseOfBikeResponse: {
             items: components["schemas"]["BikeResponse"][];
             nextCursor: null | string;
@@ -2771,6 +3434,45 @@ export interface components {
         PageResponseOfRideResponse: {
             items: components["schemas"]["RideResponse"][];
             nextCursor: null | string;
+        };
+        PositionExemptionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bikeId: string;
+            position: string;
+            /** @enum {string} */
+            reason: "none-fitted" | "tubeless";
+            /** Format: date-time */
+            startUtc: string;
+            /** Format: date-time */
+            endUtc: string | null;
+            /** Format: int64 */
+            version: number | string;
+        };
+        PositionGapResponse: {
+            position: string;
+            /** Format: int32 */
+            rideCount: number | string;
+            /** Format: date-time */
+            firstRideStartUtc: string;
+            /** Format: date-time */
+            lastRideStartUtc: string;
+        };
+        PositionStatusResponse: {
+            position: string;
+            /** @enum {string} */
+            state: "fitted" | "exempt" | "missing" | "not-recorded";
+            /** Format: uuid */
+            componentId: null | string;
+            /** Format: uuid */
+            installationId: null | string;
+            /** Format: uuid */
+            exemptionId: null | string;
+            /** @enum {null|string} */
+            reason: "none-fitted" | "tubeless" | null;
+            /** Format: date-time */
+            sinceUtc: string | null;
         };
         ProblemDetails: {
             type?: null | string;
@@ -2862,6 +3564,8 @@ export interface components {
             /** Format: double */
             cost?: null | number | string;
             currency?: null | string;
+            /** Format: int32 */
+            newWeightGrams?: null | number | string;
         };
         RideResponse: {
             /** Format: uuid */
@@ -2883,6 +3587,15 @@ export interface components {
             /** Format: int64 */
             version: number | string;
             name?: null | string;
+        };
+        WeightSummaryResponse: {
+            groups: components["schemas"]["GroupWeightResponse"][];
+            /** Format: int32 */
+            frameGrams: null | number | string;
+            /** Format: int32 */
+            totalGrams: number | string;
+            /** Format: int32 */
+            missingCount: number | string;
         };
     };
     responses: never;

@@ -15,15 +15,25 @@ export const queryKeys = {
     componentMaintenance: (id: Uuid) => ['componentMaintenance', id] as const,
     maintenance: (id: Uuid) => ['maintenance', id] as const,
     reminder: (id: Uuid) => ['reminder', id] as const,
+    catalog: () => ['catalog'] as const,
+    exemptions: (id: Uuid) => ['exemptions', id] as const,
 };
 function accessIssue(error: unknown): AccessIssue | null {
     if (!(error instanceof ApiError)) return null;
     if (error.status === 401) return 'expired';
-    if (error.status === 403 && ['pilot_access_required', 'user_not_provisioned', 'forbidden'].includes(error.code)) return 'pilot-access';
+    if (
+        error.status === 403 &&
+        ['pilot_access_required', 'user_not_provisioned', 'forbidden'].includes(
+            error.code,
+        )
+    )
+        return 'pilot-access';
     if (error.status === 502 || error.status === 503) return 'unavailable';
     return null;
 }
-export function createQueryClient(onAccessIssue?: (issue: AccessIssue) => void) {
+export function createQueryClient(
+    onAccessIssue?: (issue: AccessIssue) => void,
+) {
     const report = (error: unknown) => {
         const issue = accessIssue(error);
         if (issue) onAccessIssue?.(issue);
@@ -32,7 +42,10 @@ export function createQueryClient(onAccessIssue?: (issue: AccessIssue) => void) 
         queryCache: new QueryCache({ onError: report }),
         mutationCache: new MutationCache({ onError: report }),
         defaultOptions: {
-            queries: { retry: (count, error) => !accessIssue(error) && count < 1, refetchOnWindowFocus: false },
+            queries: {
+                retry: (count, error) => !accessIssue(error) && count < 1,
+                refetchOnWindowFocus: false,
+            },
             mutations: { retry: false },
         },
     });
@@ -56,6 +69,7 @@ export async function invalidateBike(
         queryKeys.components(),
         queryKeys.maintenance(bikeId),
         queryKeys.reminder(bikeId),
+        queryKeys.exemptions(bikeId),
         ...componentIds.flatMap((id) => [
             queryKeys.component(id),
             queryKeys.componentUsage(id),

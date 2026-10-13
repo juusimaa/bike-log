@@ -89,6 +89,74 @@ public sealed class ApiScenario : IAsyncDisposable
             )
         );
 
+    public async Task<Guid> Bike(string name = "Synthetic road") =>
+        Id(
+            await Create(
+                "/api/bikes",
+                new
+                {
+                    name,
+                    make = "Synthetic",
+                    model = "Frame",
+                    kind = "road",
+                    year = 2026,
+                }
+            )
+        );
+
+    public async Task<JsonElement> Part(
+        string type,
+        int? weightGrams = null,
+        string model = "Synthetic part"
+    ) =>
+        await Create(
+            "/api/components",
+            new
+            {
+                type,
+                make = "Synthetic",
+                model,
+                weightGrams,
+            }
+        );
+
+    public async Task<JsonElement> Fit(
+        Guid bike,
+        Guid component,
+        string position,
+        DateTimeOffset? at = null
+    ) =>
+        await Create(
+            "/api/installations",
+            new
+            {
+                bikeId = bike,
+                componentId = component,
+                position,
+                startUtc = at ?? Start,
+            }
+        );
+
+    public async Task<JsonElement> Ride(Guid bike, DateTimeOffset at, long metres = 40000) =>
+        await Create(
+            "/api/rides",
+            new
+            {
+                bikeId = bike,
+                startUtc = at,
+                distanceMetres = metres,
+            }
+        );
+
+    public async Task<long> Lifetime(Guid component) =>
+        (await Read($"/api/components/{component}/usage")).GetProperty("lifetimeMetres").GetInt64();
+
+    public static JsonElement Status(JsonElement usage, string position) =>
+        usage
+            .GetProperty("positionStatuses")
+            .EnumerateArray()
+            .Single(x => x.GetProperty("position").GetString() == position);
+
     public async Task<JsonElement> Read(string path)
     {
         var r = await Client.GetAsync(path);

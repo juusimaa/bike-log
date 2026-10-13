@@ -51,3 +51,14 @@ export function parseEuroCost(value: string): number | null {
         throw new InputError('This cost cannot be represented safely.');
     return result;
 }
+/** Optional whole grams. Mirrors the API's 1–20000 rule so mistakes show before saving. */
+export function parseGrams(value: string): number | null {
+    const text = value.trim();
+    if (text === '') return null;
+    if (!/^\d+$/.test(text))
+        throw new InputError('Enter whole grams, for example 245.');
+    const grams = Number(text);
+    if (grams < 1 || grams > 20000)
+        throw new InputError('Weight must be between 1 and 20,000 g.');
+    return grams;
+}

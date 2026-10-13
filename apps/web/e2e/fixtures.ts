@@ -1,4 +1,6 @@
 import { expect, type Page, type APIRequestContext } from '@playwright/test';
+import { catalog, overviewExtras, status } from '../tests/catalog-fixture';
+export { catalog };
 export const bikeId = '11111111-1111-1111-1111-111111111111';
 export const secondId = '22222222-2222-2222-2222-222222222222';
 export const bike = {
@@ -11,6 +13,8 @@ export const bike = {
     year: 2025,
     color: '#829c83',
     version: 1,
+    frameWeightGrams: 1180 as number | null,
+    missingPositions: [] as string[],
 };
 export const second = {
     ...bike,
@@ -21,6 +25,8 @@ export const second = {
     model: 'Allez',
     kind: 'road',
     year: 2023,
+    frameWeightGrams: null,
+    missingPositions: ['saddle'],
 };
 export const positions = [
     'chain',
@@ -55,6 +61,8 @@ export const rows = positions.map((position, i) => {
             version: 1,
             initialUsageEstimateMetres: i > 1 ? 120000 : 0,
             installations: [installation],
+            group: i > 1 ? 'wheels' : 'groupset',
+            weightGrams: [252, 345, 475, null][i] as number | null,
         },
     };
 });
@@ -75,6 +83,81 @@ export const reminder = {
     remainingMetres: 0,
     due: true,
 };
+/** Board state: the four fitted parts, plus a none-fitted front derailleur and a tubeless
+ * rear wheel on the first bike, and a missing saddle on the second. */
+function positionsFor(id: string) {
+    const fitted = Object.fromEntries(
+        rows.map(({ installation: i, component: c }) => [
+            i.position,
+            status(i.position, 'fitted', {
+                componentId: c.id,
+                installationId: i.id,
+                sinceUtc: i.startUtc,
+            }),
+        ]),
+    );
+    const extras = overviewExtras(
+        id === bikeId
+            ? {
+                  ...fitted,
+                  'front-derailleur': status('front-derailleur', 'exempt', {
+                      reason: 'none-fitted',
+                      exemptionId: '88888888-8888-8888-8888-000000000001',
+                      sinceUtc: '2026-06-01T07:00:00Z',
+                  }),
+                  'rear-inner-tube': status('rear-inner-tube', 'exempt', {
+                      reason: 'tubeless',
+                      exemptionId: '88888888-8888-8888-8888-000000000002',
+                      sinceUtc: '2026-08-01T07:00:00Z',
+                  }),
+              }
+            : {
+                  ...fitted,
+                  saddle: status('saddle', 'missing', {
+                      sinceUtc: '2026-10-12T07:00:00Z',
+                  }),
+              },
+    );
+    extras.positionGaps = [
+        {
+            position: 'saddle',
+            rideCount: 12,
+            firstRideStartUtc: '2026-06-08T08:00:00Z',
+            lastRideStartUtc: '2026-10-01T08:00:00Z',
+        },
+    ];
+    extras.weights = {
+        groups: [
+            { group: 'build', grams: 0, missingCount: 0 },
+            { group: 'groupset', grams: 597, missingCount: 0 },
+            { group: 'wheels', grams: 475, missingCount: 1 },
+        ],
+        frameGrams: id === bikeId ? 1180 : null,
+        totalGrams: 1072 + (id === bikeId ? 1180 : 0),
+        missingCount: id === bikeId ? 1 : 2,
+    };
+    return extras;
+}
+export const exemptions = [
+    {
+        id: '88888888-8888-8888-8888-000000000001',
+        bikeId,
+        position: 'front-derailleur',
+        reason: 'none-fitted',
+        startUtc: '2026-06-01T07:00:00Z',
+        endUtc: null,
+        version: 1,
+    },
+    {
+        id: '88888888-8888-8888-8888-000000000002',
+        bikeId,
+        position: 'rear-inner-tube',
+        reason: 'tubeless',
+        startUtc: '2026-08-01T07:00:00Z',
+        endUtc: null,
+        version: 1,
+    },
+];
 export const overview = (id = bikeId) => ({
     bike: id === bikeId ? bike : second,
     evaluatedAtUtc: '2026-10-01T16:00:00Z',
@@ -101,6 +184,7 @@ export const overview = (id = bikeId) => ({
                 : 384000) + c.initialUsageEstimateMetres,
     })),
     allocationGaps: [],
+    ...positionsFor(id),
     spendingByCurrency: [{ currency: 'EUR', amount: 24.9 }],
     unknownCostRecordCount: 0,
     maintenanceRecordCount: 3,
@@ -182,6 +266,9 @@ export async function mockVisual(page: Page) {
         let body: unknown;
         if (path === '/api/bikes')
             body = { items: [bike, second], nextCursor: null };
+        else if (path === '/api/component-catalog') body = catalog;
+        else if (path.endsWith('/position-exemptions'))
+            body = path.includes(secondId) ? [] : exemptions;
         else if (path.endsWith('/overview'))
             body = overview(path.includes(secondId) ? secondId : bikeId);
         else if (path.endsWith('/installations'))

@@ -17,6 +17,7 @@ import { Rides } from '../src/features/rides/Rides';
 import { DeleteRideDialog } from '../src/features/rides/DeleteRideDialog';
 import { Workspace } from '../src/features/garage/Workspace';
 import { queryKeys } from '../src/lib/query';
+import { catalog, overviewExtras } from './catalog-fixture';
 const bikeId = '11111111-1111-1111-1111-111111111111';
 const ride: Validated<RideResponse> = {
     id: '22222222-2222-2222-2222-222222222222',
@@ -31,6 +32,7 @@ const bike = {
     id: bikeId,
     name: 'Bike',
     displayName: 'Bike',
+    missingPositions: [] as string[],
     make: 'Trek',
     model: 'Domane',
     kind: 'road',
@@ -49,6 +51,7 @@ const overview = {
     unknownCostRecordCount: 0,
     maintenanceRecordCount: 0,
     recentActivity: [],
+    ...overviewExtras(),
     reminder: {
         ruleVersion: 1,
         state: 'disabled',
@@ -68,6 +71,8 @@ const overview = {
     },
 };
 const api = vi.hoisted(() => ({
+    getComponentCatalog: vi.fn(),
+    listExemptions: vi.fn(),
     listRides: vi.fn(),
     getRide: vi.fn(),
     createRide: vi.fn(),
@@ -105,6 +110,8 @@ vi.mock('../src/lib/dates', async (importOriginal) => {
 });
 beforeEach(() => {
     vi.resetAllMocks();
+    api.getComponentCatalog.mockResolvedValue(catalog);
+    api.listExemptions.mockResolvedValue([]);
     window.history.replaceState(null, '', '/');
     api.listRides.mockResolvedValue({ items: [ride], nextCursor: null });
     api.getRide.mockResolvedValue({ ...ride, name: 'Current', version: 8 });
@@ -313,9 +320,20 @@ it('uncertainDeleteMissingRecordDoesNotPretendSuccessOrOfferAnotherDelete', asyn
 });
 it('gapsUseServerOverviewByRideIdAndNeverPartialHistory', async () => {
     mount(<Rides bikeId={bikeId} />);
+    const summary = await screen.findByText('1 position not recorded');
+    fireEvent.click(summary);
+    expect(screen.getByText('Chain')).toBeVisible();
+});
+it('manyGapsShowOneCountNotOneLabelPerPosition', async () => {
+    const gaps = catalog.positions
+        .filter((p) => p.position !== 'chain')
+        .map((p) => ({ rideId: ride.id, position: p.position }));
+    api.getOverview.mockResolvedValue({ ...overview, allocationGaps: gaps });
+    mount(<Rides bikeId={bikeId} />);
     expect(
-        await screen.findByText(/chain: missing installation history/i),
-    ).toBeVisible();
+        await screen.findByText('26 positions not recorded'),
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('group').length).toBe(1);
 });
 it('overviewFailureDoesNotClaimGapFreeHistory', async () => {
     api.getOverview.mockRejectedValue(new Error('unavailable'));

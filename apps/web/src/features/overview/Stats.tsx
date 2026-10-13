@@ -1,5 +1,9 @@
 import type { BikeOverviewResponse, Validated } from '@bikelog/api-client';
-import { formatKilometres, formatEuroCost } from '../../lib/format';
+import {
+    formatKilometres,
+    formatEuroCost,
+    formatKilograms,
+} from '../../lib/format';
 export function Stats({
     snapshot: s,
 }: {
@@ -35,6 +39,17 @@ export function Stats({
                     )}
                 </p>
                 <p className="stat-caption">Calculated lifetime distance</p>
+            </div>
+            <div className="card stat">
+                <p className="stat-label">Bike weight</p>
+                <p className="stat-value">
+                    {formatKilograms(s.weights.totalGrams)}
+                </p>
+                <p className="stat-caption">
+                    {s.weights.missingCount > 0
+                        ? `Incomplete: ${s.weights.missingCount} ${s.weights.missingCount === 1 ? 'part' : 'parts'} without weight`
+                        : 'Frame and all fitted parts'}
+                </p>
             </div>
             <div className="card stat">
                 <p className="stat-label">

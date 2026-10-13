@@ -4,12 +4,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ApiError } from '@bikelog/api-client';
 import { FitComponentForm } from '../src/features/components/FitComponentForm';
 import { ReplacementForm } from '../src/features/components/ReplacementForm';
+import { catalog, overviewExtras } from './catalog-fixture';
 const api = vi.hoisted(() => ({
     createComponent: vi.fn(),
     createInstallation: vi.fn(),
     replaceWithService: vi.fn(),
     listComponents: vi.fn(),
     listInstallations: vi.fn(),
+    getComponentCatalog: vi.fn(),
+    getOverview: vi.fn(),
+    listBikes: vi.fn(),
+    replaceInstallation: vi.fn(),
+    moveInstallation: vi.fn(),
+    fitPair: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 const installation = {
@@ -29,19 +36,18 @@ const component = {
     initialUsageEstimateMetres: 0,
     version: 1,
     installations: [installation],
+    group: 'wheels',
+    weightGrams: null,
 };
+function seeded() {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+    client.setQueryData(['catalog'], catalog);
+    return client;
+}
 function mount(node: React.ReactNode) {
-    render(
-        <QueryClientProvider
-            client={
-                new QueryClient({
-                    defaultOptions: { queries: { retry: false } },
-                })
-            }
-        >
-            {node}
-        </QueryClientProvider>,
-    );
+    render(<QueryClientProvider client={seeded()}>{node}</QueryClientProvider>);
 }
 function fill() {
     fireEvent.change(screen.getByLabelText('Make'), {
@@ -56,6 +62,18 @@ function fill() {
 }
 beforeEach(() => {
     vi.resetAllMocks();
+    api.getComponentCatalog.mockResolvedValue(catalog);
+    api.getOverview.mockResolvedValue({
+        bike: { id: 'b1', displayName: 'Road', missingPositions: [] },
+        ...overviewExtras(),
+    });
+    api.listBikes.mockResolvedValue({
+        items: [
+            { id: 'b1', displayName: 'Road', missingPositions: [] },
+            { id: 'b2', displayName: 'Gravel', missingPositions: [] },
+        ],
+        nextCursor: null,
+    });
     api.listComponents.mockResolvedValue({ items: [], nextCursor: null });
     api.listInstallations.mockResolvedValue({ items: [], nextCursor: null });
     api.createComponent.mockResolvedValue({
@@ -90,7 +108,7 @@ it('replacementUsesExactlyOneCompositeRequest', async () => {
     fireEvent.change(screen.getByLabelText('Cost (EUR)'), {
         target: { value: '0' },
     });
-    fireEvent.click(screen.getByText('Replace component'));
+    fireEvent.click(screen.getByText('Replace part'));
     await waitFor(() => expect(saved).toHaveBeenCalled());
     expect(api.replaceWithService).toHaveBeenCalledWith(
         'i1',
@@ -138,7 +156,7 @@ it('staleReplacementCannotCreateOrphanClientWork', async () => {
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Replace component'));
+    fireEvent.click(screen.getByText('Replace part'));
     await screen.findByText(/Already replaced/);
     expect(screen.getByText('Reapply my changes')).toBeDisabled();
     expect(api.createComponent).not.toHaveBeenCalled();
@@ -156,7 +174,7 @@ it('fitFailureRetainsCreatedPartForRetry', async () => {
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Fit component'));
+    fireEvent.click(screen.getByText('Fit part'));
     await screen.findByText(/Retained component new/);
     fireEvent.click(screen.getByText('Retry fitting retained component'));
     await waitFor(() =>
@@ -184,14 +202,12 @@ it('reloadCanResumeFittingExistingUnusedPart', async () => {
             onCancel={() => {}}
         />,
     );
-    await screen.findByRole('option', { name: /Old.*unused/ });
-    fireEvent.change(screen.getByLabelText('Existing unused component'), {
-        target: { value: 'unused' },
-    });
-    fireEvent.change(screen.getByLabelText('Date and time'), {
+    fireEvent.click(await screen.findByLabelText(/From your garage/));
+    fireEvent.click(await screen.findByRole('radio', { name: /Old/ }));
+    fireEvent.change(screen.getByLabelText('Fitted on'), {
         target: { value: '2025-02-01T12:00' },
     });
-    fireEvent.click(screen.getByText('Fit component'));
+    fireEvent.click(screen.getByText('Fit part'));
     await waitFor(() =>
         expect(api.createInstallation).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -215,7 +231,7 @@ it('uncertainCreationRequiresPagedOwnerReviewBeforeExplicitResubmit', async () =
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Fit component'));
+    fireEvent.click(screen.getByText('Fit part'));
     await screen.findByText(/The create outcome is uncertain/);
     expect(screen.queryByText('Resubmit after review')).not.toBeInTheDocument();
     api.listComponents
@@ -266,7 +282,7 @@ it('staleOpenInstallationRequiresExplicitFreshVersion', async () => {
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Replace component'));
+    fireEvent.click(screen.getByText('Replace part'));
     await screen.findByText('Reapply my changes');
     expect(api.replaceWithService).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/Your attempted changes/)).toHaveTextContent(
@@ -298,7 +314,7 @@ it('uncertainReplacementNeverAutomaticallyResubmits', async () => {
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Replace component'));
+    fireEvent.click(screen.getByText('Replace part'));
     await screen.findByText(/The replacement outcome is uncertain/);
     expect(api.listInstallations).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText('Refresh installation history'));
@@ -327,12 +343,13 @@ it('previouslyRemovedCompatiblePartCanBeFittedAndHistoryIsReviewable', async () 
             onCancel={() => {}}
         />,
     );
-    await screen.findByRole('option', { name: /Old.*retained/ });
+    fireEvent.click(screen.getByLabelText(/From your garage/));
+    expect(
+        await screen.findByRole('radio', { name: /Old.*Last on Road/ }),
+    ).toBeInTheDocument();
 });
 it('createdUnusedPartInvalidatesCollectionAndPassportEvenWhenFittingFails', async () => {
-    const client = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    });
+    const client = seeded();
     client.setQueryData(['components'], {
         pages: [{ items: [component], nextCursor: 'stale' }],
         pageParams: [undefined],
@@ -361,7 +378,7 @@ it('createdUnusedPartInvalidatesCollectionAndPassportEvenWhenFittingFails', asyn
         </QueryClientProvider>,
     );
     fill();
-    fireEvent.click(screen.getByText('Fit component'));
+    fireEvent.click(screen.getByText('Fit part'));
     await screen.findByText(/Retained component new/);
     await screen.findByText('Occupied');
     expect(client.getQueryData(['components'])).toBeUndefined();
@@ -412,9 +429,7 @@ it.each(['fit', 'replacement'])(
         if (flow === 'replacement')
             expect(screen.getByLabelText('Cost (EUR)')).toHaveValue('12.34');
         fireEvent.click(
-            screen.getByText(
-                flow === 'fit' ? 'Fit component' : 'Replace component',
-            ),
+            screen.getByText(flow === 'fit' ? 'Fit part' : 'Replace part'),
         );
         expect(api.createComponent).not.toHaveBeenCalled();
         expect(api.createInstallation).not.toHaveBeenCalled();
@@ -434,7 +449,7 @@ it('retained identity shows authoritative readonly model and retry edits only da
         />,
     );
     fill();
-    fireEvent.click(screen.getByText('Fit component'));
+    fireEvent.click(screen.getByText('Fit part'));
     await screen.findByText(/Part created; fitting incomplete/);
     expect(screen.getByLabelText('Model')).toHaveValue('New');
     expect(screen.getByLabelText('Model')).toHaveAttribute('readonly');
@@ -450,9 +465,24 @@ it('retained identity shows authoritative readonly model and retry edits only da
         api.createInstallation.mock.calls[0][0].startUtc,
     );
 });
-it('existing identity shows authoritative readonly model', async () => {
+it('garage source lists only unfitted parts of the same type', async () => {
     api.listComponents.mockResolvedValue({
-        items: [{ ...component, id: 'unused', installations: [] }],
+        items: [
+            { ...component, id: 'unused', installations: [] },
+            {
+                ...component,
+                id: 'pedals',
+                type: 'pedals',
+                model: 'Pedals',
+                installations: [],
+            },
+            {
+                ...component,
+                id: 'busy',
+                model: 'Fitted elsewhere',
+                installations: [{ ...installation, bikeId: 'b2' }],
+            },
+        ],
         nextCursor: null,
     });
     mount(
@@ -463,14 +493,14 @@ it('existing identity shows authoritative readonly model', async () => {
             onCancel={() => {}}
         />,
     );
-    await screen.findByRole('option', { name: /Old.*unused/ });
-    fireEvent.change(screen.getByLabelText('Existing unused component'), {
-        target: { value: 'unused' },
-    });
-    expect(screen.getByLabelText('Make')).toHaveValue('Campagnolo');
-    expect(screen.getByLabelText('Make')).toHaveAttribute('readonly');
-    expect(screen.getByLabelText('Model')).toHaveValue('Old');
-    expect(screen.getByLabelText('Model')).toHaveAttribute('readonly');
+    fireEvent.click(await screen.findByLabelText(/From your garage/));
+    expect(
+        await screen.findByRole('radio', { name: /Old/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /Pedals/ })).toBeNull();
+    expect(
+        screen.queryByRole('radio', { name: /Fitted elsewhere/ }),
+    ).toBeNull();
 });
 it('repeated replacement validation refocuses summary and identifies make', () => {
     mount(
@@ -482,8 +512,8 @@ it('repeated replacement validation refocuses summary and identifies make', () =
         />,
     );
     for (let n = 0; n < 2; n++) {
-        screen.getByText('Replace component').focus();
-        fireEvent.click(screen.getByText('Replace component'));
+        screen.getByText('Replace part').focus();
+        fireEvent.click(screen.getByText('Replace part'));
         expect(screen.getByRole('alert')).toHaveFocus();
         expect(screen.getByLabelText('Make')).toHaveAttribute(
             'aria-invalid',
@@ -517,9 +547,7 @@ it.each(['fit', 'replacement'])(
             target: { value: '   ' },
         });
         fireEvent.click(
-            screen.getByText(
-                flow === 'fit' ? 'Fit component' : 'Replace component',
-            ),
+            screen.getByText(flow === 'fit' ? 'Fit part' : 'Replace part'),
         );
         expect(screen.getByLabelText('Make')).toHaveAttribute(
             'aria-invalid',

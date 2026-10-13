@@ -38,8 +38,14 @@ backend integration or authentication.
 
 ## Capabilities and Constraints
 
-- Track multiple bikes and dated installations of chains, cassettes, and front
-  and rear tyres.
+- Track multiple bikes and dated installations in 27 positions grouped into
+  Build, Groupset and Wheels. The API's catalog defines positions, groups and
+  labels; the web renders whatever it returns.
+- Record optional weights in grams for parts and the frame. Totals count
+  recorded weights only and say how many are missing.
+- Mark a front derailleur "none fitted" or a wheel tubeless for a dated period.
+  Those positions get no usage and show no gaps. A bike with a part taken away
+  is incomplete: flagged and warned about, never blocked.
 - Allocate a whole ride using its start timestamp and installation intervals
   `[start, end)`. Missing history is an allocation gap, not guessed usage.
 - Keep component lifetime usage, current-installation usage and usage since

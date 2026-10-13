@@ -7,6 +7,7 @@ import type {
     Validated,
     PageResponseOfBikeResponse,
 } from '@bikelog/api-client';
+import { parseGrams } from '../../lib/units';
 import { getApi } from '../../lib/api';
 import { Dialog } from '../../components/Dialog';
 import { Field } from '../../components/Field';
@@ -35,6 +36,8 @@ export function BikeForm({
         kind: bike?.kind ?? '',
         year: bike?.year?.toString() ?? '',
         color: bike?.color ?? '',
+        frameWeight:
+            bike?.frameWeightGrams == null ? '' : String(bike.frameWeightGrams),
     }));
     const [values, setValues] = useState(initial);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -80,6 +83,12 @@ export function BikeForm({
             problems.year = 'Year must be a whole year from 1900 to 9999.';
         if (values.color.trim().length > 100)
             problems.color = 'Color must be at most 100 characters.';
+        let frameWeightGrams: number | null = null;
+        try {
+            frameWeightGrams = parseGrams(values.frameWeight);
+        } catch (e) {
+            problems.frameWeight = e instanceof Error ? e.message : String(e);
+        }
         setFieldErrors(problems);
         setErrors(Object.values(problems));
         setAttemptCount((n) => n + 1);
@@ -91,6 +100,7 @@ export function BikeForm({
             kind: values.kind as CreateBike['kind'],
             year: Number(values.year),
             color: values.color.trim() || null,
+            frameWeightGrams,
         };
         return {
             bikeId: original?.id ?? null,
@@ -167,6 +177,8 @@ export function BikeForm({
                 {record.model ?? 'Not recorded'} ·{' '}
                 {record.kind ?? 'Not recorded'} ·{' '}
                 {record.year ?? 'Not recorded'} · {record.color ?? 'No color'}
+                {record.frameWeightGrams != null &&
+                    ` · frame ${record.frameWeightGrams} g`}
             </p>
         );
     }
@@ -234,6 +246,29 @@ export function BikeForm({
                             </Field>
                         ),
                     )}
+                    <Field
+                        id={`${prefix}-frameWeight`}
+                        label="Frame weight (g)"
+                        error={fieldErrors.frameWeight}
+                        hint="Optional. Whole grams, 1–20,000."
+                    >
+                        <input
+                            value={values.frameWeight}
+                            inputMode="numeric"
+                            placeholder="e.g. 1180"
+                            onChange={(e) =>
+                                setValues({
+                                    ...values,
+                                    frameWeight: e.target.value,
+                                })
+                            }
+                        />
+                    </Field>
+                    <p className="dialog-description">
+                        Make and model describe the frame. The frame is not a
+                        replaceable part: a different frame means a different
+                        bike, so add a new bike instead.
+                    </p>
                     <Field
                         id={`${prefix}-kind`}
                         label="Kind"

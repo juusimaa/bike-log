@@ -200,14 +200,22 @@ public static class InstallationEndpoints
         );
     }
 
+    /// <summary>
+    /// Validates proposed installations against the owner's exemptions (loaded unless proposed) and
+    /// recorded maintenance.
+    /// </summary>
     internal static async Task ValidateHistory(
         IReadOnlyList<Installation> proposed,
         BikeLogDbContext db,
         Guid owner,
-        CancellationToken ct
+        CancellationToken ct,
+        IReadOnlyList<PositionExemption>? exemptions = null
     )
     {
-        InstallationRules.Validate(proposed);
+        InstallationRules.Validate(
+            proposed,
+            exemptions ?? await db.PositionExemptions.Where(x => x.OwnerId == owner).ToListAsync(ct)
+        );
         MaintenanceHistoryRules.Validate(
             proposed,
             await db

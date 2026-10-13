@@ -1,6 +1,10 @@
 'use client';
 import { useEffect } from 'react';
-import type { ComponentResponse, Validated } from '@bikelog/api-client';
+import type {
+    ComponentResponse,
+    InstallationResponse,
+    Validated,
+} from '@bikelog/api-client';
 import { Dialog } from '../../components/Dialog';
 import { usePassport, useInstallationPages } from './queries';
 import { BikeIdentity } from './BikeIdentity';
@@ -9,7 +13,14 @@ import {
     formatKilometres,
     formatDuration,
     formatEuroCost,
+    formatGrams,
 } from '../../lib/format';
+import {
+    useComponentCatalog,
+    positionLabel,
+    typeLabel,
+    capitalised,
+} from './catalog';
 function CurrentStatus({
     bikeId,
     installationId,
@@ -51,13 +62,27 @@ export function ComponentPassport({
     selectedBikeId,
     onClose,
     onEditEstimate,
+    onEditDetails,
+    onMove,
+    onRemove,
 }: {
     componentId: string;
     selectedBikeId: string;
     onClose: () => void;
     onEditEstimate?: (component: Validated<ComponentResponse>) => void;
+    onEditDetails?: (component: Validated<ComponentResponse>) => void;
+    onMove?: (
+        installation: Validated<InstallationResponse>,
+        component: Validated<ComponentResponse>,
+    ) => void;
+    onRemove?: (
+        installation: Validated<InstallationResponse>,
+        component: Validated<ComponentResponse>,
+    ) => void;
 }) {
     const { detail, usage, maintenance } = usePassport(componentId);
+    const catalog = useComponentCatalog().data;
+    const open = detail.data?.installations.find((i) => i.endUtc === null);
     const c = detail.data,
         u = usage.data;
     return (
@@ -78,9 +103,41 @@ export function ComponentPassport({
             {c && (
                 <>
                     <p>Component identity: {c.id}</p>
-                    <p>Type: {c.type}</p>
+                    <p>Type: {capitalised(typeLabel(catalog, c.type))}</p>
                     <p>Make: {c.make}</p>
                     <p>Model: {c.model}</p>
+                    <p>
+                        Weight:{' '}
+                        {c.weightGrams === null
+                            ? 'Weight not recorded'
+                            : formatGrams(c.weightGrams)}
+                    </p>
+                    <div className="passport-actions">
+                        {onEditDetails && (
+                            <button
+                                className="button small secondary"
+                                onClick={() => onEditDetails(c)}
+                            >
+                                Edit details
+                            </button>
+                        )}
+                        {open && onMove && (
+                            <button
+                                className="button small secondary"
+                                onClick={() => onMove(open, c)}
+                            >
+                                Move to another bike
+                            </button>
+                        )}
+                        {open && onRemove && (
+                            <button
+                                className="button small secondary"
+                                onClick={() => onRemove(open, c)}
+                            >
+                                Remove from bike
+                            </button>
+                        )}
+                    </div>
                     <p>
                         Starting estimate:{' '}
                         {formatKilometres(c.initialUsageEstimateMetres)} km
@@ -125,8 +182,8 @@ export function ComponentPassport({
                             <article key={i.id}>
                                 <BikeIdentity bikeId={i.bikeId} />
                                 <p>
-                                    {i.position} · {formatDateTime(i.startUtc)}{' '}
-                                    —{' '}
+                                    {positionLabel(catalog, i.position)} ·{' '}
+                                    {formatDateTime(i.startUtc)} —{' '}
                                     {i.endUtc
                                         ? formatDateTime(i.endUtc)
                                         : 'Open-ended'}

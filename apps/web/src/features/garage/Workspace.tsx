@@ -8,17 +8,28 @@ import type {
     Validated,
     InstallationResponse,
     Position,
+    PositionExemptionResponse,
     ReminderEvaluation,
 } from '@bikelog/api-client';
 import { Garage, type GarageProps, type GarageIntegration } from './Garage';
 import { BikeForm } from '../bikes/BikeForm';
 import { clearPrivateQueries, queryKeys } from '../../lib/query';
-import { SessionExpired, type AccessIssue } from '../../components/SessionExpired';
+import {
+    SessionExpired,
+    type AccessIssue,
+} from '../../components/SessionExpired';
 import { DirtyFormGuard } from '../../components/DirtyFormGuard';
 import { RideForm } from '../rides/RideForm';
 import { DeleteRideDialog } from '../rides/DeleteRideDialog';
 import { Rides } from '../rides/Rides';
-import { Components } from '../components/Components';
+import { Components, type BoardRequest } from '../components/Components';
+import {
+    EditPartDialog,
+    EndExemptionDialog,
+    ExemptionDialog,
+    MoveDialog,
+    RemoveDialog,
+} from '../components/PositionDialogs';
 import { ComponentPassport } from '../components/ComponentPassport';
 import { FitComponentForm } from '../components/FitComponentForm';
 import { ReplacementForm } from '../components/ReplacementForm';
@@ -80,6 +91,58 @@ function ConnectedReminder({
         />
     );
 }
+/** The dialog for one position board action. */
+function BoardDialog({
+    request,
+    bikeId,
+    bikeName,
+    ...shared
+}: {
+    request: BoardRequest;
+    bikeId: string;
+    bikeName: string;
+    onSaved: (message: string) => void;
+    onCancel: () => void;
+    onBusyChange?: (busy: boolean) => void;
+    onDirtyChange?: (dirty: boolean) => void;
+}) {
+    switch (request.kind) {
+        case 'remove':
+            return (
+                <RemoveDialog
+                    {...shared}
+                    installation={request.installation}
+                    component={request.component}
+                    bikeName={bikeName}
+                />
+            );
+        case 'move':
+            return (
+                <MoveDialog
+                    {...shared}
+                    installation={request.installation}
+                    component={request.component}
+                />
+            );
+        case 'exempt':
+            return (
+                <ExemptionDialog
+                    {...shared}
+                    bikeId={bikeId}
+                    position={request.position}
+                    fitted={request.fitted}
+                />
+            );
+        case 'end-exemption':
+            return (
+                <EndExemptionDialog
+                    {...shared}
+                    exemption={request.exemption}
+                    bikeName={bikeName}
+                />
+            );
+    }
+}
 export function Workspace(
     props: Pick<GarageProps, 'renderView' | 'renderReminder'> & {
         authenticated?: boolean;
@@ -102,7 +165,19 @@ export function Workspace(
               evaluation: Validated<ReminderEvaluation>;
               key: number;
           }
-        | { kind: 'fit'; bikeId: string; position: Position; key: number }
+        | {
+              kind: 'fit';
+              bikeId: string;
+              position: Position;
+              exemption?: Validated<PositionExemptionResponse>;
+              key: number;
+          }
+        | { kind: 'board'; bikeId: string; request: BoardRequest; key: number }
+        | {
+              kind: 'edit-part';
+              component: Validated<ComponentResponse>;
+              key: number;
+          }
         | {
               kind: 'replace';
               installation: Validated<InstallationResponse>;
@@ -135,10 +210,14 @@ export function Workspace(
     const leave = useCallback(() => {
         void clearPrivateQueries(client).then(async () => {
             try {
-                const response = await fetch('/auth/logout', { method: 'POST', credentials: 'same-origin' });
+                const response = await fetch('/auth/logout', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                });
                 if (!response.ok) throw new Error('Sign-out unavailable');
-                const body = await response.json() as { logoutUrl?: string };
-                if (!body.logoutUrl) throw new Error('Sign-out destination unavailable');
+                const body = (await response.json()) as { logoutUrl?: string };
+                if (!body.logoutUrl)
+                    throw new Error('Sign-out destination unavailable');
                 window.location.replace(body.logoutUrl);
             } catch {
                 props.onAccessIssue?.('unavailable');
@@ -158,6 +237,13 @@ export function Workspace(
         setDirty(false);
         setBusy(false);
     }, []);
+    const bikeName = (bikeId: string) =>
+        client.getQueryData<Validated<BikeResponse>>(queryKeys.bike(bikeId))
+            ?.displayName ?? 'This bike';
+    const saved = (message: string) => {
+        close();
+        setNotice(message);
+    };
     const reminderFor = (bikeId: string, context: GarageIntegration) =>
         props.renderReminder?.(bikeId, context) ?? (
             <ConnectedReminder
@@ -219,260 +305,378 @@ export function Workspace(
     return (
         <>
             <div aria-hidden={!!props.accessIssue} inert={!!props.accessIssue}>
-            <Garage
-                {...props}
-                onSignOut={props.authenticated ? requestSignOut : undefined}
-                onComponentAction={openComponent}
-                dirty={dirty}
-                navigationLocked={busy}
-                onExitAccepted={close}
-                renderReminder={reminderFor}
-                onAction={(action, id) => {
-                    if (action === 'create-bike')
-                        setEditor({
-                            kind: 'bike',
-                            key: ++editorSequence.current,
-                        });
-                    else if (action === 'edit-bike' && id) {
-                        const bike = client.getQueryData<
-                            Validated<BikeResponse>
-                        >(queryKeys.bike(id));
-                        if (bike)
+                <Garage
+                    {...props}
+                    onSignOut={props.authenticated ? requestSignOut : undefined}
+                    onComponentAction={openComponent}
+                    dirty={dirty}
+                    navigationLocked={busy}
+                    onExitAccepted={close}
+                    renderReminder={reminderFor}
+                    onAction={(action, id) => {
+                        if (action === 'create-bike')
                             setEditor({
                                 kind: 'bike',
-                                bike,
                                 key: ++editorSequence.current,
                             });
-                    } else if (action === 'log-ride' && id) {
-                        setEditor({
-                            kind: 'ride',
-                            bikeId: id,
-                            key: ++editorSequence.current,
-                        });
-                    } else if (action === 'log-maintenance' && id) {
-                        setEditor({
-                            kind: 'maintenance',
-                            bikeId: id,
-                            key: ++editorSequence.current,
-                        });
-                    } else
-                        setNotice(
-                            'This form will be connected in the next implementation steps.',
-                        );
-                }}
-                renderView={(context) =>
-                    props.renderView?.(context) ?? (
-                        <>
-                            <ConnectedStats bikeId={context.bikeId!} />
-                            {context.view === 'maintenance' &&
-                            context.bikeId ? (
-                                <div className="content-grid">
-                                    <Maintenance
-                                        key={`${context.bikeId}-maintenance`}
+                        else if (action === 'edit-bike' && id) {
+                            const bike = client.getQueryData<
+                                Validated<BikeResponse>
+                            >(queryKeys.bike(id));
+                            if (bike)
+                                setEditor({
+                                    kind: 'bike',
+                                    bike,
+                                    key: ++editorSequence.current,
+                                });
+                        } else if (action === 'log-ride' && id) {
+                            setEditor({
+                                kind: 'ride',
+                                bikeId: id,
+                                key: ++editorSequence.current,
+                            });
+                        } else if (action === 'log-maintenance' && id) {
+                            setEditor({
+                                kind: 'maintenance',
+                                bikeId: id,
+                                key: ++editorSequence.current,
+                            });
+                        } else
+                            setNotice(
+                                'This form will be connected in the next implementation steps.',
+                            );
+                    }}
+                    renderView={(context) =>
+                        props.renderView?.(context) ?? (
+                            <>
+                                <ConnectedStats bikeId={context.bikeId!} />
+                                {context.view === 'maintenance' &&
+                                context.bikeId ? (
+                                    <div className="content-grid">
+                                        <Maintenance
+                                            key={`${context.bikeId}-maintenance`}
+                                            bikeId={context.bikeId}
+                                        />
+                                        {reminderFor(context.bikeId, context)}
+                                    </div>
+                                ) : context.view === 'components' &&
+                                  context.bikeId ? (
+                                    <Components
+                                        key={context.bikeId}
                                         bikeId={context.bikeId}
+                                        disabled={busy}
+                                        onFit={(position, exemption) =>
+                                            context.requestCancel(() =>
+                                                setEditor({
+                                                    kind: 'fit',
+                                                    bikeId: context.bikeId!,
+                                                    position,
+                                                    exemption,
+                                                    key: ++editorSequence.current,
+                                                }),
+                                            )
+                                        }
+                                        onRequest={(request) =>
+                                            context.requestCancel(() =>
+                                                setEditor({
+                                                    kind: 'board',
+                                                    bikeId: context.bikeId!,
+                                                    request,
+                                                    key: ++editorSequence.current,
+                                                }),
+                                            )
+                                        }
+                                        onEditBike={
+                                            context.bike
+                                                ? () =>
+                                                      context.requestCancel(
+                                                          () =>
+                                                              setEditor({
+                                                                  kind: 'bike',
+                                                                  bike: context.bike,
+                                                                  key: ++editorSequence.current,
+                                                              }),
+                                                      )
+                                                : undefined
+                                        }
+                                        onReplace={(installation) =>
+                                            openComponent(
+                                                'replace',
+                                                installation,
+                                                context,
+                                            )
+                                        }
+                                        onPassport={(componentId) =>
+                                            context.requestCancel(() =>
+                                                setEditor({
+                                                    kind: 'passport',
+                                                    componentId,
+                                                    bikeId: context.bikeId!,
+                                                    key: ++editorSequence.current,
+                                                }),
+                                            )
+                                        }
                                     />
-                                    {reminderFor(context.bikeId, context)}
-                                </div>
-                            ) : context.view === 'components' &&
-                              context.bikeId ? (
-                                <Components
-                                    key={context.bikeId}
-                                    bikeId={context.bikeId}
-                                    disabled={busy}
-                                    onFit={(position) =>
-                                        context.requestCancel(() =>
-                                            setEditor({
-                                                kind: 'fit',
-                                                bikeId: context.bikeId!,
-                                                position,
-                                                key: ++editorSequence.current,
-                                            }),
-                                        )
-                                    }
-                                    onReplace={(installation) =>
-                                        openComponent(
-                                            'replace',
-                                            installation,
-                                            context,
-                                        )
-                                    }
-                                    onPassport={(componentId) =>
-                                        context.requestCancel(() =>
-                                            setEditor({
-                                                kind: 'passport',
-                                                componentId,
-                                                bikeId: context.bikeId!,
-                                                key: ++editorSequence.current,
-                                            }),
-                                        )
-                                    }
-                                />
-                            ) : context.view === 'rides' && context.bikeId ? (
-                                <Rides
-                                    key={context.bikeId}
-                                    bikeId={context.bikeId}
-                                    disabled={busy}
-                                    onEdit={(ride) =>
-                                        context.requestCancel(() =>
-                                            setEditor({
-                                                kind: 'ride',
-                                                bikeId: ride.bikeId,
-                                                ride,
-                                                key: ++editorSequence.current,
-                                            }),
-                                        )
-                                    }
-                                    onDelete={(ride) =>
-                                        context.requestCancel(() =>
-                                            setEditor({
-                                                kind: 'delete-ride',
-                                                ride,
-                                                key: ++editorSequence.current,
-                                            }),
-                                        )
-                                    }
-                                />
-                            ) : null}
-                        </>
-                    )
-                }
-                renderOverlay={(context) =>
-                    savedId ? (
-                        <SavedNavigation
-                            id={savedId}
-                            context={context}
-                            onDone={clearSaved}
-                        />
-                    ) : (
-                        editor &&
-                        (editor.kind === 'maintenance' ? (
-                            <MaintenanceForm
-                                key={editor.key}
-                                bikeId={editor.bikeId}
-                                presetTaskKey={editor.presetTaskKey}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice('Maintenance saved.');
-                                }}
-                            />
-                        ) : editor.kind === 'reminder' ? (
-                            <ReminderForm
-                                key={editor.key}
-                                bikeId={editor.bikeId}
-                                evaluation={editor.evaluation}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice('Reminder saved.');
-                                }}
-                            />
-                        ) : editor.kind === 'fit' ? (
-                            <FitComponentForm
-                                key={editor.key}
-                                bikeId={editor.bikeId}
-                                position={editor.position}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice('Component fitted.');
-                                }}
-                            />
-                        ) : editor.kind === 'replace' ? (
-                            <ReplacementForm
-                                key={editor.key}
-                                installation={editor.installation}
-                                component={editor.component}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice(
-                                        'Component replaced and service recorded.',
-                                    );
-                                }}
-                            />
-                        ) : editor.kind === 'passport' ? (
-                            <ComponentPassport
-                                key={editor.key}
-                                componentId={editor.componentId}
-                                selectedBikeId={editor.bikeId}
-                                onClose={() => context.requestCancel(close)}
-                                onEditEstimate={(component) =>
-                                    context.requestCancel(() =>
-                                        setEditor({
-                                            kind: 'estimate',
-                                            component,
-                                            bikeId: editor.bikeId,
-                                            key: ++editorSequence.current,
-                                        }),
-                                    )
-                                }
-                            />
-                        ) : editor.kind === 'estimate' ? (
-                            <EstimateForm
-                                key={editor.key}
-                                component={editor.component}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice('Starting estimate saved.');
-                                }}
-                            />
-                        ) : editor.kind === 'ride' ? (
-                            <RideForm
-                                key={editor.key}
-                                bikeId={editor.bikeId}
-                                ride={editor.ride}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={() => {
-                                    close();
-                                    setNotice('Ride saved.');
-                                }}
-                            />
-                        ) : editor.kind === 'delete-ride' ? (
-                            <DeleteRideDialog
-                                key={editor.key}
-                                ride={editor.ride}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onDeleted={() => {
-                                    close();
-                                    setNotice('Ride deleted.');
-                                }}
+                                ) : context.view === 'rides' &&
+                                  context.bikeId ? (
+                                    <Rides
+                                        key={context.bikeId}
+                                        bikeId={context.bikeId}
+                                        disabled={busy}
+                                        onEdit={(ride) =>
+                                            context.requestCancel(() =>
+                                                setEditor({
+                                                    kind: 'ride',
+                                                    bikeId: ride.bikeId,
+                                                    ride,
+                                                    key: ++editorSequence.current,
+                                                }),
+                                            )
+                                        }
+                                        onDelete={(ride) =>
+                                            context.requestCancel(() =>
+                                                setEditor({
+                                                    kind: 'delete-ride',
+                                                    ride,
+                                                    key: ++editorSequence.current,
+                                                }),
+                                            )
+                                        }
+                                    />
+                                ) : null}
+                            </>
+                        )
+                    }
+                    renderOverlay={(context) =>
+                        savedId ? (
+                            <SavedNavigation
+                                id={savedId}
+                                context={context}
+                                onDone={clearSaved}
                             />
                         ) : (
-                            <BikeForm
-                                key={editor.key}
-                                bike={editor.bike}
-                                onDirtyChange={setDirty}
-                                onBusyChange={setBusy}
-                                onCancel={() => context.requestCancel(close)}
-                                onSaved={(bike) => {
-                                    close();
-                                    setNotice(`${bike.displayName} saved.`);
-                                    setSavedId(bike.id);
-                                }}
-                            />
-                        ))
-                    )
-                }
-            />
+                            editor &&
+                            (editor.kind === 'maintenance' ? (
+                                <MaintenanceForm
+                                    key={editor.key}
+                                    bikeId={editor.bikeId}
+                                    presetTaskKey={editor.presetTaskKey}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Maintenance saved.');
+                                    }}
+                                />
+                            ) : editor.kind === 'reminder' ? (
+                                <ReminderForm
+                                    key={editor.key}
+                                    bikeId={editor.bikeId}
+                                    evaluation={editor.evaluation}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Reminder saved.');
+                                    }}
+                                />
+                            ) : editor.kind === 'fit' ? (
+                                <FitComponentForm
+                                    key={editor.key}
+                                    bikeId={editor.bikeId}
+                                    position={editor.position}
+                                    exemption={editor.exemption}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Component fitted.');
+                                    }}
+                                />
+                            ) : editor.kind === 'replace' ? (
+                                <ReplacementForm
+                                    key={editor.key}
+                                    installation={editor.installation}
+                                    component={editor.component}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Part replaced.');
+                                    }}
+                                />
+                            ) : editor.kind === 'passport' ? (
+                                <ComponentPassport
+                                    key={editor.key}
+                                    componentId={editor.componentId}
+                                    selectedBikeId={editor.bikeId}
+                                    onClose={() => context.requestCancel(close)}
+                                    onEditEstimate={(component) =>
+                                        context.requestCancel(() =>
+                                            setEditor({
+                                                kind: 'estimate',
+                                                component,
+                                                bikeId: editor.bikeId,
+                                                key: ++editorSequence.current,
+                                            }),
+                                        )
+                                    }
+                                    onEditDetails={(component) =>
+                                        setEditor({
+                                            kind: 'edit-part',
+                                            component,
+                                            key: ++editorSequence.current,
+                                        })
+                                    }
+                                    onMove={(installation, component) =>
+                                        setEditor({
+                                            kind: 'board',
+                                            bikeId: installation.bikeId,
+                                            request: {
+                                                kind: 'move',
+                                                installation,
+                                                component,
+                                            },
+                                            key: ++editorSequence.current,
+                                        })
+                                    }
+                                    onRemove={(installation, component) =>
+                                        setEditor({
+                                            kind: 'board',
+                                            bikeId: installation.bikeId,
+                                            request: {
+                                                kind: 'remove',
+                                                installation,
+                                                component,
+                                            },
+                                            key: ++editorSequence.current,
+                                        })
+                                    }
+                                />
+                            ) : editor.kind === 'edit-part' ? (
+                                <EditPartDialog
+                                    key={editor.key}
+                                    component={editor.component}
+                                    affectedBikeIds={[
+                                        ...new Set(
+                                            editor.component.installations.map(
+                                                (i) => i.bikeId,
+                                            ),
+                                        ),
+                                    ]}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={saved}
+                                />
+                            ) : editor.kind === 'board' ? (
+                                <BoardDialog
+                                    key={editor.key}
+                                    request={editor.request}
+                                    bikeId={editor.bikeId}
+                                    bikeName={bikeName(editor.bikeId)}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={saved}
+                                />
+                            ) : editor.kind === 'estimate' ? (
+                                <EstimateForm
+                                    key={editor.key}
+                                    component={editor.component}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Starting estimate saved.');
+                                    }}
+                                />
+                            ) : editor.kind === 'ride' ? (
+                                <RideForm
+                                    key={editor.key}
+                                    bikeId={editor.bikeId}
+                                    ride={editor.ride}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={() => {
+                                        close();
+                                        setNotice('Ride saved.');
+                                    }}
+                                />
+                            ) : editor.kind === 'delete-ride' ? (
+                                <DeleteRideDialog
+                                    key={editor.key}
+                                    ride={editor.ride}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onDeleted={() => {
+                                        close();
+                                        setNotice('Ride deleted.');
+                                    }}
+                                />
+                            ) : (
+                                <BikeForm
+                                    key={editor.key}
+                                    bike={editor.bike}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={(bike) => {
+                                        close();
+                                        setNotice(`${bike.displayName} saved.`);
+                                        setSavedId(bike.id);
+                                    }}
+                                />
+                            ))
+                        )
+                    }
+                />
             </div>
-            {props.accessIssue && <SessionExpired reason={props.accessIssue} onLeave={leave} onRetry={() => props.onAccessIssue?.(null)} />}
-            {confirmSignOut && <DirtyFormGuard dirty onStay={() => setConfirmSignOut(false)} onDiscard={() => { setConfirmSignOut(false); close(); leave(); }} />}
+            {props.accessIssue && (
+                <SessionExpired
+                    reason={props.accessIssue}
+                    onLeave={leave}
+                    onRetry={() => props.onAccessIssue?.(null)}
+                />
+            )}
+            {confirmSignOut && (
+                <DirtyFormGuard
+                    dirty
+                    onStay={() => setConfirmSignOut(false)}
+                    onDiscard={() => {
+                        setConfirmSignOut(false);
+                        close();
+                        leave();
+                    }}
+                />
+            )}
             <Toast message={notice} />
         </>
     );

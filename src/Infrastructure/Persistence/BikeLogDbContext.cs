@@ -15,6 +15,7 @@ public sealed class BikeLogDbContext(DbContextOptions<BikeLogDbContext> options)
     public DbSet<Bike> Bikes => Set<Bike>();
     public DbSet<Component> Components => Set<Component>();
     public DbSet<Installation> Installations => Set<Installation>();
+    public DbSet<PositionExemption> PositionExemptions => Set<PositionExemption>();
     public DbSet<Ride> Rides => Set<Ride>();
     public DbSet<MaintenanceRecord> MaintenanceRecords => Set<MaintenanceRecord>();
     public DbSet<ComponentUsageRow> ComponentUsages => Set<ComponentUsageRow>();

@@ -1,9 +1,11 @@
 using System.Data;
 using System.Globalization;
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Reminders;
 using BikeLog.Api.Features.Usage;
+using BikeLog.Domain.Weights;
 using BikeLog.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,6 +52,14 @@ public static class BikeOverviewEndpoints
                 }
                 var usage = await usageReader.ReadAsync(owner.OwnerId, id, now, ct);
                 var reminder = await reminders.ReadAsync(owner.OwnerId, id, now, ct);
+                var fittedIds = usage.CurrentComponents.Select(x => x.ComponentId).ToArray();
+                var weights = WeightSummary.Calculate(
+                    await db
+                        .Components.AsNoTracking()
+                        .Where(x => x.OwnerId == owner.OwnerId && fittedIds.Contains(x.Id))
+                        .ToListAsync(ct),
+                    bike.FrameWeightGrams
+                );
                 var spending = maintenance
                     .Where(x => x.Cost.HasValue)
                     .GroupBy(x => x.Currency!)
@@ -82,17 +92,37 @@ public static class BikeOverviewEndpoints
                     .Take(3)
                     .ToArray();
                 return new BikeOverviewResponse(
-                    BikeResponse.From(bike),
+                    BikeResponse.From(
+                        bike,
+                        usage
+                            .PositionStatuses.Where(x => x.State == "missing")
+                            .Select(x => x.Position)
+                            .ToArray()
+                    ),
                     now,
                     rides.Count,
                     distance,
                     usage.CurrentComponents,
                     usage.AllocationGaps,
+                    usage.PositionStatuses,
+                    usage.PositionGaps,
                     spending,
                     maintenance.Count(x => !x.Cost.HasValue),
                     maintenance.Count,
                     activity,
-                    reminder
+                    reminder,
+                    new WeightSummaryResponse(
+                        weights
+                            .Groups.Select(x => new GroupWeightResponse(
+                                ComponentValues.Group(x.Group),
+                                x.Grams,
+                                x.MissingCount
+                            ))
+                            .ToArray(),
+                        weights.FrameGrams,
+                        weights.TotalGrams,
+                        weights.MissingCount
+                    )
                 );
             }
         );

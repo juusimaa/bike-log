@@ -268,4 +268,89 @@ public class UiBackendContractTests
             }
         }
     }
+
+    [Fact]
+    public async Task OpenApiDescribesComponentGroupsAndWeights()
+    {
+        await using var scenario = await ApiScenario.Open();
+        var api = await scenario.Read("/openapi/v1.json");
+        var paths = api.GetProperty("paths");
+        var schemas = api.GetProperty("components").GetProperty("schemas");
+        string?[] Enum(string schema, string property) =>
+            schemas
+                .GetProperty(schema)
+                .GetProperty("properties")
+                .GetProperty(property)
+                .GetProperty("enum")
+                .EnumerateArray()
+                .Select(x =>
+                    x.ValueKind == System.Text.Json.JsonValueKind.Null ? null : x.GetString()
+                )
+                .ToArray();
+        string[] Required(string schema) =>
+            schemas
+                .GetProperty(schema)
+                .GetProperty("required")
+                .EnumerateArray()
+                .Select(x => x.GetString()!)
+                .Order()
+                .ToArray();
+        Assert.Equal(20, Enum("CreateComponent", "type").Length);
+        Assert.Equal(27, Enum("CreateInstallation", "position").Length);
+        Assert.Equal(27, Enum("PositionStatusResponse", "position").Length);
+        Assert.Equal(new[] { "build", "groupset", "wheels" }, Enum("ComponentResponse", "group"));
+        Assert.Equal(
+            new string?[] { "none-fitted", "tubeless" },
+            Enum("PositionExemptionResponse", "reason")
+        );
+        Assert.Equal(
+            new[] { "fitted", "exempt", "missing", "not-recorded" },
+            Enum("PositionStatusResponse", "state")
+        );
+        foreach (
+            var (schema, property) in new[]
+            {
+                ("CreateComponent", "weightGrams"),
+                ("ComponentResponse", "weightGrams"),
+                ("CreateBike", "frameWeightGrams"),
+                ("BikeResponse", "frameWeightGrams"),
+            }
+        )
+        {
+            var types = schemas
+                .GetProperty(schema)
+                .GetProperty("properties")
+                .GetProperty(property)
+                .GetProperty("type")
+                .EnumerateArray()
+                .Select(x => x.GetString())
+                .ToArray();
+            Assert.Contains("null", types);
+        }
+        Assert.Equal(new[] { "make", "model", "type" }, Required("CreateComponent"));
+        Assert.Equal(new[] { "expectedVersion", "make", "model" }, Required("EditComponent"));
+        Assert.Equal(new[] { "bikeId", "make", "model", "startUtc", "type" }, Required("FitPair"));
+        Assert.Equal(
+            new[] { "expectedInstallationVersion", "movedAtUtc", "toBikeId" },
+            Required("MoveInstallation")
+        );
+        Assert.Equal(new[] { "position", "startUtc" }, Required("CreatePositionExemption"));
+        Assert.Equal(new[] { "expectedVersion", "startUtc" }, Required("CorrectPositionExemption"));
+        Assert.Contains("missingPositions", Required("BikeResponse"));
+        foreach (
+            var route in new[]
+            {
+                "/api/component-catalog",
+                "/api/components/{id}",
+                "/api/installations/pair",
+                "/api/installations/{id}/move",
+                "/api/bikes/{id}/position-exemptions",
+                "/api/position-exemptions/{id}",
+            }
+        )
+        {
+            Assert.True(paths.TryGetProperty(route, out _), route);
+        }
+        Assert.True(paths.GetProperty("/api/components/{id}").TryGetProperty("put", out _));
+    }
 }

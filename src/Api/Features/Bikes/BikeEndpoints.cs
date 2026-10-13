@@ -1,4 +1,6 @@
+using System.Data;
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Bikes;
 using BikeLog.Infrastructure.Persistence;
@@ -32,7 +34,8 @@ public static class BikeEndpoints
                                 request.Model,
                                 request.Kind,
                                 request.Year,
-                                request.Color
+                                request.Color,
+                                request.FrameWeightGrams
                             );
                             db.Bikes.Add(b);
                             return Task.FromResult(b);
@@ -40,21 +43,31 @@ public static class BikeEndpoints
                         false,
                         ct
                     );
-                    return Results.Created($"/api/bikes/{bike.Id}", BikeResponse.From(bike));
+                    return Results.Created($"/api/bikes/{bike.Id}", BikeResponse.From(bike, []));
                 }
             )
             .Produces<BikeResponse>(201)
             .WithDescription("Create a bike for the current owner.");
         api.MapGet(
             "/bikes/{id:guid}",
-            async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
+            async (
+                Guid id,
+                BikeLogDbContext db,
+                ICurrentOwner owner,
+                TimeProvider clock,
+                CancellationToken ct
+            ) =>
             {
+                await using var snapshot = await db.Database.BeginTransactionAsync(
+                    IsolationLevel.RepeatableRead,
+                    ct
+                );
                 var b =
                     await db
                         .Bikes.AsNoTracking()
                         .SingleOrDefaultAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct)
                     ?? throw ApiInput.Missing();
-                return BikeResponse.From(b);
+                return await BikeCompletenessReader.ResponseAsync(db, b, clock.GetUtcNow(), ct);
             }
         );
         api.MapPut(
@@ -65,6 +78,7 @@ public static class BikeEndpoints
                 BikeLogDbContext db,
                 OwnerMutation mutation,
                 ICurrentOwner owner,
+                TimeProvider clock,
                 CancellationToken ct
             ) =>
             {
@@ -85,7 +99,8 @@ public static class BikeEndpoints
                             request.Model,
                             request.Kind,
                             request.Year,
-                            request.Color
+                            request.Color,
+                            request.FrameWeightGrams
                         );
                         b.Version = checked(b.Version + 1);
                         return b;
@@ -93,7 +108,7 @@ public static class BikeEndpoints
                     false,
                     ct
                 );
-                return BikeResponse.From(bike);
+                return await BikeCompletenessReader.ResponseAsync(db, bike, clock.GetUtcNow(), ct);
             }
         );
     }
@@ -105,9 +120,11 @@ public static class BikeEndpoints
         string? model,
         string? kind,
         int year,
-        string? color
+        string? color,
+        int? frameWeightGrams
     )
     {
+        var frameWeight = ComponentValues.Weight(frameWeightGrams);
         var normalizedName = ApiInput.OptionalName(name);
         var normalizedMake = ApiInput.Text(make, "make");
         var normalizedModel = ApiInput.Text(model, "model");
@@ -136,5 +153,6 @@ public static class BikeEndpoints
         b.Kind = parsedKind;
         b.Year = year;
         b.Color = normalizedColor;
+        b.FrameWeightGrams = frameWeight;
     }
 }

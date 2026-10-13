@@ -1,6 +1,7 @@
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Installations;
+using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Installations;
 using BikeLog.Domain.Usage;
 using BikeLog.Infrastructure.Persistence;
@@ -30,7 +31,11 @@ public sealed class BikeUsageReader(BikeLogDbContext db, IUsageCalculator calcul
             .Installations.AsNoTracking()
             .Where(x => x.OwnerId == ownerId && x.BikeId == id)
             .ToListAsync(ct);
-        var calculation = calculator.Calculate(rides, installations);
+        var exemptions = await db
+            .PositionExemptions.AsNoTracking()
+            .Where(x => x.OwnerId == ownerId && x.BikeId == id)
+            .ToListAsync(ct);
+        var calculation = calculator.Calculate(rides, installations, exemptions);
 
         var current = installations
             .Where(x => x.StartUtc <= now && (!x.EndUtc.HasValue || now < x.EndUtc))
@@ -100,6 +105,18 @@ public sealed class BikeUsageReader(BikeLogDbContext db, IUsageCalculator calcul
                 .AllocationGaps.Select(x => new AllocationGapResponse(
                     x.RideId,
                     ComponentValues.Position(x.Position)
+                ))
+                .ToArray(),
+            BikeCompleteness
+                .Statuses(id, installations, exemptions, now)
+                .Select(PositionStatusResponse.From)
+                .ToArray(),
+            calculation
+                .PositionGaps.Select(x => new PositionGapResponse(
+                    ComponentValues.Position(x.Position),
+                    x.RideCount,
+                    x.FirstRideStartUtc,
+                    x.LastRideStartUtc
                 ))
                 .ToArray()
         );

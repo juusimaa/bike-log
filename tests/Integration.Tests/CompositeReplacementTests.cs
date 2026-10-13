@@ -319,7 +319,8 @@ public class CompositeReplacementTests
     {
         public UsageCalculation Calculate(
             IReadOnlyList<Ride> rides,
-            IReadOnlyList<Installation> installations
+            IReadOnlyList<Installation> installations,
+            IReadOnlyList<PositionExemption>? exemptions = null
         ) => throw new InvalidOperationException("Injected failure");
     }
 

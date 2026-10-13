@@ -23,6 +23,7 @@ public static class ComponentEndpoints
                 ) =>
                 {
                     var type = ComponentValues.ParseType(request.Type);
+                    var weight = ComponentValues.Weight(request.WeightGrams);
                     var c = await mutation.ExecuteAsync(
                         owner.OwnerId,
                         _ =>
@@ -33,6 +34,7 @@ public static class ComponentEndpoints
                                 Type = type,
                                 Make = ComponentValues.IdentityText(request.Make, "make"),
                                 Model = ComponentValues.IdentityText(request.Model, "model"),
+                                WeightGrams = weight,
                             };
                             db.Components.Add(c);
                             return Task.FromResult(c);
@@ -42,19 +44,59 @@ public static class ComponentEndpoints
                     );
                     return Results.Created(
                         $"/api/components/{c.Id}",
-                        new ComponentResponse(
-                            c.Id,
-                            ComponentValues.Type(c.Type),
-                            c.Make,
-                            c.Model,
-                            c.Version,
-                            [],
-                            c.InitialUsageEstimateMetres
-                        )
+                        ComponentResponse.From(c, [])
                     );
                 }
             )
             .Produces<ComponentResponse>(201);
+        api.MapPut(
+                "/components/{id:guid}",
+                async (
+                    Guid id,
+                    EditComponent request,
+                    BikeLogDbContext db,
+                    OwnerMutation mutation,
+                    ICurrentOwner owner,
+                    CancellationToken ct
+                ) =>
+                {
+                    var make = ComponentValues.IdentityText(request.Make, "make");
+                    var model = ComponentValues.IdentityText(request.Model, "model");
+                    var weight = ComponentValues.Weight(request.WeightGrams);
+                    var c = await mutation.ExecuteAsync(
+                        owner.OwnerId,
+                        async token =>
+                        {
+                            var c =
+                                await db.Components.SingleOrDefaultAsync(
+                                    x => x.OwnerId == owner.OwnerId && x.Id == id,
+                                    token
+                                ) ?? throw ApiInput.Missing();
+                            ApiInput.Version(request.ExpectedVersion, c.Version);
+                            c.Make = make;
+                            c.Model = model;
+                            c.WeightGrams = weight;
+                            c.Version = checked(c.Version + 1);
+                            return c;
+                        },
+                        false,
+                        ct
+                    );
+                    var history = await db
+                        .Installations.AsNoTracking()
+                        .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
+                        .OrderBy(x => x.StartUtc)
+                        .ToListAsync(ct);
+                    return ComponentResponse.From(
+                        c,
+                        history.Select(InstallationResponse.From).ToArray()
+                    );
+                }
+            )
+            .Produces<ComponentResponse>()
+            .WithDescription(
+                "Edit make, model and weight with expectedVersion. Type, installations and usage never change."
+            );
         api.MapGet(
             "/components/{id:guid}",
             async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
@@ -73,14 +115,9 @@ public static class ComponentEndpoints
                     .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
                     .OrderBy(x => x.StartUtc)
                     .ToListAsync(ct);
-                return new ComponentResponse(
-                    c.Id,
-                    ComponentValues.Type(c.Type),
-                    c.Make,
-                    c.Model,
-                    c.Version,
-                    history.Select(InstallationResponse.From).ToArray(),
-                    c.InitialUsageEstimateMetres
+                return ComponentResponse.From(
+                    c,
+                    history.Select(InstallationResponse.From).ToArray()
                 );
             }
         );

@@ -149,4 +149,75 @@ public class UsageCalculatorTests
             new UsageCalculator().Calculate([ride], [Install()]).UnallocatedRideIds
         );
     }
+
+    private static Installation Fit(InstallationPosition position)
+    {
+        var i = Install();
+        i.Position = position;
+        return i;
+    }
+
+    private static PositionExemption NoneFitted(DateTimeOffset start, DateTimeOffset? end = null) =>
+        new()
+        {
+            OwnerId = Owner,
+            BikeId = Bike,
+            Position = InstallationPosition.FrontDerailleur,
+            Reason = ExemptionReason.NoneFitted,
+            StartUtc = start,
+            EndUtc = end,
+        };
+
+    [Fact]
+    public void RideAllocatesToAFittedSaddle()
+    {
+        var saddle = Fit(InstallationPosition.Saddle);
+        var r = new UsageCalculator().Calculate([Ride(distance: 40000)], [saddle]);
+        Assert.Equal(40000, r.ComponentUsages.Single().LifetimeMetres);
+        Assert.DoesNotContain(r.AllocationGaps, x => x.Position == InstallationPosition.Saddle);
+    }
+
+    [Fact]
+    public void ExemptPositionHasNoGapButUnrecordedPositionsStillDo()
+    {
+        var inside = Ride(Start.AddHours(1));
+        var after = Ride(Start.AddDays(2));
+        var r = new UsageCalculator().Calculate(
+            [inside, after],
+            [],
+            [NoneFitted(Start, Start.AddDays(1))]
+        );
+        Assert.DoesNotContain(
+            r.AllocationGaps,
+            x => x.RideId == inside.Id && x.Position == InstallationPosition.FrontDerailleur
+        );
+        Assert.Contains(
+            r.AllocationGaps,
+            x => x.RideId == after.Id && x.Position == InstallationPosition.FrontDerailleur
+        );
+        Assert.Contains(
+            r.AllocationGaps,
+            x => x.RideId == inside.Id && x.Position == InstallationPosition.Saddle
+        );
+    }
+
+    [Fact]
+    public void PositionGapsSummariseEachGappedPosition()
+    {
+        var first = Ride(Start.AddDays(1));
+        var last = Ride(Start.AddDays(5));
+        var middle = Ride(Start.AddDays(3));
+        var r = new UsageCalculator().Calculate(
+            [last, first, middle],
+            [Fit(InstallationPosition.Chain)]
+        );
+        Assert.DoesNotContain(r.PositionGaps, x => x.Position == InstallationPosition.Chain);
+        Assert.Equal(26, r.PositionGaps.Count);
+        var saddle = r.PositionGaps.Single(x => x.Position == InstallationPosition.Saddle);
+        Assert.Equal(
+            new PositionGap(Bike, InstallationPosition.Saddle, 3, first.StartUtc, last.StartUtc),
+            saddle
+        );
+        Assert.Equal(InstallationPosition.Fork, r.PositionGaps[0].Position);
+    }
 }

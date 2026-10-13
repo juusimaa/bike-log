@@ -12,10 +12,21 @@ const schema = await response.json();
 // Keep snapshots stable when verification runs on an alternate local port.
 schema.servers = [{ url: 'http://127.0.0.1:5080/' }];
 // ASP.NET format-only DateTimeOffset: ISO strings, preserving nullable wire fields.
-const nullableDates = new Set(['endUtc', 'calculatedAtUtc', 'baselineUtc']);
+const nullableDates = new Set([
+    'endUtc',
+    'calculatedAtUtc',
+    'baselineUtc',
+    'sinceUtc',
+]);
 const typeSchema = structuredClone(schema);
-for (const dto of Object.values(typeSchema.components.schemas)) {
+// Catalog-driven values stay plain strings in TypeScript so a new position, type or group
+// needs only regeneration (research D13); the runtime snapshot keeps the enums.
+const catalogField = (dto, name) =>
+    ['position', 'toPosition', 'group'].includes(name) ||
+    (name === 'type' && /Component|Pair|Catalog/.test(dto));
+for (const [dtoName, dto] of Object.entries(typeSchema.components.schemas)) {
     for (const [name, property] of Object.entries(dto.properties ?? {})) {
+        if (catalogField(dtoName, name)) delete property.enum;
         if (property.format === 'date-time' && !property.type)
             property.type = nullableDates.has(name)
                 ? ['string', 'null']

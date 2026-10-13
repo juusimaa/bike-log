@@ -52,7 +52,9 @@ public static class ComponentEstimateEndpoints
                                 component.Version,
                                 calculated,
                                 component.InitialUsageEstimateMetres,
-                                combined
+                                combined,
+                                ComponentValues.Group(component.Group),
+                                component.WeightGrams
                             );
                         },
                         false,

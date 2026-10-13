@@ -9,7 +9,8 @@ public sealed record ReplaceWithService(
     [property: System.Text.Json.Serialization.JsonRequired] DateTimeOffset ReplacedAtUtc,
     [property: System.Text.Json.Serialization.JsonRequired] long ExpectedInstallationVersion,
     decimal? Cost,
-    string? Currency
+    string? Currency,
+    int? NewWeightGrams
 );
 
 public sealed record ReplacementWithServiceResponse(

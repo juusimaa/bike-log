@@ -28,7 +28,12 @@ type Schema = {
     items?: Schema;
 };
 const schemas = snapshot.components.schemas as Record<string, Schema>;
-const nullableDates = new Set(['endUtc', 'calculatedAtUtc', 'baselineUtc']);
+const nullableDates = new Set([
+    'endUtc',
+    'calculatedAtUtc',
+    'baselineUtc',
+    'sinceUtc',
+]);
 function invalid(): never {
     throw new ApiError(
         0,
@@ -459,6 +464,88 @@ export function createApiClient(
             request<Dto.ComponentEstimateResponse>(
                 'put',
                 '/api/components/{id}/estimate',
+                { id, body: input, signal },
+            ),
+        getComponentCatalog: (signal?: AbortSignal) =>
+            request<Dto.ComponentCatalogResponse>(
+                'get',
+                '/api/component-catalog',
+                { signal },
+            ),
+        getBikeUsage: (bikeId: string, signal?: AbortSignal) =>
+            request<Dto.BikeUsageResponse>('get', '/api/bikes/{id}/usage', {
+                id: bikeId,
+                signal,
+            }),
+        editComponent: (
+            id: string,
+            input: Dto.EditComponent,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.ComponentResponse>('put', '/api/components/{id}', {
+                id,
+                body: input,
+                signal,
+            }),
+        correctInstallation: (
+            id: string,
+            input: Dto.CorrectInstallation,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.InstallationResponse>(
+                'put',
+                '/api/installations/{id}',
+                { id, body: input, signal },
+            ),
+        replaceInstallation: (
+            installationId: string,
+            input: Dto.ReplaceInstallation,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.AnonymousTypeOfInstallationResponseAndInstallationResponse>(
+                'post',
+                '/api/installations/{id}/replacement',
+                { id: installationId, body: input, signal },
+            ),
+        moveInstallation: (
+            installationId: string,
+            input: Dto.MoveInstallation,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.MoveInstallationResponse>(
+                'post',
+                '/api/installations/{id}/move',
+                { id: installationId, body: input, signal },
+            ),
+        fitPair: (input: Dto.FitPair, signal?: AbortSignal) =>
+            request<Dto.FitPairResponse>('post', '/api/installations/pair', {
+                body: input,
+                signal,
+            }),
+        listExemptions: (bikeId: string, signal?: AbortSignal) =>
+            request<Dto.PositionExemptionResponse[]>(
+                'get',
+                '/api/bikes/{id}/position-exemptions',
+                { id: bikeId, signal },
+            ),
+        createExemption: (
+            bikeId: string,
+            input: Dto.CreatePositionExemption,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.PositionExemptionResponse>(
+                'post',
+                '/api/bikes/{id}/position-exemptions',
+                { id: bikeId, body: input, signal },
+            ),
+        correctExemption: (
+            id: string,
+            input: Dto.CorrectPositionExemption,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.PositionExemptionResponse>(
+                'put',
+                '/api/position-exemptions/{id}',
                 { id, body: input, signal },
             ),
         getBikeMaintenance: (bikeId: string, signal?: AbortSignal) =>

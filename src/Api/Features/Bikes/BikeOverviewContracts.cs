@@ -14,6 +14,16 @@ public sealed record RecentActivity(
     long? RideDistanceMetres
 );
 
+public sealed record GroupWeightResponse(string Group, int Grams, int MissingCount);
+
+/// <summary>Recorded weights of currently fitted parts; missingCount includes the frame.</summary>
+public sealed record WeightSummaryResponse(
+    IReadOnlyList<GroupWeightResponse> Groups,
+    int? FrameGrams,
+    int TotalGrams,
+    int MissingCount
+);
+
 public sealed record BikeOverviewResponse(
     BikeResponse Bike,
     DateTimeOffset EvaluatedAtUtc,
@@ -21,9 +31,12 @@ public sealed record BikeOverviewResponse(
     long RecordedDistanceMetres,
     IReadOnlyList<CurrentComponentUsage> CurrentComponents,
     IReadOnlyList<AllocationGapResponse> AllocationGaps,
+    IReadOnlyList<PositionStatusResponse> PositionStatuses,
+    IReadOnlyList<PositionGapResponse> PositionGaps,
     IReadOnlyList<CurrencySpend> SpendingByCurrency,
     int UnknownCostRecordCount,
     int MaintenanceRecordCount,
     IReadOnlyList<RecentActivity> RecentActivity,
-    ReminderEvaluation Reminder
+    ReminderEvaluation Reminder,
+    WeightSummaryResponse Weights
 );

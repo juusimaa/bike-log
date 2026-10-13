@@ -30,6 +30,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.Property<string>("Color")
                         .HasColumnType("text");
 
+                    b.Property<int?>("FrameWeightGrams")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Kind")
                         .HasColumnType("text");
 
@@ -56,7 +59,10 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("Bikes");
+                    b.ToTable("Bikes", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Bike_FrameWeight", "\"FrameWeightGrams\" IS NULL OR \"FrameWeightGrams\" BETWEEN 1 AND 20000");
+                        });
                 });
 
             modelBuilder.Entity("BikeLog.Domain.Components.Component", b =>
@@ -88,6 +94,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
+                    b.Property<int?>("WeightGrams")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OwnerId");
@@ -96,7 +105,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Component_InitialUsageEstimate", "\"InitialUsageEstimateMetres\" >= 0");
 
-                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" IN ('Chain', 'Cassette', 'Tyre')");
+                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'ThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'Brake', 'BrakeLever', 'Crankset', 'Rim', 'Tyre', 'DiscRotor', 'InnerTube')");
+
+                            t.HasCheckConstraint("CK_Component_Weight", "\"WeightGrams\" IS NULL OR \"WeightGrams\" BETWEEN 1 AND 20000");
                         });
                 });
 
@@ -140,7 +151,52 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Installation_Interval", "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\"");
 
-                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" IN ('Chain', 'Cassette', 'FrontTyre', 'RearTyre')");
+                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'FrontThroughAxle', 'RearThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'FrontBrake', 'RearBrake', 'FrontBrakeLever', 'RearBrakeLever', 'Crankset', 'FrontRim', 'RearRim', 'FrontTyre', 'RearTyre', 'FrontDiscRotor', 'RearDiscRotor', 'FrontInnerTube', 'RearInnerTube')");
+                        });
+                });
+
+            modelBuilder.Entity("BikeLog.Domain.Installations.PositionExemption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BikeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("EndUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("StartUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("OwnerId", "Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("OwnerId", "BikeId", "Position", "StartUtc");
+
+                    b.ToTable("PositionExemptions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_PositionExemption_Interval", "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\"");
+
+                            t.HasCheckConstraint("CK_PositionExemption_Reason", "(\"Position\", \"Reason\") IN (('FrontDerailleur', 'NoneFitted'), ('FrontInnerTube', 'Tubeless'), ('RearInnerTube', 'Tubeless'))");
                         });
                 });
 
@@ -458,6 +514,16 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.HasOne("BikeLog.Domain.Components.Component", null)
                         .WithMany()
                         .HasForeignKey("OwnerId", "ComponentId")
+                        .HasPrincipalKey("OwnerId", "Id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BikeLog.Domain.Installations.PositionExemption", b =>
+                {
+                    b.HasOne("BikeLog.Domain.Bikes.Bike", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId", "BikeId")
                         .HasPrincipalKey("OwnerId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

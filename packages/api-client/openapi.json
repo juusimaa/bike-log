@@ -986,6 +986,95 @@
       }
     },
     "/api/components/{id}": {
+      "put": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Edit make, model and weight with expectedVersion. Type, installations and usage never change.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditComponent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
       "get": {
         "tags": [
           "BikeLog.Api"
@@ -1008,6 +1097,340 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ComponentResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/component-catalog": {
+      "get": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Fixed positions, component types, groups and labels. Clients render from this and never copy it.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComponentCatalogResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/bikes/{id}/position-exemptions": {
+      "post": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Declare a position intentionally empty from startUtc (front derailleur none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePositionExemption"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionExemptionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "The bike's intentionally empty periods, newest first.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PositionExemptionResponse"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/position-exemptions/{id}": {
+      "put": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Correct or end an exemption with expectedVersion. Ending it means the position needs a part again.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CorrectPositionExemption"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PositionExemptionResponse"
                 }
               }
             }
@@ -1527,6 +1950,177 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReplacementWithServiceResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/installations/{id}/move": {
+      "post": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Move a fitted part to another bike or position in one step. An occupied destination needs expectedDestinationInstallationVersion; its part returns to the garage.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MoveInstallation"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoveInstallationResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/installations/pair": {
+      "post": {
+        "tags": [
+          "BikeLog.Api"
+        ],
+        "description": "Create two parts of one front/rear type and fit them to both ends from startUtc, all or nothing.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FitPair"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FitPairResponse"
                 }
               }
             }
@@ -2506,10 +3100,33 @@
           },
           "position": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
               "front-tyre",
-              "rear-tyre"
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
             ],
             "type": "string"
           }
@@ -2538,11 +3155,14 @@
           "recordedDistanceMetres",
           "currentComponents",
           "allocationGaps",
+          "positionStatuses",
+          "positionGaps",
           "spendingByCurrency",
           "unknownCostRecordCount",
           "maintenanceRecordCount",
           "recentActivity",
-          "reminder"
+          "reminder",
+          "weights"
         ],
         "type": "object",
         "properties": {
@@ -2581,6 +3201,18 @@
               "$ref": "#/components/schemas/AllocationGapResponse"
             }
           },
+          "positionStatuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionStatusResponse"
+            }
+          },
+          "positionGaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionGapResponse"
+            }
+          },
           "spendingByCurrency": {
             "type": "array",
             "items": {
@@ -2611,6 +3243,9 @@
           },
           "reminder": {
             "$ref": "#/components/schemas/ReminderEvaluation"
+          },
+          "weights": {
+            "$ref": "#/components/schemas/WeightSummaryResponse"
           }
         }
       },
@@ -2624,7 +3259,9 @@
           "kind",
           "year",
           "color",
-          "displayName"
+          "displayName",
+          "frameWeightGrams",
+          "missingPositions"
         ],
         "type": "object",
         "properties": {
@@ -2689,6 +3326,21 @@
           },
           "displayName": {
             "type": "string"
+          },
+          "frameWeightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingPositions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2699,7 +3351,9 @@
           "unallocatedRideIds",
           "calculatedAtUtc",
           "currentComponents",
-          "allocationGaps"
+          "allocationGaps",
+          "positionStatuses",
+          "positionGaps"
         ],
         "type": "object",
         "properties": {
@@ -2738,6 +3392,127 @@
             "items": {
               "$ref": "#/components/schemas/AllocationGapResponse"
             }
+          },
+          "positionStatuses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionStatusResponse"
+            }
+          },
+          "positionGaps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PositionGapResponse"
+            }
+          }
+        }
+      },
+      "CatalogPositionResponse": {
+        "required": [
+          "position",
+          "type",
+          "group",
+          "end",
+          "label",
+          "exemption"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
+            ],
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "group": {
+            "enum": [
+              "build",
+              "groupset",
+              "wheels"
+            ],
+            "type": "string"
+          },
+          "end": {
+            "enum": [
+              "front",
+              "rear",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "label": {
+            "type": "string"
+          },
+          "exemption": {
+            "enum": [
+              "none-fitted",
+              "tubeless",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "ComponentCatalogResponse": {
+        "required": [
+          "groups",
+          "positions",
+          "pairTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogPositionResponse"
+            }
+          },
+          "pairTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -2750,7 +3525,9 @@
           "version",
           "calculatedLifetimeMetres",
           "initialUsageEstimateMetres",
-          "combinedLifetimeMetres"
+          "combinedLifetimeMetres",
+          "group",
+          "weightGrams"
         ],
         "type": "object",
         "properties": {
@@ -2760,9 +3537,26 @@
           },
           "type": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
-              "tyre"
+              "chain",
+              "brake",
+              "brake-lever",
+              "crankset",
+              "rim",
+              "tyre",
+              "disc-rotor",
+              "inner-tube"
             ],
             "type": "string"
           },
@@ -2806,6 +3600,23 @@
             ],
             "description": "Integer metres; estimates are separate from recorded usage.",
             "format": "int64"
+          },
+          "group": {
+            "enum": [
+              "build",
+              "groupset",
+              "wheels"
+            ],
+            "type": "string"
+          },
+          "weightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2817,7 +3628,9 @@
           "model",
           "version",
           "installations",
-          "initialUsageEstimateMetres"
+          "initialUsageEstimateMetres",
+          "group",
+          "weightGrams"
         ],
         "type": "object",
         "properties": {
@@ -2827,9 +3640,26 @@
           },
           "type": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
-              "tyre"
+              "chain",
+              "brake",
+              "brake-lever",
+              "crankset",
+              "rim",
+              "tyre",
+              "disc-rotor",
+              "inner-tube"
             ],
             "type": "string"
           },
@@ -2861,6 +3691,23 @@
             ],
             "description": "Integer metres; estimates are separate from recorded usage.",
             "format": "int64"
+          },
+          "group": {
+            "enum": [
+              "build",
+              "groupset",
+              "wheels"
+            ],
+            "type": "string"
+          },
+          "weightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -2932,6 +3779,29 @@
         }
       },
       "CorrectInstallation": {
+        "required": [
+          "startUtc",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "startUtc": {
+            "format": "date-time"
+          },
+          "endUtc": {
+            "format": "date-time"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "CorrectPositionExemption": {
         "required": [
           "startUtc",
           "expectedVersion"
@@ -3055,6 +3925,15 @@
               "null",
               "string"
             ]
+          },
+          "frameWeightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3068,9 +3947,26 @@
         "properties": {
           "type": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
-              "tyre"
+              "chain",
+              "brake",
+              "brake-lever",
+              "crankset",
+              "rim",
+              "tyre",
+              "disc-rotor",
+              "inner-tube"
             ],
             "type": "string"
           },
@@ -3085,6 +3981,15 @@
               "null",
               "string"
             ]
+          },
+          "weightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -3107,10 +4012,33 @@
           },
           "position": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
               "front-tyre",
-              "rear-tyre"
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
             ],
             "type": "string"
           },
@@ -3176,6 +4104,59 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "CreatePositionExemption": {
+        "required": [
+          "position",
+          "startUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
+            ],
+            "type": "string"
+          },
+          "startUtc": {
+            "format": "date-time"
+          },
+          "expectedInstallationVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -3352,10 +4333,33 @@
           },
           "position": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
               "front-tyre",
-              "rear-tyre"
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
             ],
             "type": "string"
           },
@@ -3480,6 +4484,54 @@
               "string"
             ],
             "format": "int64"
+          },
+          "frameWeightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
+      "EditComponent": {
+        "required": [
+          "make",
+          "model",
+          "expectedVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "make": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "weightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "expectedVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
           }
         }
       },
@@ -3560,6 +4612,145 @@
           }
         }
       },
+      "FitPair": {
+        "required": [
+          "bikeId",
+          "type",
+          "make",
+          "model",
+          "startUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "bikeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "type": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "brake",
+              "brake-lever",
+              "crankset",
+              "rim",
+              "tyre",
+              "disc-rotor",
+              "inner-tube"
+            ],
+            "type": "string"
+          },
+          "make": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "model": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "weightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "startUtc": {
+            "format": "date-time"
+          },
+          "initialUsageEstimateMetres": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "description": "Integer metres; estimates are separate from recorded usage.",
+            "format": "int64"
+          }
+        }
+      },
+      "FitPairResponse": {
+        "required": [
+          "front",
+          "rear"
+        ],
+        "type": "object",
+        "properties": {
+          "front": {
+            "$ref": "#/components/schemas/FittedPart"
+          },
+          "rear": {
+            "$ref": "#/components/schemas/FittedPart"
+          }
+        }
+      },
+      "FittedPart": {
+        "required": [
+          "component",
+          "installation"
+        ],
+        "type": "object",
+        "properties": {
+          "component": {
+            "$ref": "#/components/schemas/ComponentResponse"
+          },
+          "installation": {
+            "$ref": "#/components/schemas/InstallationResponse"
+          }
+        }
+      },
+      "GroupWeightResponse": {
+        "required": [
+          "group",
+          "grams",
+          "missingCount"
+        ],
+        "type": "object",
+        "properties": {
+          "group": {
+            "enum": [
+              "build",
+              "groupset",
+              "wheels"
+            ],
+            "type": "string"
+          },
+          "grams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "InstallationListItem": {
         "required": [
           "installation",
@@ -3601,10 +4792,33 @@
           },
           "position": {
             "enum": [
-              "chain",
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
               "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
               "front-tyre",
-              "rear-tyre"
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
             ],
             "type": "string"
           },
@@ -3751,6 +4965,102 @@
           }
         }
       },
+      "MoveInstallation": {
+        "required": [
+          "toBikeId",
+          "movedAtUtc",
+          "expectedInstallationVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "toBikeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "toPosition": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "movedAtUtc": {
+            "format": "date-time"
+          },
+          "expectedInstallationVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "expectedDestinationInstallationVersion": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "MoveInstallationResponse": {
+        "required": [
+          "oldInstallation",
+          "newInstallation",
+          "displacedInstallation"
+        ],
+        "type": "object",
+        "properties": {
+          "oldInstallation": {
+            "$ref": "#/components/schemas/InstallationResponse"
+          },
+          "newInstallation": {
+            "$ref": "#/components/schemas/InstallationResponse"
+          },
+          "displacedInstallation": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/InstallationResponse"
+              }
+            ]
+          }
+        }
+      },
       "PageResponseOfBikeResponse": {
         "required": [
           "items",
@@ -3853,6 +5163,228 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "PositionExemptionResponse": {
+        "required": [
+          "id",
+          "bikeId",
+          "position",
+          "reason",
+          "startUtc",
+          "endUtc",
+          "version"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "bikeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "position": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "none-fitted",
+              "tubeless"
+            ],
+            "type": "string"
+          },
+          "startUtc": {
+            "format": "date-time"
+          },
+          "endUtc": {
+            "format": "date-time"
+          },
+          "version": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          }
+        }
+      },
+      "PositionGapResponse": {
+        "required": [
+          "position",
+          "rideCount",
+          "firstRideStartUtc",
+          "lastRideStartUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
+            ],
+            "type": "string"
+          },
+          "rideCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "firstRideStartUtc": {
+            "format": "date-time"
+          },
+          "lastRideStartUtc": {
+            "format": "date-time"
+          }
+        }
+      },
+      "PositionStatusResponse": {
+        "required": [
+          "position",
+          "state",
+          "componentId",
+          "installationId",
+          "exemptionId",
+          "reason",
+          "sinceUtc"
+        ],
+        "type": "object",
+        "properties": {
+          "position": {
+            "enum": [
+              "fork",
+              "bottom-bracket",
+              "handlebar",
+              "handlebar-tape",
+              "saddle",
+              "seatpost",
+              "pedals",
+              "front-through-axle",
+              "rear-through-axle",
+              "front-derailleur",
+              "rear-derailleur",
+              "shifters",
+              "cassette",
+              "chain",
+              "front-brake",
+              "rear-brake",
+              "front-brake-lever",
+              "rear-brake-lever",
+              "crankset",
+              "front-rim",
+              "rear-rim",
+              "front-tyre",
+              "rear-tyre",
+              "front-disc-rotor",
+              "rear-disc-rotor",
+              "front-inner-tube",
+              "rear-inner-tube"
+            ],
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "fitted",
+              "exempt",
+              "missing",
+              "not-recorded"
+            ],
+            "type": "string"
+          },
+          "componentId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "installationId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "exemptionId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "reason": {
+            "enum": [
+              "none-fitted",
+              "tubeless",
+              null
+            ],
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "sinceUtc": {
+            "format": "date-time"
           }
         }
       },
@@ -4160,6 +5692,15 @@
               "null",
               "string"
             ]
+          },
+          "newWeightGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       },
@@ -4217,6 +5758,48 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "WeightSummaryResponse": {
+        "required": [
+          "groups",
+          "frameGrams",
+          "totalGrams",
+          "missingCount"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GroupWeightResponse"
+            }
+          },
+          "frameGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "totalGrams": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "missingCount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           }
         }
       }

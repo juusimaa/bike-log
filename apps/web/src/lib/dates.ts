@@ -109,3 +109,13 @@ export function withinInstallation(
         (end === null || Temporal.Instant.compare(instant, end) < 0)
     );
 }
+
+/** Day-level prose date, for example "13 Oct 2026", in the browser's timezone. */
+export function formatDate(iso: string, timeZone = LOCAL_TIME_ZONE): string {
+    return new Intl.DateTimeFormat('en-GB', {
+        timeZone,
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).format(new Date(iso));
+}
