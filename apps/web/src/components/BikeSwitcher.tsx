@@ -158,7 +158,7 @@ export function BikeSwitcher({
                 aria-current={active || undefined}
                 onClick={() => choose(b.id)}
             >
-                <BikeArt color={b.color} />
+                <BikeArt color={b.color} kind={b.kind} />
                 <span className="switcher-text">
                     <strong>{b.displayName}</strong>
                     <small>{details(b)}</small>
@@ -210,7 +210,7 @@ export function BikeSwitcher({
                 disabled={disabled}
                 onClick={() => (isOpen ? close(false) : setOpen(true))}
             >
-                <BikeArt color={current?.color} />
+                <BikeArt color={current?.color} kind={current?.kind} />
                 <span className="switcher-text">
                     <strong>{current?.displayName ?? 'Choose a bike'}</strong>
                     <small>
