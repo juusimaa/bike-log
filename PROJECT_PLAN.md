@@ -94,6 +94,8 @@ Decided on 2026-10-13 ([decision 0004](docs/decisions/0004-strava-integration-no
 
 Rides are entered by hand. Any other activity source, whether a provider API or files a rider uploads, needs its own terms review and decision before work starts. Copying Strava API data into a manual record is not a workaround.
 
+Files a rider exports from their own accounts (a Strava account archive, or FIT/GPX files) may be imported, but no import is built now ([decision 0005](docs/decisions/0005-file-import-allowed-but-not-built.md)): manual entry is quicker than exporting and uploading, and starting usage estimates cover earlier use. The Suunto Cloud API was also checked and is not available for personal use.
+
 ## 6. Architecture
 
 Start with a modular API and synchronous usage calculation. Add one independently deployed worker during the later Azure/asynchronous milestone. The diagram below shows that later architecture. Keep domain rules in the backend so both clients produce the same results.
@@ -195,7 +197,7 @@ Done when: maintenance can be entered offline, sync retries create one record, a
 
 ### Phase 5 — eligible activity integration
 
-Strava is ruled out ([decision 0004](docs/decisions/0004-strava-integration-not-feasible.md)). Continue with manual rides, and start this phase only once another activity source has passed a terms review and has a recorded decision. Use queue-backed imports, pagination, retry/backoff, bike matching and reconciliation. Test deletions and authorization revocation. The bike-matching design in the abandoned spec 003 can be reused.
+Strava is ruled out ([decision 0004](docs/decisions/0004-strava-integration-not-feasible.md)), and file-based import is allowed but not built ([decision 0005](docs/decisions/0005-file-import-allowed-but-not-built.md)). Continue with manual rides, and start this phase only once another activity source has passed a terms review and has a recorded decision. Use queue-backed imports, pagination, retry/backoff, bike matching and reconciliation. Test deletions and authorization revocation. The bike-matching design in the abandoned spec 003 can be reused.
 
 Done when: an eligible imported ride updates the correct dated equipment configuration exactly once, and provider lifecycle rules are satisfied.
 
@@ -251,7 +253,7 @@ Generate the client from OpenAPI; do not duplicate mileage rules in either front
 - Choose the first mobile test platform and devices.
 - Validate the identity provider with web and native sign-in.
 - Set the Azure learning budget before provisioning, and choose the Azure and Aiven regions together so they are close.
-- Choose whether to pursue another activity source; Strava is not feasible (decision 0004).
+- Choose whether to pursue another activity source; Strava is not feasible (decision 0004), and file import is deferred (decision 0005).
 - Choose the project name and actual first bike/components for acceptance checks.
 
 Recommended first implementation milestone: one bike, one chain, manual ride entry and maintenance logging through the ASP.NET Core API and local PostgreSQL in Docker, verified with integration tests. Detailed UI design and web/mobile implementation follow in Phase 2.
