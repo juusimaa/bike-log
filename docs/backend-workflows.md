@@ -128,3 +128,31 @@ Final controller regression passed: 48 domain and 143 PostgreSQL/API tests, zero
 All eight tasks passed independent review. The final whole-branch reviewer found no Critical or Important defects; five Minor follow-ups were fixed in one wave and passed scoped re-review. Final regression totals above include those fixes. Task-started API processes and PostgreSQL were stopped after verification, restoring the initial service state. The named volume and all preexisting/synthetic acceptance data remain intact. The owner selected committing and local integration into `main` on 2026-10-02; remote publication was not requested.
 
 After the nullable-enum and redirect fixes, both HTTP acceptance scripts passed again with readiness HTTP 200 on port 5080. Task-started API processes were stopped; PostgreSQL was subsequently stopped by the controller; the named volume is retained.
+
+## Component groups and weights (2026-10)
+
+Feature 002 extends a bike from 4 positions to 27 in three groups (Build, Groupset, Wheels), adds optional weights and records intentionally empty positions. The domain `ComponentCatalog` is the single source for positions, types, groups, front/rear ends, labels and which positions may be empty; clients read it from `GET /component-catalog`.
+
+| Method / route | Request / result |
+| --- | --- |
+| GET `/component-catalog` | `{groups, positions[{position,type,group,end,label,exemption}], pairTypes}` |
+| PUT `/components/{id}` | `{make,model,weightGrams?,expectedVersion}`; type, installations and usage never change |
+| POST `/installations/pair` | `{bikeId,type,make,model,weightGrams?,startUtc,initialUsageEstimateMetres?}`; two parts at the front and rear positions, all or nothing |
+| POST `/installations/{id}/move` | `{toBikeId,toPosition?,movedAtUtc,expectedInstallationVersion,expectedDestinationInstallationVersion?}`; an occupied destination needs its version and its part returns to the garage |
+| POST `/bikes/{id}/position-exemptions` | `{position,startUtc,expectedInstallationVersion?}`; front derailleur `none-fitted` or inner tube `tubeless`; ends an open part there at `startUtc` |
+| PUT `/position-exemptions/{id}` | `{startUtc,endUtc?,expectedVersion}`; ending one makes the position `missing` until a part is fitted |
+| GET `/bikes/{id}/position-exemptions` | The bike's intentionally empty periods, newest first |
+
+Weights are whole grams, null or 1–20000, on components (`weightGrams`, also `newWeightGrams` on replacement) and the frame (`frameWeightGrams` on bikes). Bike responses add `missingPositions`; usage and overview add `positionStatuses` (`fitted|exempt|missing|not-recorded`) and `positionGaps` (rides per position without a recorded part). The overview adds `weights` per catalog group, frame and total, with `missingCount` disclosing unweighed parts and frame. Replacement maintenance is named `Replace <label>`; the existing chain, cassette and tyre names are unchanged.
+
+### Explicit compatible upgrade (component groups)
+
+Run `./scripts/dev.sh migrate`, then `./scripts/dev.sh rebuild-usage`. The `ComponentGroupsWeight` migration only adds nullable weight columns, widens the type and position check constraints and creates `PositionExemptions`; existing chains, cassettes and tyres keep their stored names and their totals (upgrade test `ComponentGroupsUpgradeTests`). Weights start unrecorded. Rollback is compatible application code, not a schema downgrade: earlier builds cannot read the new type and position names.
+
+### Adding a group, type or position
+
+1. Add the enum member and one `ComponentCatalog` entry (label, group, end, exemption).
+2. Generate an additive migration; it widens `CK_Component_Type` / `CK_Installation_Position` from the enum names.
+3. Regenerate the client: run the API, then `npm run api:generate`.
+4. Update the counts in `ComponentCatalogTests`.
+5. No web code change is expected: the board, weights and labels render from the catalog. New positions are `not-recorded` on existing bikes, so they add gaps but never make a bike incomplete.

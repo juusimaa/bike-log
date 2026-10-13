@@ -180,6 +180,10 @@ Status pills pair written meaning with a semantic background and darker overview
 
 White cards use a one-pixel divider-colored border and panel corners, with overflow contained. Overview care uses sage and a slightly stronger border with 26px padding, reduced to 22px at 1150px. Bike presentation stays white with compact padding; metric dividers follow the row or column direction. These are variants of the same flat surface family.
 
+### Position board
+
+The Components screen groups catalog positions into white group panels with a weight subtotal in each heading. Fitted, missing and empty-on-purpose positions get full rows; positions never recorded fold into one "N not recorded" line per group. Missing rows use the amber attention tint and an amber pill; "None fitted" and "Not applicable (tubeless)" use the grey quiet pill. The wheel setup strip sits on sage at the top of the group holding the tubeless positions. Row actions keep Replace visible and put move, remove and history in a "More actions" menu. On phones each row stacks label and actions, then the part, then weight and kilometres. Dialogs choose a part's source with a segmented control (New part, From your garage, From another bike) and list candidates as selectable cards.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -187,6 +191,8 @@ White cards use a one-pixel divider-colored border and panel corners, with overf
 - Do keep maintenance state, lifetime mileage, and estimates explicit in text.
 - Do retain keyboard focus visibility and reduced-motion behavior.
 - Do keep overflowing tables within a labeled, keyboard-focusable region with a visible phone scroll cue.
+- Do render groups, positions and labels from the API catalog; never list them in screen code.
+- Do use amber only for "needs attention" states that never block an action.
 
 ### Don't:
 - Don't use reminder colors or progress bars to imply measured physical wear or guaranteed safety.

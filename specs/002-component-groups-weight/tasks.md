@@ -235,7 +235,7 @@ Quickstart scenario 1.
 ### Implementation for User Story 6
 
 - [X] T047 [US6] Add a weight display and an "Edit details" form (make, model, weight, using `PUT /components/{id}` from T036) to apps/web/src/features/components/ComponentPassport.tsx. Show "Weight not recorded" when null. On 409, use the existing apps/web/src/components/ConflictPanel.tsx pattern. Design: V3 part history dialog and Edit part details dialog.
-- [ ] T048 [US6] Append an "Explicit compatible upgrade (component groups)" note to docs/backend-workflows.md. It must say: migrate, then `rebuild-usage`; existing parts keep their totals; weight starts unrecorded; and rollback is compatible code, not a schema downgrade (D10). Add an "Adding a group, type or position" checklist from research D13: catalog entry and enum member, additive migration widening `CK_Component_Type`/`CK_Installation_Position`, `npm run api:generate`, update ComponentCatalogTests counts, no web code change expected.
+- [X] T048 [US6] Append an "Explicit compatible upgrade (component groups)" note to docs/backend-workflows.md. It must say: migrate, then `rebuild-usage`; existing parts keep their totals; weight starts unrecorded; and rollback is compatible code, not a schema downgrade (D10). Add an "Adding a group, type or position" checklist from research D13: catalog entry and enum member, additive migration widening `CK_Component_Type`/`CK_Installation_Position`, `npm run api:generate`, update ComponentCatalogTests counts, no web code change expected.
 
 **Checkpoint**: Quickstart scenario 1 passes.
 
@@ -345,9 +345,9 @@ scenarios 10–12.
 
 - [ ] T067 [P] Extend apps/web/e2e/workflow.spec.ts with the following flow against the synthetic API: fit a saddle with weight, mark the front derailleur none fitted, fit a brake pair, switch the rear wheel to tubeless, log a ride, and see the saddle and brakes carry the ride with no front derailleur or rear tube gap.
 - [ ] T068 [P] Update apps/web/e2e/visual.spec.ts so the grouped position board and the wheel setup appear in the `visual-desktop`, `visual-tablet` and `visual-mobile` projects. There must be no horizontal page scroll at 390 px. Update the baselines after review. Design: V3 screens as the visual checks: Components (both bikes), Fit/Replace dialogs, wheel setup, Overview and Rides.
-- [ ] T069 Update the `OpenAPI` contract assertions in tests/Integration.Tests/UiBackendContractTests.cs for the new routes, required fields, wire enums (20 types, 27 positions, 3 groups, 2 reasons) and nullable `weightGrams`/`frameWeightGrams`.
+- [X] T069 Update the `OpenAPI` contract assertions in tests/Integration.Tests/UiBackendContractTests.cs for the new routes, required fields, wire enums (20 types, 27 positions, 3 groups, 2 reasons) and nullable `weightGrams`/`frameWeightGrams`.
 - [ ] T070 Run every gate in specs/002-component-groups-weight/quickstart.md "Automated gates", then walk scenarios 1–20 (including the timed SC-001 walkthrough) against `./scripts/dev.sh run` + `npm run web:dev` with synthetic data. Record a dated "Local verification" entry with test counts and per-scenario results in docs/backend-workflows.md under a new "Component groups and weights (2026-10)" section. Report any failure as observed, and turn it into a fix task.
-- [ ] T071 Update apps/web/PRODUCT.md (and apps/web/DESIGN.md if the board introduces new patterns) to describe the grouped position board, weights and wheel setup. Design: V3 README design notes.
+- [X] T071 Update apps/web/PRODUCT.md (and apps/web/DESIGN.md if the board introduces new patterns) to describe the grouped position board, weights and wheel setup. Design: V3 README design notes.
 
 ---
 
