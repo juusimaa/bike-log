@@ -105,7 +105,9 @@ describe('garage', () => {
         api.getOverview.mockRejectedValue(new ClientRangeError());
         mount();
         expect(
-            await screen.findByRole('heading', { name: 'Client range error' }),
+            await screen.findByRole('heading', {
+                name: 'Value out of supported range',
+            }),
         ).toBeVisible();
         expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled();
     });

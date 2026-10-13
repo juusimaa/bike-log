@@ -22,7 +22,10 @@ export function Stats({
                     {formatKilometres(s.recordedDistanceMetres)}{' '}
                     <small>km</small>
                 </p>
-                <p className="stat-caption">{s.rideCount} recorded rides</p>
+                <p className="stat-caption">
+                    {s.rideCount}{' '}
+                    {s.rideCount === 1 ? 'recorded ride' : 'recorded rides'}
+                </p>
             </div>
             <div className="card stat">
                 <p className="stat-label">
@@ -66,13 +69,19 @@ export function Stats({
                     <p className="stat-caption">No known spending</p>
                 )}
                 <p className="stat-caption">
-                    {s.maintenanceRecordCount} service records
+                    {s.maintenanceRecordCount}{' '}
+                    {s.maintenanceRecordCount === 1
+                        ? 'service record'
+                        : 'service records'}
                     {s.unknownCostRecordCount > 0 && (
                         <>
                             <br />
                             <span>
-                                {s.unknownCostRecordCount} records with unknown
-                                cost
+                                {s.unknownCostRecordCount}{' '}
+                                {s.unknownCostRecordCount === 1
+                                    ? 'record'
+                                    : 'records'}{' '}
+                                with unknown cost
                             </span>
                         </>
                     )}

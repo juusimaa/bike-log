@@ -9,7 +9,7 @@ export function RideSummary({
     return (
         <>
             <p>
-                {ride.name || formatDateTime(ride.startUtc).replace('T', ' ')} ·{' '}
+                {ride.name || formatDateTime(ride.startUtc)} ·{' '}
                 {formatKilometres(Number(ride.distanceMetres))} km ·{' '}
                 {formatDuration(
                     ride.durationSeconds == null
@@ -19,6 +19,7 @@ export function RideSummary({
                 {'version' in ride && <> · Saved version {ride.version}</>}
             </p>
             <p>
+                {/* Exact instant: it separates same-name rides during recovery. */}
                 Start time:{' '}
                 <time dateTime={ride.startUtc}>{ride.startUtc}</time>
             </p>

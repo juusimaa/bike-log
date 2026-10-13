@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useId, useState } from 'react';
 import type {
     EditReminder,
@@ -187,7 +188,9 @@ export function ReminderForm({
                     key={validationAttempt}
                     errors={[
                         ...errors,
-                        ...(save.state.error ? [save.state.error.message] : []),
+                        ...(save.state.error
+                            ? [errorText(save.state.error)]
+                            : []),
                         ...(save.state.refreshError
                             ? [save.state.refreshError.message]
                             : []),

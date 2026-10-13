@@ -26,12 +26,18 @@ export function BikeIdentity({ bikeId }: { bikeId: string }) {
         isFetchNextPageError,
         fetchNextPage,
     ]);
-    return bike ? (
-        <span>{bike.displayName}</span>
-    ) : (
+    if (bike) return <span>{bike.displayName}</span>;
+    const looking =
+        (bikes.isPending || isFetchingNextPage || hasNextPage) &&
+        !bikes.isError &&
+        !isFetchNextPageError;
+    if (looking) return <span>Looking up bike…</span>;
+    return (
         <span>
             Unresolved bike {bikeId}{' '}
             <button
+                type="button"
+                className="text-button"
                 onClick={() =>
                     void (bikes.isFetchNextPageError
                         ? bikes.fetchNextPage()

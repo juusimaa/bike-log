@@ -44,7 +44,10 @@ export function Rides({
                 <div className="table-tools">
                     <span className="count">
                         {rides.length}
-                        {pages.hasNextPage ? '+' : ''} RIDES
+                        {pages.hasNextPage ? '+' : ''}{' '}
+                        {rides.length === 1 && !pages.hasNextPage
+                            ? 'RIDE'
+                            : 'RIDES'}
                     </span>
                     <button
                         className="text-button"
@@ -63,7 +66,11 @@ export function Rides({
                 </p>
             </div>
             {pages.error && (
-                <ReadError error={pages.error} onRetry={() => void refresh()} />
+                <ReadError
+                    error={pages.error}
+                    retrying={pages.isFetching}
+                    onRetry={() => void refresh()}
+                />
             )}
             {pages.isPending && <p role="status">Loading rides…</p>}
             {overview.error && (
@@ -74,7 +81,10 @@ export function Rides({
             )}
             {!pages.isPending && !pages.error && rides.length === 0 && (
                 <EmptyState title="No rides yet">
-                    <p>Log your first ride.</p>
+                    <p>
+                        Use Add a ride above to log your first ride on this
+                        bike.
+                    </p>
                 </EmptyState>
             )}
             {rides.length > 0 && (
@@ -92,9 +102,7 @@ export function Rides({
                         </thead>
                         <tbody>
                             {rides.map((ride) => {
-                                const local = formatDateTime(
-                                    ride.startUtc,
-                                ).replace('T', ' ');
+                                const local = formatDateTime(ride.startUtc);
                                 const gaps =
                                     overview.data?.allocationGaps.filter(
                                         (gap) => gap.rideId === ride.id,

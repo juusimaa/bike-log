@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useState, useEffect, useId } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
@@ -21,7 +22,13 @@ import {
 import { formatGrams } from '../../lib/format';
 import { parseEuroCost, parseGrams } from '../../lib/units';
 import { invalidateBike } from '../../lib/query';
-import { PartFields, WhenField, allPages } from './fit-replacement';
+import {
+    PartFields,
+    PartsLoadState,
+    WhenField,
+    allPages,
+    useGarageParts,
+} from './fit-replacement';
 import { problemText } from './ActionDialog';
 import {
     useComponentCatalog,
@@ -29,7 +36,7 @@ import {
     positionLabel,
     typeLabel,
 } from './catalog';
-import { useBikes } from '../garage/queries';
+import { useAllBikes } from '../garage/queries';
 type Source = 'new' | 'garage' | 'bike';
 type Part = Validated<ComponentResponse>;
 /** One replacement request; every kind carries the replaced installation's version. */
@@ -97,30 +104,20 @@ export function ReplacementForm({
     const [source, setSource] = useState<Source>('new');
     const [spare, setSpare] = useState('');
     const [donor, setDonor] = useState('');
-    const [parts, setParts] = useState<Part[]>([]);
+    const garageParts = useGarageParts();
+    const parts = garageParts.parts;
     const [validationAttempt, setValidationAttempt] = useState(0);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [errors, setErrors] = useState<string[]>([]);
     const client = useQueryClient();
     const id = useId();
     const catalog = useComponentCatalog().data;
-    const bikes = useBikes();
+    const bikes = useAllBikes();
     const label = positionLabel(catalog, original.position);
     const kind = typeLabel(catalog, oldPart.type);
     const bikeName = (bikeId: string) =>
         bikes.data?.pages.flatMap((p) => p.items).find((b) => b.id === bikeId)
             ?.displayName ?? 'another bike';
-    useEffect(() => {
-        let active = true;
-        allPages((cursor) => getApi().listComponents({ pageSize: 50, cursor }))
-            .then((p) => {
-                if (active) setParts(p);
-            })
-            .catch(() => undefined);
-        return () => {
-            active = false;
-        };
-    }, []);
     const garage = parts.filter(
         (p) =>
             p.type === oldPart.type &&
@@ -308,9 +305,9 @@ export function ReplacementForm({
             if (after.phase === 'conflict') await refresh();
         } catch (e) {
             setFieldErrors({
-                [field]: e instanceof Error ? e.message : String(e),
+                [field]: errorText(e),
             });
-            setErrors([e instanceof Error ? e.message : String(e)]);
+            setErrors([errorText(e)]);
         }
     }
     async function retry() {
@@ -369,16 +366,20 @@ export function ReplacementForm({
                             [
                                 'garage',
                                 'From your garage',
-                                garage.length
-                                    ? `${garage.length} spare`
-                                    : 'none',
+                                garageParts.status !== 'ready'
+                                    ? ''
+                                    : garage.length
+                                      ? `${garage.length} spare`
+                                      : 'none',
                             ],
                             [
                                 'bike',
                                 'From another bike',
-                                fittedElsewhere.length
-                                    ? `${fittedElsewhere.length} fitted`
-                                    : 'none',
+                                garageParts.status !== 'ready'
+                                    ? ''
+                                    : fittedElsewhere.length
+                                      ? `${fittedElsewhere.length} fitted`
+                                      : 'none',
                             ],
                         ] as const
                     ).map(([value, text, note]) => (
@@ -423,7 +424,13 @@ export function ReplacementForm({
                                         : 'Part fitted to another bike'
                                 }
                             >
-                                {source === 'garage' &&
+                                <PartsLoadState
+                                    status={garageParts.status}
+                                    error={garageParts.error}
+                                    onRetry={garageParts.retry}
+                                />
+                                {garageParts.status === 'ready' &&
+                                    source === 'garage' &&
                                     (garage.length === 0 ? (
                                         <p className="empty-choice">
                                             No spare {kind} in your garage.
@@ -461,7 +468,8 @@ export function ReplacementForm({
                                             );
                                         })
                                     ))}
-                                {source === 'bike' &&
+                                {garageParts.status === 'ready' &&
+                                    source === 'bike' &&
                                     (fittedElsewhere.length === 0 ? (
                                         <p className="empty-choice">
                                             No {kind} is fitted to your other

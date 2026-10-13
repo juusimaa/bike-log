@@ -53,7 +53,14 @@ export function RideFields({
                 >
                     <input
                         id={`${prefix}-${key}`}
-                        maxLength={key === 'name' ? 100 : undefined}
+                        maxLength={
+                            key === 'name'
+                                ? 100
+                                : key === 'start'
+                                  ? undefined
+                                  : 20
+                        }
+                        autoComplete="off"
                         type={key === 'start' ? 'datetime-local' : 'text'}
                         value={values[key]}
                         inputMode={

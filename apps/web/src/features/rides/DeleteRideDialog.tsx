@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useState } from 'react';
 import {
     ApiError,
@@ -85,7 +86,9 @@ export function DeleteRideDialog({
             <RideSummary ride={original} />
             <FormError
                 errors={[
-                    ...(remove.state.error ? [remove.state.error.message] : []),
+                    ...(remove.state.error
+                        ? [errorText(remove.state.error)]
+                        : []),
                     ...(remove.state.refreshError
                         ? [remove.state.refreshError.message]
                         : []),

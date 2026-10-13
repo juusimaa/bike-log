@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query';
 import { useEffect, useState } from 'react';
@@ -161,6 +162,8 @@ export function Components({
         if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError)
             void fetchNextPage();
     }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+    const currentFailed = current.isError || isFetchNextPageError;
+    const currentSettled = currentFailed || (current.isSuccess && !hasNextPage);
     const currentRows = current.data?.pages.flatMap((p) => p.items) ?? [];
     const fitted = new Map(currentRows.map((r) => [r.installation.id, r]));
     const rows = [
@@ -178,6 +181,10 @@ export function Components({
             ),
         ).values(),
     ];
+    // A spare has no open installation on any bike, not just this one.
+    const spares = parts.filter((c) =>
+        c.installations.every((i) => i.endUtc !== null),
+    );
     const snapshot = overview.data;
     const statuses = snapshot?.positionStatuses ?? [];
     const openExemption = (position: string) =>
@@ -225,6 +232,8 @@ export function Components({
                                 {c.make}{' '}
                                 {c.model?.trim() || 'Model not provided'}
                             </button>
+                        ) : currentSettled ? (
+                            <strong>Part details unavailable</strong>
                         ) : (
                             <strong>Loading part…</strong>
                         )}
@@ -603,10 +612,22 @@ export function Components({
             {(catalog.error || overview.error) && (
                 <ReadError
                     error={(catalog.error ?? overview.error)!}
+                    retrying={catalog.isFetching || overview.isFetching}
                     onRetry={() => {
                         void catalog.refetch();
                         void overview.refetch();
                     }}
+                />
+            )}
+            {currentFailed && current.error && (
+                <ReadError
+                    error={current.error}
+                    retrying={current.isFetching}
+                    onRetry={() =>
+                        void (isFetchNextPageError
+                            ? fetchNextPage()
+                            : current.refetch())
+                    }
                 />
             )}
             {catalog.data && snapshot
@@ -639,13 +660,28 @@ export function Components({
                         <option value="all">Include replaced parts</option>
                     </select>
                 </div>
-                {chapters.isPending && <p>Loading installations…</p>}
+                {chapters.isPending && (
+                    <p role="status">Loading installations…</p>
+                )}
                 {chapters.isError && (
                     <p role="alert">
-                        Unable to load installations.{' '}
-                        <button onClick={() => void chapters.refetch()}>
+                        Installations could not be loaded.{' '}
+                        {errorText(chapters.error)}{' '}
+                        <button
+                            type="button"
+                            className="text-button"
+                            disabled={chapters.isFetching}
+                            onClick={() => void chapters.refetch()}
+                        >
                             Retry installations
                         </button>
+                    </p>
+                )}
+                {chapters.isSuccess && rows.length === 0 && (
+                    <p className="table-empty">
+                        {status === 'current'
+                            ? 'No parts are recorded as fitted to this bike yet. Use Fit on a position above to add one.'
+                            : 'No installation history is recorded for this bike yet.'}
                     </p>
                 )}
                 <div className="table-wrap">
@@ -741,33 +777,47 @@ export function Components({
                         Not fitted to any bike. Their history and usage stay
                         with them; fit one when fitting or replacing a part.
                     </p>
-                    {collection.isError && (
-                        <button onClick={() => void collection.refetch()}>
-                            Retry collection
-                        </button>
+                    {collection.isPending && (
+                        <p role="status">Loading parts…</p>
                     )}
-                    {parts
-                        .filter(
-                            (c) =>
-                                !rows.some((row) => row.component.id === c.id),
-                        )
-                        .map((c) => (
-                            <article key={c.id}>
-                                <button
-                                    disabled={disabled}
-                                    onClick={() => onPassport?.(c.id)}
-                                >
-                                    {c.make}{' '}
-                                    {c.model?.trim() || 'Model not provided'}
-                                </button>
-                                {c.weightGrams !== null && (
-                                    <span> {formatGrams(c.weightGrams)}</span>
-                                )}
-                                {c.installations.length === 0 && (
-                                    <span> Never fitted</span>
-                                )}
-                            </article>
-                        ))}
+                    {collection.isError && (
+                        <p role="alert">
+                            Your other parts could not be loaded.{' '}
+                            {errorText(collection.error)}{' '}
+                            <button
+                                type="button"
+                                className="text-button"
+                                disabled={collection.isFetching}
+                                onClick={() => void collection.refetch()}
+                            >
+                                Retry collection
+                            </button>
+                        </p>
+                    )}
+                    {collection.isSuccess &&
+                        !collection.hasNextPage &&
+                        spares.length === 0 && (
+                            <p>
+                                No spare parts. Every part is fitted to a bike.
+                            </p>
+                        )}
+                    {spares.map((c) => (
+                        <article key={c.id}>
+                            <button
+                                disabled={disabled}
+                                onClick={() => onPassport?.(c.id)}
+                            >
+                                {c.make}{' '}
+                                {c.model?.trim() || 'Model not provided'}
+                            </button>
+                            {c.weightGrams !== null && (
+                                <span> {formatGrams(c.weightGrams)}</span>
+                            )}
+                            {c.installations.length === 0 && (
+                                <span> Never fitted</span>
+                            )}
+                        </article>
+                    ))}
                     {collection.hasNextPage && (
                         <button
                             disabled={collection.isFetchingNextPage}
