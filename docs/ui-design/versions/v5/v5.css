@@ -1,0 +1,125 @@
+/* V5: Strava import and bike links. Builds on V4 (styles.css + v3.css + v4.css) and keeps its tokens.
+   Strava orange is used only for the connect button and the source tag, as Strava's brand
+   guidelines expect; production uses Strava's official "Connect with Strava" button asset. */
+:root{--strava:#fc5200;--strava-text:#b33a00;--danger-text:#9c3f22;--danger-line:#ecc9bb}
+
+/* Shell additions */
+.nav-state{margin-left:auto;width:8px;height:8px;border-radius:50%;background:#c9cfc4}
+.nav-state.on{background:#6c914e}
+.nav-state.warn{background:#d39a2c}
+.nav-count{font-size:11px;font-weight:650;background:var(--amber-bg);color:var(--amber-text)}
+.scenario{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.scenario select{border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:12px;background:#fff;color:var(--ink)}
+td,th,.table-wrap{position:relative}
+
+/* Buttons */
+.strava-button{background:var(--strava);color:#fff;font-size:14px;min-height:44px;padding:11px 18px}
+.strava-button:hover{background:#e04800}
+.button.danger{background:#fff;border-color:var(--danger-line);color:var(--danger-text)}
+.button.danger:hover{background:#fbf1ec}
+
+/* Source tags on rides */
+.src{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:650;border-radius:5px;padding:3px 6px;line-height:1.1}
+.src.strava{background:#fff0e8;color:var(--strava-text)}
+.src.manual{background:var(--quiet-bg);color:var(--quiet-text)}
+.ride-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:5px;font-size:12px;color:var(--muted)}
+.ride-name{font-weight:600}
+
+/* Cards and rows */
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:16px}
+.panel h2{font-size:17px;font-weight:650;letter-spacing:-.02em}
+.panel>p.lead{font-size:13px;color:var(--muted);line-height:1.6;margin:6px 0 14px;max-width:70ch}
+.panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.step-title{display:flex;align-items:center;gap:10px}
+.step-title .num{width:26px;height:26px;border-radius:50%;background:var(--sage);color:var(--green);display:grid;place-items:center;font-size:13px;font-weight:700}
+.intro-list{display:grid;gap:10px;margin:16px 0 20px;padding:0;list-style:none;font-size:14px;line-height:1.55;max-width:66ch}
+.intro-list li{display:flex;gap:10px}
+.intro-list .i{color:var(--ok-text);margin-top:3px}
+.fine{font-size:12px;color:var(--muted);line-height:1.6;margin-top:10px}
+
+.map-row{display:grid;grid-template-columns:auto 57px minmax(0,1fr) minmax(220px,300px);gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--row-line)}
+.map-row:first-of-type{border-top:0}
+.map-row.no-check{grid-template-columns:57px minmax(0,1fr) minmax(220px,300px)}
+.map-row .art{width:57px;height:33px}
+.map-row strong{font-size:14px;font-weight:650}
+.map-row small{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+.map-row .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.map-row select,.settings-row select,.bulk-bar select{width:100%;border:1px solid #dce1d6;border-radius:8px;padding:9px 10px;font-size:13px;background:#fff;color:var(--ink)}
+.map-row input[type=checkbox]{width:18px;height:18px}
+.map-row.off{opacity:.6}
+.map-row .details{grid-column:1/-1;background:#f7f8f5;border-radius:10px;padding:12px 14px 2px}
+.map-row .details .field-pair{grid-template-columns:repeat(4,minmax(0,1fr))}
+.map-row select.invalid{border-color:#c46b4c;box-shadow:0 0 0 3px #f7e2d9}
+
+.settings-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,320px);gap:16px;align-items:center;padding:14px 0;border-top:1px solid var(--row-line);font-size:14px}
+.settings-row:first-of-type{border-top:0}
+.settings-row small{display:block;font-size:12px;color:var(--muted);margin-top:3px;line-height:1.5}
+.settings-row .control{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+
+.status-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.status-line .dot{width:8px;height:8px;border-radius:50%;background:#6c914e}
+.status-line .dot.warn{background:#d39a2c}
+.status-line .dot.off{background:#b9bfb4}
+.backfill{margin-top:14px;max-width:560px}
+.backfill .bar{height:6px;border-radius:6px;background:#eef0e8;overflow:hidden}
+.backfill .bar span{display:block;height:100%;background:var(--green);border-radius:6px;transition:width .25s}
+.backfill.paused .bar span{background:#d8ad59}
+.backfill p{font-size:13px;color:var(--muted);margin-top:8px}
+
+.bikes-table td,.bikes-table th{padding-right:12px}
+.bikes-table td{padding-top:14px;padding-bottom:14px}
+.cell-strong{font-weight:600;display:flex;align-items:center;gap:6px}
+.cell-sub{display:block;font-size:12px;color:var(--muted);margin-top:3px}
+
+.preview-tools{border:1px dashed #cfd6c7;background:#fafbf7}
+.preview-tools .tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.attribution{font-size:12px;color:var(--muted);margin:4px 0 8px}
+
+/* Overview garage */
+.garage-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.bike-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.bike-card .art{width:100%;height:96px}
+.bike-card h2{font-size:16px;font-weight:650}
+.bike-card p{font-size:12px;color:var(--muted)}
+.bike-card .card-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto;padding-top:8px;border-top:1px solid var(--row-line);font-size:13px}
+.empty-state{text-align:center;padding:48px 20px}
+.empty-state p{font-size:14px;color:var(--muted);margin:8px auto 18px;max-width:46ch;line-height:1.6}
+
+/* Rides */
+.rides-toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.rides-toolbar .segmented{margin:0;width:min(100%,520px);grid-auto-flow:column;grid-auto-columns:1fr}
+.rides-toolbar select{border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:13px;background:#fff}
+.group-row td{background:#f7f8f5;padding:12px 10px!important;font-size:13px}
+.group-row .group-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.group-row .group-line .button{margin-left:auto}
+.rides-card td{padding-right:10px}
+.rides-card td:first-child{width:28px}
+.rides-card input[type=checkbox]{width:16px;height:16px}
+.bulk-bar{position:sticky;bottom:12px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px;box-shadow:0 10px 30px #1c332c33}
+.bulk-bar select{width:auto;min-width:200px}
+.bulk-bar .button.secondary{background:transparent;color:#fff;border-color:#ffffff55}
+.bulk-bar .button.primary{background:#e4efb0;color:var(--ink)}
+.dup-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.dup-pair>div{border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;line-height:1.6}
+.impact{background:#f4f6ee;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.6;margin:0 0 16px}
+.impact strong{font-weight:650}
+
+@media(max-width:800px){
+  .map-row,.map-row.no-check{grid-template-columns:auto minmax(0,1fr)}
+  .map-row.no-check{grid-template-columns:minmax(0,1fr)}
+  .map-row .art{display:none}
+  .map-row>select,.map-row>.choose{grid-column:1/-1}
+  .map-row .details .field-pair{grid-template-columns:1fr 1fr}
+  .settings-row{grid-template-columns:1fr}
+  .settings-row .control{justify-content:flex-start}
+  .dup-pair{grid-template-columns:1fr}
+}
+@media(max-width:650px){
+  .scenario{font-size:0;gap:0}
+  .scenario select{font-size:12px;max-width:150px}
+  nav a .nav-state{display:none}
+  .rides-card{padding:14px 12px}
+  .rides-card table{min-width:560px}
+}
+.loss-table{font-size:13px;margin-bottom:6px}
+.loss-table td{padding:8px 0}
