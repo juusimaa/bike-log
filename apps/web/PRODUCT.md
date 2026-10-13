@@ -60,7 +60,8 @@ email/password forms do not commit Bike Log to storing passwords.
 ## Brand Commitments
 
 Use Bike Log as the current product name. V1 is the approved visual and interaction
-baseline; V2 authentication remains a draft for review. Preserve that approval
+baseline; V3 (approved 2026-10-13) extends it for component groups, weights and full bike positions;
+V2 authentication remains a draft for review. Preserve that approval
 boundary in future work. This product record does not select a new visual style.
 
 ## Evidence on Hand
