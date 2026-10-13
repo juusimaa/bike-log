@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using BikeLog.Api.Features.Components;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
@@ -56,8 +57,21 @@ public static class ApiContractSchema
                         "hybrid",
                         "other",
                     ],
-                    "type" when type.Name.Contains("Component") => ["chain", "cassette", "tyre"],
-                    "position" => ["chain", "cassette", "front-tyre", "rear-tyre"],
+                    "type" when type.Name.Contains("Component") || type.Name.Contains("Pair") =>
+                    [
+                        .. ComponentValues.TypeValues,
+                    ],
+                    "position" or "toPosition" => [.. ComponentValues.PositionValues],
+                    "group" => [.. ComponentValues.GroupValues],
+                    "reason" or "exemption" => [.. ComponentValues.ReasonValues],
+                    "end" when type.Name.Contains("Catalog") => ["front", "rear"],
+                    "state" when type.Name.Contains("PositionStatus") =>
+                    [
+                        "fitted",
+                        "exempt",
+                        "missing",
+                        "not-recorded",
+                    ],
                     "method" => ["oil", "wax"],
                     _ => null,
                 };

@@ -21,13 +21,20 @@ internal sealed class ComponentConfiguration : IEntityTypeConfiguration<Componen
         b.Property(x => x.Make).IsRequired();
         b.Property(x => x.Model).IsRequired();
         b.Property(x => x.Type).HasConversion<string>();
+        b.Ignore(x => x.Group);
         b.ToTable(
             "Components",
             t =>
+            {
                 t.HasCheckConstraint(
                     "CK_Component_Type",
-                    "\"Type\" IN ('Chain', 'Cassette', 'Tyre')"
-                )
+                    $"\"Type\" IN ({EntityConfiguration.Names<ComponentType>()})"
+                );
+                t.HasCheckConstraint(
+                    "CK_Component_Weight",
+                    EntityConfiguration.Weight("WeightGrams")
+                );
+            }
         );
     }
 }

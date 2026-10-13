@@ -129,7 +129,15 @@ public class MultiComponentApiTests
         }
         var bikeUsage = await s.Read($"/api/bikes/{e.Bike}/usage");
         Assert.Equal(4, bikeUsage.GetProperty("currentComponents").GetArrayLength());
-        Assert.Empty(bikeUsage.GetProperty("allocationGaps").EnumerateArray());
+        Assert.DoesNotContain(
+            bikeUsage.GetProperty("allocationGaps").EnumerateArray(),
+            x =>
+                x.GetProperty("position").GetString()
+                    is "chain"
+                        or "cassette"
+                        or "front-tyre"
+                        or "rear-tyre"
+        );
         Assert.Equal(
             e.Chain,
             bikeUsage.GetProperty("currentChain").GetProperty("componentId").GetGuid()
@@ -290,15 +298,19 @@ public class MultiComponentApiTests
         );
         var usage = await s.Read($"/api/bikes/{e.Bike}/usage");
         Assert.Equal(ApiScenario.Id(ride), usage.GetProperty("unallocatedRideIds")[0].GetGuid());
+        var gaps = usage
+            .GetProperty("allocationGaps")
+            .EnumerateArray()
+            .Select(x => x.GetProperty("position").GetString())
+            .ToArray();
         Assert.Equal(
             new[] { "cassette", "chain", "rear-tyre" },
-            usage
-                .GetProperty("allocationGaps")
-                .EnumerateArray()
-                .Select(x => x.GetProperty("position").GetString())
+            gaps.Where(x => x is "chain" or "cassette" or "front-tyre" or "rear-tyre")
                 .Order()
                 .ToArray()
         );
+        // Every catalog position except the fitted front tyre is explained.
+        Assert.Equal(26, gaps.Length);
         Assert.Equal(
             65000,
             (await s.Read($"/api/components/{tyre}/usage")).GetProperty("lifetimeMetres").GetInt64()

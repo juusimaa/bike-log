@@ -162,28 +162,25 @@ public class UserAuthorizationTests(PostgresFixture database) : IClassFixture<Po
             await using (var before = TestDatabase.Open(isolated.ConnectionString))
             {
                 await before.Database.MigrateAsync("20261003152835_ComponentMake");
-                before.Bikes.Add(
-                    new Bike
-                    {
-                        Id = bikeId,
-                        OwnerId = Guid.Parse("11111111-1111-1111-1111-111111111111"),
-                        Name = "Existing synthetic bike",
-                    }
+                // Use the pre-authentication schema, never the current EF model before upgrade.
+                var ownerId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+                await before.Database.ExecuteSqlInterpolatedAsync(
+                    $"INSERT INTO \"Bikes\" (\"Id\",\"OwnerId\",\"Name\",\"Version\") VALUES ({bikeId},{ownerId},'Existing synthetic bike',1)"
                 );
-                await before.SaveChangesAsync();
                 migrationsBefore = (await before.Database.GetAppliedMigrationsAsync()).Count();
             }
 
             await using (var after = TestDatabase.Open(isolated.ConnectionString))
             {
+                await after.Database.MigrateAsync("20261009051928_AddAuthenticationOwnership");
+                Assert.Equal(
+                    migrationsBefore + 1,
+                    (await after.Database.GetAppliedMigrationsAsync()).Count()
+                );
                 await after.Database.MigrateAsync();
                 Assert.Equal(
                     "Existing synthetic bike",
                     (await after.Bikes.SingleAsync(x => x.Id == bikeId)).Name
-                );
-                Assert.Equal(
-                    migrationsBefore + 1,
-                    (await after.Database.GetAppliedMigrationsAsync()).Count()
                 );
                 Assert.Empty(await after.WebSessions.ToListAsync());
                 Assert.Empty(await after.OidcLoginTransactions.ToListAsync());

@@ -11,13 +11,22 @@ public class MultiComponentUsageTests
         Bike = Guid.NewGuid();
     private static readonly DateTimeOffset Start = DateTimeOffset.Parse("2026-01-01T00:00:00Z");
 
-    private static Installation Part(int position) =>
+    private static readonly InstallationPosition[] Legacy =
+    [
+        InstallationPosition.Chain,
+        InstallationPosition.Cassette,
+        InstallationPosition.FrontTyre,
+        InstallationPosition.RearTyre,
+    ];
+
+    // Indexes the four foundation-era positions: chain, cassette, front tyre, rear tyre.
+    private static Installation Part(int legacy) =>
         new()
         {
             OwnerId = Owner,
             BikeId = Bike,
             ComponentId = Guid.NewGuid(),
-            Position = (InstallationPosition)position,
+            Position = Legacy[legacy],
             StartUtc = Start,
         };
 
@@ -74,7 +83,8 @@ public class MultiComponentUsageTests
             result.AllocationGaps,
             x => x.RideId == ride.Id && x.Position == InstallationPosition.Chain
         );
-        Assert.Equal(2, result.AllocationGaps.Count);
+        // Every catalog position except the two fitted tyres has a gap.
+        Assert.Equal(ComponentCatalog.Entries.Count - 2, result.AllocationGaps.Count);
     }
 
     [Fact]
@@ -95,7 +105,7 @@ public class MultiComponentUsageTests
     [InlineData(2)]
     [InlineData(3)]
     public void TyreFitsEitherTyrePosition(int position) =>
-        ComponentCompatibility.Validate(ComponentType.Tyre, (InstallationPosition)position);
+        ComponentCompatibility.Validate(ComponentType.Tyre, Legacy[position]);
 
     [Theory]
     [InlineData(0)]
@@ -129,6 +139,6 @@ public class MultiComponentUsageTests
         ride.OwnerId = Guid.NewGuid();
         var result = new UsageCalculator().Calculate([ride], [Part(0), Part(1), Part(2), Part(3)]);
         Assert.All(result.ComponentUsages, x => Assert.Equal(0, x.LifetimeMetres));
-        Assert.Equal(4, result.AllocationGaps.Count);
+        Assert.Equal(ComponentCatalog.Entries.Count, result.AllocationGaps.Count);
     }
 }

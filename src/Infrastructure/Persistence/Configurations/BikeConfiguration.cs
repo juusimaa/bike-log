@@ -11,5 +11,13 @@ internal sealed class BikeConfiguration : IEntityTypeConfiguration<Bike>
         EntityConfiguration.Common(b);
         b.Property(x => x.Name);
         b.Property(x => x.Kind).HasConversion<string>();
+        b.ToTable(
+            "Bikes",
+            t =>
+                t.HasCheckConstraint(
+                    "CK_Bike_FrameWeight",
+                    EntityConfiguration.Weight("FrameWeightGrams")
+                )
+        );
     }
 }

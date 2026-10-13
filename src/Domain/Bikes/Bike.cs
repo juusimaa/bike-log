@@ -17,4 +17,5 @@ public sealed class Bike : Entity
     public BikeKind? Kind { get; set; }
     public int? Year { get; set; }
     public string? Color { get; set; }
+    public int? FrameWeightGrams { get; set; }
 }

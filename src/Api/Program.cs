@@ -137,6 +137,7 @@ api.MapGet(
 api.MapBikes();
 api.MapBikeOverview();
 api.MapComponents();
+api.MapComponentCatalog();
 api.MapComponentEstimates();
 api.MapInstallations();
 api.MapReplacementWithService();

@@ -38,7 +38,7 @@ internal sealed class InstallationConfiguration : IEntityTypeConfiguration<Insta
                 );
                 t.HasCheckConstraint(
                     "CK_Installation_Position",
-                    "\"Position\" IN ('Chain', 'Cassette', 'FrontTyre', 'RearTyre')"
+                    $"\"Position\" IN ({EntityConfiguration.Names<InstallationPosition>()})"
                 );
             }
         );
