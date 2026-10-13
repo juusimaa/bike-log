@@ -243,7 +243,9 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
         }),
     ).toBeVisible();
     await expect(
-        reload.getByText('Calculated lifetime: 65 km', { exact: true }),
+        reload.getByText('65 km from rides + 120 km estimate', {
+            exact: true,
+        }),
     ).toBeVisible();
     await expect(reload.getByRole('dialog').getByText(/€0\.00/)).toBeVisible();
     await expect(

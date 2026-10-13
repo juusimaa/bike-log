@@ -16,6 +16,7 @@ const api = vi.hoisted(() => ({
     listComponentMaintenance: vi.fn(),
     listBikes: vi.fn(),
     editEstimate: vi.fn(),
+    getReminder: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 const chapter = {
@@ -180,16 +181,77 @@ it('incompleteDurationAndUnfittedPartAreExplainable', async () => {
             onClose={() => {}}
         />,
     );
-    expect(await screen.findByText(/Duration incomplete/)).toBeInTheDocument();
     expect(
-        await screen.findByText('Starting estimate: 120 km'),
+        await screen.findByText(
+            'At least 1 min 1 sec ridden; some rides have no duration',
+        ),
     ).toBeInTheDocument();
-    expect(screen.getByText('Calculated lifetime: 65 km')).toBeInTheDocument();
-    expect(screen.getByText('Combined lifetime: 185 km')).toBeInTheDocument();
+    expect(screen.getByText('185 km')).toBeInTheDocument();
     expect(
-        screen.getByText(/Installation distance: 65 km/),
+        screen.getByText('65 km from rides + 120 km estimate'),
     ).toBeInTheDocument();
-    expect(screen.getByText('Not currently fitted')).toBeInTheDocument();
+    expect(screen.getByText('65 km')).toBeInTheDocument();
+    expect(screen.getByText('at least 1 min 1 sec')).toBeInTheDocument();
+    expect(
+        await screen.findByText('Not currently fitted'),
+    ).toBeInTheDocument();
+});
+it('passportSaysWhenLubricationIsDueForThisPart', async () => {
+    api.listInstallations.mockResolvedValue({
+        items: [{ installation: chapter, component }],
+        nextCursor: null,
+    });
+    api.getReminder.mockResolvedValue({
+        ruleVersion: 1,
+        state: 'ready',
+        enabled: true,
+        method: 'wax',
+        oilThresholdMetres: null,
+        waxThresholdMetres: 300000,
+        activeThresholdMetres: 300000,
+        evaluatedAtUtc: '2025-03-01T00:00:00Z',
+        componentId: 'c1',
+        installationId: 'i1',
+        baselineKind: 'maintenance',
+        baselineUtc: '2025-02-01T00:00:00Z',
+        distanceSinceBaselineMetres: 310000,
+        remainingMetres: 0,
+        due: true,
+    });
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
+    expect(await screen.findByText('Lubrication due')).toBeVisible();
+    expect(
+        screen.getByText(/310 km since service · reminder every 300 km/),
+    ).toBeVisible();
+    expect(
+        screen.getByText('Last service: Wax on other bike · 1 Feb 2025'),
+    ).toBeVisible();
+    expect(await screen.findByText('Currently fitted')).toBeVisible();
+});
+it('passportIgnoresAReminderThatFollowsAnotherPart', async () => {
+    api.getReminder.mockResolvedValue({
+        ruleVersion: 1,
+        state: 'ready',
+        enabled: true,
+        method: 'oil',
+        oilThresholdMetres: 200000,
+        waxThresholdMetres: null,
+        activeThresholdMetres: 200000,
+        evaluatedAtUtc: '2025-03-01T00:00:00Z',
+        componentId: 'other-chain',
+        installationId: 'i9',
+        baselineKind: 'installation',
+        baselineUtc: '2025-02-01T00:00:00Z',
+        distanceSinceBaselineMetres: 10000,
+        remainingMetres: 190000,
+        due: false,
+    });
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
+    expect(
+        await screen.findByText('Last service: Wax on other bike · 1 Feb 2025'),
+    ).toBeVisible();
+    await waitFor(() => expect(api.getReminder).toHaveBeenCalled());
+    expect(screen.queryByText(/until lubrication/)).not.toBeInTheDocument();
 });
 it('filterChangeDoesNotAppendLateAllPage', async () => {
     let late!: (value: unknown) => void;
@@ -295,7 +357,7 @@ it('unresolvedBikeShowsUuidAndNeverSelectedBikeName', async () => {
         />,
     );
     expect(await screen.findByText(/Unresolved bike b2/)).toBeInTheDocument();
-    await screen.findByText('Road');
+    expect((await screen.findAllByText('Road')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Retry bike lookup').length).toBeGreaterThan(0);
 });
 it('serverOverflowPreservesEstimateWithoutClientRecalculation', async () => {
@@ -562,7 +624,7 @@ it('passport displays make and model alongside prose durations', async () => {
         }),
     ).toBeVisible();
     expect(screen.getByText('Component ID: c1')).not.toBeVisible();
-    expect(await screen.findByText('Recorded duration: 1.5 min')).toBeVisible();
+    expect(await screen.findByText('1.5 min ridden')).toBeVisible();
 });
 it('passport names an empty service history instead of showing a bike id', async () => {
     api.listComponentMaintenance.mockResolvedValue({

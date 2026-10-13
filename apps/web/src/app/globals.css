@@ -1992,11 +1992,121 @@ dialog button[type='submit'] {
     color: var(--v3-muted);
     margin: -6px 0 16px;
 }
+/* Component history (V3 passport): figures first, then service status, then dated history. */
+dialog.wide {
+    max-width: 640px;
+}
+.passport-subtitle {
+    margin: -16px 0 20px;
+    color: var(--v3-muted);
+}
+.passport-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.passport-stats > div {
+    min-width: 0;
+    background: var(--v3-sage);
+    border-radius: 10px;
+    padding: 14px;
+}
+.passport-stats span {
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.passport-stats strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+.passport-stats small {
+    display: block;
+    margin-top: 2px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--v3-muted);
+}
+.passport-service {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+}
+.passport-service:empty {
+    display: none;
+}
+.passport-service p {
+    flex: 1 1 260px;
+    margin: 0;
+    color: var(--v3-muted);
+}
+.form-dialog.wide h3 {
+    margin: 26px 0 4px;
+    font-size: 14px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+}
+.passport-note {
+    margin: 0 0 6px;
+    color: var(--v3-muted);
+}
+.history {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.history li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 11px 0;
+    border-top: 1px solid var(--v3-row-line);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.history li small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.history li small .pill {
+    margin-top: 4px;
+}
+.history-figure {
+    text-align: right;
+    white-space: nowrap;
+}
 .passport-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 12px 0 16px;
+    margin: 24px 0 12px;
+}
+.passport-technical {
+    margin-bottom: 16px;
+    font-size: 12px;
+    color: var(--v3-muted);
+}
+.passport-technical summary {
+    width: max-content;
+    cursor: pointer;
+}
+.passport-technical p {
+    margin: 6px 0 0;
+}
+@media (max-width: 650px) {
+    .passport-stats {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 .stats {
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));

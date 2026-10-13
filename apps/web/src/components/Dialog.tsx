@@ -5,8 +5,16 @@ export type DialogProps = {
     title: string;
     onCancel: () => void;
     children: ReactNode;
+    /** Reading dialogs with figures and history (640px instead of 500px). */
+    wide?: boolean;
 };
-export function Dialog({ open, title, onCancel, children }: DialogProps) {
+export function Dialog({
+    open,
+    title,
+    onCancel,
+    children,
+    wide = false,
+}: DialogProps) {
     const ref = useRef<HTMLDialogElement>(null);
     const titleId = useId();
     useEffect(() => {
@@ -67,7 +75,7 @@ export function Dialog({ open, title, onCancel, children }: DialogProps) {
                     first.focus();
                 }
             }}
-            className="form-dialog"
+            className={wide ? 'form-dialog wide' : 'form-dialog'}
         >
             <h2 id={titleId}>{title}</h2>
             {children}
