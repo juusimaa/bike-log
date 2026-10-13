@@ -16,6 +16,8 @@ const bike = {
     year: 2020,
     color: null,
     version: 9,
+    frameWeightGrams: null,
+    missingPositions: [] as string[],
 };
 const api = vi.hoisted(() => ({
     createBike: vi.fn(),

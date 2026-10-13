@@ -29,6 +29,8 @@ const component = {
     initialUsageEstimateMetres: 0,
     version: 1,
     installations: [installation],
+    group: 'wheels',
+    weightGrams: null,
 };
 function mount(node: React.ReactNode) {
     render(

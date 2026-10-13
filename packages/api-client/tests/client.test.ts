@@ -12,6 +12,8 @@ const bike = {
     year: null,
     color: null,
     displayName: 'Unnamed bike',
+    frameWeightGrams: null,
+    missingPositions: [],
 } satisfies BikeResponse;
 const reminder = {
     ruleVersion: 1,
@@ -232,6 +234,8 @@ it('preserves all four replacement result members and rejects each absent member
         version: 1,
         installations: [],
         initialUsageEstimateMetres: 0,
+        group: 'groupset',
+        weightGrams: null,
     };
     const installation = {
         id,
@@ -464,6 +468,120 @@ it('uses documented methods, resource paths and pagination for every remaining w
                 expectedVersion: 2,
             },
         ],
+        [() => api.getComponentCatalog(), 'GET', '/api/component-catalog'],
+        [() => api.getBikeUsage(id), 'GET', `/api/bikes/${id}/usage`],
+        [
+            () =>
+                api.editComponent(id, {
+                    make: 'Synthetic',
+                    model: 'Saddle',
+                    weightGrams: 245,
+                    expectedVersion: 2,
+                }),
+            'PUT',
+            `/api/components/${id}`,
+            {
+                make: 'Synthetic',
+                model: 'Saddle',
+                weightGrams: 245,
+                expectedVersion: 2,
+            },
+        ],
+        [
+            () =>
+                api.correctInstallation(id, {
+                    startUtc: instant,
+                    endUtc: instant,
+                    expectedVersion: 2,
+                }),
+            'PUT',
+            `/api/installations/${id}`,
+            { startUtc: instant, endUtc: instant, expectedVersion: 2 },
+        ],
+        [
+            () =>
+                api.replaceInstallation(id, {
+                    newComponentId: id,
+                    replacedAtUtc: instant,
+                    expectedInstallationVersion: 1,
+                }),
+            'POST',
+            `/api/installations/${id}/replacement`,
+            {
+                newComponentId: id,
+                replacedAtUtc: instant,
+                expectedInstallationVersion: 1,
+            },
+        ],
+        [
+            () =>
+                api.moveInstallation(id, {
+                    toBikeId: id,
+                    toPosition: 'saddle',
+                    movedAtUtc: instant,
+                    expectedInstallationVersion: 1,
+                    expectedDestinationInstallationVersion: 3,
+                }),
+            'POST',
+            `/api/installations/${id}/move`,
+            {
+                toBikeId: id,
+                toPosition: 'saddle',
+                movedAtUtc: instant,
+                expectedInstallationVersion: 1,
+                expectedDestinationInstallationVersion: 3,
+            },
+        ],
+        [
+            () =>
+                api.fitPair({
+                    bikeId: id,
+                    type: 'brake',
+                    make: 'Synthetic',
+                    model: 'Brake',
+                    startUtc: instant,
+                }),
+            'POST',
+            '/api/installations/pair',
+            {
+                bikeId: id,
+                type: 'brake',
+                make: 'Synthetic',
+                model: 'Brake',
+                startUtc: instant,
+            },
+        ],
+        [
+            () => api.listExemptions(id),
+            'GET',
+            `/api/bikes/${id}/position-exemptions`,
+        ],
+        [
+            () =>
+                api.createExemption(id, {
+                    position: 'rear-inner-tube',
+                    startUtc: instant,
+                    expectedInstallationVersion: 4,
+                }),
+            'POST',
+            `/api/bikes/${id}/position-exemptions`,
+            {
+                position: 'rear-inner-tube',
+                startUtc: instant,
+                expectedInstallationVersion: 4,
+            },
+        ],
+        [
+            () =>
+                api.correctExemption(id, {
+                    startUtc: instant,
+                    endUtc: instant,
+                    expectedVersion: 1,
+                }),
+            'PUT',
+            `/api/position-exemptions/${id}`,
+            { startUtc: instant, endUtc: instant, expectedVersion: 1 },
+        ],
     ];
     for (const [call, method, path, body] of cases) {
         await expect(call()).rejects.toMatchObject({ status: 502 });
@@ -533,11 +651,19 @@ it('canonicalizes generated int32 string counters throughout overview responses'
             recordedDistanceMetres: 12000,
             currentComponents: [],
             allocationGaps: [],
+            positionStatuses: [],
+            positionGaps: [],
             spendingByCurrency: [],
             unknownCostRecordCount: '0',
             maintenanceRecordCount: '2',
             recentActivity: [],
             reminder,
+            weights: {
+                groups: [],
+                frameGrams: null,
+                totalGrams: '0',
+                missingCount: 1,
+            },
         }),
     );
     const overview = await api.getOverview(id);

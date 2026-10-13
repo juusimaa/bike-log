@@ -31,6 +31,8 @@ const component = {
     version: 7,
     initialUsageEstimateMetres: 120000,
     installations: [chapter],
+    group: 'groupset',
+    weightGrams: null,
 };
 function mount(node: React.ReactNode) {
     return render(

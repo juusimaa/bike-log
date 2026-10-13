@@ -2,7 +2,13 @@ import type { components } from './generated/schema';
 export type Uuid = string;
 export type Page<T> = { items: T[]; nextCursor: string | null };
 export type PageOptions = { pageSize?: number; cursor?: string };
-export type Position = 'chain' | 'cassette' | 'front-tyre' | 'rear-tyre';
+// Positions, component types and groups come from GET /api/component-catalog. Clients never
+// enumerate them (research D13), so a new catalog entry needs no client code change.
+export type Position = string;
+export type ComponentType = string;
+export type ComponentGroup = string;
+export type ExemptionReason = 'none-fitted' | 'tubeless';
+export type PositionState = 'fitted' | 'exempt' | 'missing' | 'not-recorded';
 export type View = 'overview' | 'components' | 'rides' | 'maintenance';
 export type AllocationGapResponse =
     components['schemas']['AllocationGapResponse'];
@@ -57,6 +63,28 @@ export type ReplacementWithServiceResponse =
     components['schemas']['ReplacementWithServiceResponse'];
 export type ReplaceWithService = components['schemas']['ReplaceWithService'];
 export type RideResponse = components['schemas']['RideResponse'];
+export type CatalogPositionResponse =
+    components['schemas']['CatalogPositionResponse'];
+export type ComponentCatalogResponse =
+    components['schemas']['ComponentCatalogResponse'];
+export type CorrectPositionExemption =
+    components['schemas']['CorrectPositionExemption'];
+export type CreatePositionExemption =
+    components['schemas']['CreatePositionExemption'];
+export type EditComponent = components['schemas']['EditComponent'];
+export type FitPair = components['schemas']['FitPair'];
+export type FitPairResponse = components['schemas']['FitPairResponse'];
+export type GroupWeightResponse = components['schemas']['GroupWeightResponse'];
+export type MoveInstallation = components['schemas']['MoveInstallation'];
+export type MoveInstallationResponse =
+    components['schemas']['MoveInstallationResponse'];
+export type PositionExemptionResponse =
+    components['schemas']['PositionExemptionResponse'];
+export type PositionGapResponse = components['schemas']['PositionGapResponse'];
+export type PositionStatusResponse =
+    components['schemas']['PositionStatusResponse'];
+export type WeightSummaryResponse =
+    components['schemas']['WeightSummaryResponse'];
 // Runtime validation converts OpenAPI's numeric string alternatives to numbers.
 // DTO aliases above remain faithful to the generated schema.
 export type Validated<T> = number extends T
