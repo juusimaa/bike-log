@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useId, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type {
@@ -212,7 +213,9 @@ export function MaintenanceForm({
                     key={validationAttempt}
                     errors={[
                         ...errors,
-                        ...(save.state.error ? [save.state.error.message] : []),
+                        ...(save.state.error
+                            ? [errorText(save.state.error)]
+                            : []),
                         ...(save.state.refreshError
                             ? [save.state.refreshError.message]
                             : []),
@@ -252,6 +255,7 @@ export function MaintenanceForm({
                         <input
                             id={id + 'task'}
                             value={task}
+                            maxLength={200}
                             onChange={(e) => setTask(e.target.value)}
                             readOnly={!!original.presetTaskKey}
                         />
@@ -328,6 +332,7 @@ export function MaintenanceForm({
                         <textarea
                             id={id + 'notes'}
                             value={notes}
+                            maxLength={2000}
                             onChange={(e) => setNotes(e.target.value)}
                         />
                     </Field>
@@ -340,6 +345,8 @@ export function MaintenanceForm({
                             id={id + 'cost'}
                             value={cost}
                             inputMode="decimal"
+                            autoComplete="off"
+                            maxLength={20}
                             onChange={(e) => setCost(e.target.value)}
                         />
                     </Field>

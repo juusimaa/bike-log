@@ -1,4 +1,6 @@
 'use client';
+import { errorText } from '../../lib/errors';
+import { ReadError } from '../../components/EmptyState';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
@@ -78,8 +80,15 @@ function ConnectedReminder({
     onLubricate: (bikeId: string) => void;
 }) {
     const query = useReminder(bikeId);
-    if (query.isPending) return <p>Loading reminder…</p>;
-    if (query.isError) return <p role="alert">Unable to load reminder.</p>;
+    if (query.isPending) return <p role="status">Loading reminder…</p>;
+    if (query.isError)
+        return (
+            <ReadError
+                error={query.error}
+                retrying={query.isFetching}
+                onRetry={() => void query.refetch()}
+            />
+        );
     return (
         <ReminderCard
             evaluation={query.data}
@@ -208,6 +217,9 @@ export function Workspace(
         if (props.accessIssue) void clearPrivateQueries(client);
     }, [props.accessIssue, client]);
     const leave = useCallback(() => {
+        // One sign-out request at a time; repeated clicks must not race.
+        if (signingOut.current) return;
+        signingOut.current = true;
         void clearPrivateQueries(client).then(async () => {
             try {
                 const response = await fetch('/auth/logout', {
@@ -220,6 +232,7 @@ export function Workspace(
                     throw new Error('Sign-out destination unavailable');
                 window.location.replace(body.logoutUrl);
             } catch {
+                signingOut.current = false;
                 props.onAccessIssue?.('unavailable');
             }
         });
@@ -231,7 +244,16 @@ export function Workspace(
     }, [busy, editor, dirty, leave]);
     const [savedId, setSavedId] = useState<string | null>(null);
     const clearSaved = useCallback(() => setSavedId(null), []);
-    const [notice, setNotice] = useState<string | null>(null);
+    const [notice, setNoticeState] = useState<{
+        text: string;
+        seq: number;
+    } | null>(null);
+    const setNotice = useCallback(
+        (text: string) =>
+            setNoticeState((last) => ({ text, seq: (last?.seq ?? 0) + 1 })),
+        [],
+    );
+    const signingOut = useRef(false);
     const close = useCallback(() => {
         setEditor(null);
         setDirty(false);
@@ -291,6 +313,8 @@ export function Workspace(
             void getApi()
                 .getComponent(installation.componentId)
                 .then((component) => {
+                    // A later request superseded this one; never open a stale editor.
+                    if (opening !== editorSequence.current) return;
                     setEditor({
                         kind: 'replace',
                         installation,
@@ -298,7 +322,11 @@ export function Workspace(
                         key: opening,
                     });
                 })
-                .catch(() => setNotice('Unable to load replacement component.'))
+                .catch((e) =>
+                    setNotice(
+                        `The part could not be opened for replacement. ${errorText(e)}`,
+                    ),
+                )
                 .finally(() => setBusy(false));
         });
     };
@@ -329,6 +357,10 @@ export function Workspace(
                                     bike,
                                     key: ++editorSequence.current,
                                 });
+                            else
+                                setNotice(
+                                    'This bike is still loading. Try Edit bike again in a moment.',
+                                );
                         } else if (action === 'log-ride' && id) {
                             setEditor({
                                 kind: 'ride',
@@ -342,9 +374,7 @@ export function Workspace(
                                 key: ++editorSequence.current,
                             });
                         } else
-                            setNotice(
-                                'This form will be connected in the next implementation steps.',
-                            );
+                            setNotice('Select a bike first, then try again.');
                     }}
                     renderView={(context) =>
                         props.renderView?.(context) ?? (
@@ -677,7 +707,7 @@ export function Workspace(
                     }}
                 />
             )}
-            <Toast message={notice} />
+            <Toast message={notice?.text ?? null} seq={notice?.seq} />
         </>
     );
 }

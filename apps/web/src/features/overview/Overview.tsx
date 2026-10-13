@@ -4,7 +4,7 @@ import type {
     InstallationResponse,
     Validated,
 } from '@bikelog/api-client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     useComponentCatalog,
     groupLabel,
@@ -38,10 +38,26 @@ export function Overview({
     const fitted = useCurrentInstallations(bikeId);
     const catalog = useComponentCatalog().data;
     const [allGaps, setAllGaps] = useState(false);
+    const {
+        hasNextPage,
+        isFetchingNextPage,
+        isFetchNextPageError,
+        fetchNextPage,
+    } = fitted;
+    // Identities can sit on a later page; load them all so no row waits forever.
+    useEffect(() => {
+        if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError)
+            void fetchNextPage();
+    }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+    const identitiesSettled =
+        fitted.isError ||
+        isFetchNextPageError ||
+        (fitted.isSuccess && !hasNextPage);
     if (overview.error)
         return (
             <ReadError
                 error={overview.error}
+                retrying={overview.isFetching}
                 onRetry={() => void overview.refetch()}
             />
         );
@@ -61,10 +77,7 @@ export function Overview({
                             <div className="card-title">
                                 <h2>Chain care</h2>
                             </div>
-                            <p>
-                                Reminder controls will be connected in the
-                                maintenance step.
-                            </p>
+                            <p>Service reminders are unavailable right now.</p>
                         </section>
                     )}
                 </div>
@@ -105,7 +118,11 @@ export function Overview({
                         <BikeArt color={s.bike.color} />
                         <div className="hero-bottom">
                             <span>
-                                ● {s.currentComponents.length} components fitted
+                                ● {s.currentComponents.length}{' '}
+                                {s.currentComponents.length === 1
+                                    ? 'component'
+                                    : 'components'}{' '}
+                                fitted
                             </span>
                             <button
                                 disabled={!onViewComponents}
@@ -287,6 +304,7 @@ export function Overview({
                     {fitted.error && (
                         <ReadError
                             error={fitted.error}
+                            retrying={fitted.isFetching}
                             onRetry={() => void fitted.refetch()}
                         />
                     )}
@@ -341,7 +359,9 @@ export function Overview({
                                                                     ? '—'
                                                                     : identity
                                                                       ? `${identity.component.make} ${identity.component.model?.trim() || 'Model not provided'}`
-                                                                      : 'Loading component identity…'}
+                                                                      : identitiesSettled
+                                                                        ? 'Part details unavailable'
+                                                                        : 'Loading component identity…'}
                                                             </small>
                                                         </span>
                                                     </div>
@@ -414,13 +434,14 @@ export function Overview({
                             </tbody>
                         </table>
                     </div>
-                    {fitted.hasNextPage && (
+                    {isFetchNextPageError && (
                         <button
+                            type="button"
                             className="button secondary"
-                            disabled={fitted.isFetchingNextPage}
-                            onClick={() => void fitted.fetchNextPage()}
+                            disabled={isFetchingNextPage}
+                            onClick={() => void fetchNextPage()}
                         >
-                            Load more current components
+                            Retry loading components
                         </button>
                     )}
                 </section>

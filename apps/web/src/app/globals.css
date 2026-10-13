@@ -2174,3 +2174,60 @@ dialog button[type='submit'] {
         right: 0;
     }
 }
+
+/* Hardening: rider-entered names, notes and tasks wrap inside their containers. */
+.activity > div,
+.item-name > span,
+.choice > span {
+    min-width: 0;
+}
+.activity strong,
+.activity p,
+.hero p,
+.item-name strong,
+.item-name small,
+.component-name,
+.component-library article,
+.full-table td > strong,
+.rides-card .full-table td:first-child,
+.maintenance-note,
+.choice > span,
+.pos-row .part,
+.form-dialog h2,
+.form-dialog h4,
+.toast {
+    overflow-wrap: anywhere;
+}
+.full-table td time {
+    white-space: nowrap;
+}
+.empty h2 + p {
+    max-width: 46ch;
+    margin: 8px auto 0;
+    line-height: 1.6;
+}
+.empty p + .button {
+    margin-top: 18px;
+}
+/* Inside a panel, an empty or error state is a region of that panel, not a nested card. */
+.card .card.empty {
+    border: 0;
+    border-radius: 0;
+    background: none;
+    padding: 32px 0 16px;
+}
+.maintenance-note {
+    white-space: pre-line;
+}
+.table-empty {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 16px 0 4px;
+    line-height: 1.6;
+}
+.table-more {
+    margin-top: 16px;
+}
+.toast {
+    max-width: min(520px, calc(100vw - 32px));
+}

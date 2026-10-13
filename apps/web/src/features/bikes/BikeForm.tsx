@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useId, useState } from 'react';
 import type {
     BikeResponse,
@@ -87,7 +88,7 @@ export function BikeForm({
         try {
             frameWeightGrams = parseGrams(values.frameWeight);
         } catch (e) {
-            problems.frameWeight = e instanceof Error ? e.message : String(e);
+            problems.frameWeight = errorText(e);
         }
         setFieldErrors(problems);
         setErrors(Object.values(problems));
@@ -199,7 +200,9 @@ export function BikeForm({
                     key={attemptCount}
                     errors={[
                         ...errors,
-                        ...(save.state.error ? [save.state.error.message] : []),
+                        ...(save.state.error
+                            ? [errorText(save.state.error)]
+                            : []),
                         ...(save.state.refreshError
                             ? [save.state.refreshError.message]
                             : []),
@@ -223,7 +226,7 @@ export function BikeForm({
                                 }
                                 hint={
                                     key === 'name'
-                                        ? 'Optional. Leave blank to use the server name from make and model.'
+                                        ? 'Optional. Leave blank to name the bike from its make and model.'
                                         : key === 'color'
                                           ? 'Optional color name, e.g. Hazy IPA (up to 100 characters).'
                                           : undefined
@@ -255,6 +258,8 @@ export function BikeForm({
                         <input
                             value={values.frameWeight}
                             inputMode="numeric"
+                            autoComplete="off"
+                            maxLength={6}
                             placeholder="e.g. 1180"
                             onChange={(e) =>
                                 setValues({

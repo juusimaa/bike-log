@@ -1,6 +1,6 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useState, type ReactNode } from 'react';
-import { ApiError } from '@bikelog/api-client';
 import { Dialog } from '../../components/Dialog';
 import { FormError } from '../../components/FormError';
 import { ConflictPanel } from '../../components/ConflictPanel';
@@ -15,13 +15,7 @@ export class FieldProblem extends Error {
     }
 }
 /** The API's explanation when it has one, otherwise the error's own message. */
-export function problemText(error: unknown): string {
-    if (error instanceof ApiError) {
-        const detail = error.problem?.detail;
-        return typeof detail === 'string' && detail ? detail : error.message;
-    }
-    return error instanceof Error ? error.message : String(error);
-}
+export const problemText = errorText;
 /**
  * One versioned write behind a small form. A stale version shows the conflict panel with the
  * current record; reapplying uses the refreshed version and never guesses.

@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useId, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -22,7 +23,7 @@ import {
     typeLabel,
     type Catalog,
 } from './catalog';
-import { useBikes, useOverview } from '../garage/queries';
+import { useAllBikes, useOverview } from '../garage/queries';
 type Installation = Validated<InstallationResponse>;
 type Component = Validated<ComponentResponse>;
 type Exemption = Validated<PositionExemptionResponse>;
@@ -46,10 +47,7 @@ function useWhen() {
             try {
                 return toUtc(wall, offset || undefined);
             } catch (e) {
-                throw new FieldProblem(
-                    'date',
-                    e instanceof Error ? e.message : String(e),
-                );
+                throw new FieldProblem('date', errorText(e));
             }
         },
     };
@@ -339,7 +337,7 @@ export function MoveDialog({
     component: Component;
 }) {
     const client = useQueryClient();
-    const bikePages = useBikes();
+    const bikePages = useAllBikes();
     const bikes = bikePages.data?.pages.flatMap((p) => p.items) ?? [];
     const catalog = useComponentCatalog().data;
     const id = useId();
@@ -632,10 +630,7 @@ export function EditPartDialog({
                 try {
                     weightGrams = parseGrams(weight);
                 } catch (e) {
-                    throw new FieldProblem(
-                        'weight',
-                        e instanceof Error ? e.message : String(e),
-                    );
+                    throw new FieldProblem('weight', errorText(e));
                 }
                 return {
                     make: make.trim(),

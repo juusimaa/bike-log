@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { Uuid } from '@bikelog/api-client';
 import { getApi } from '../../lib/api';
@@ -10,6 +11,21 @@ export function useBikes() {
             getApi().listBikes({ pageSize: 50, cursor: pageParam }, signal),
         getNextPageParam: (last) => last.nextCursor ?? undefined,
     });
+}
+/** Every bike, for pickers and name lookups that must not stop at the first page. */
+export function useAllBikes() {
+    const bikes = useBikes();
+    const {
+        hasNextPage,
+        isFetchingNextPage,
+        isFetchNextPageError,
+        fetchNextPage,
+    } = bikes;
+    useEffect(() => {
+        if (hasNextPage && !isFetchingNextPage && !isFetchNextPageError)
+            void fetchNextPage();
+    }, [hasNextPage, isFetchingNextPage, isFetchNextPageError, fetchNextPage]);
+    return bikes;
 }
 export function useBike(id: Uuid | null) {
     return useQuery({

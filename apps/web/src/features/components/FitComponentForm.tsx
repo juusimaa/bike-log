@@ -1,4 +1,5 @@
 'use client';
+import { errorText } from '../../lib/errors';
 import { useEffect, useState, useId } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
@@ -17,7 +18,12 @@ import { formatLocal, formatDate, toUtc } from '../../lib/dates';
 import { formatGrams } from '../../lib/format';
 import { parseGrams, parseKilometres } from '../../lib/units';
 import { invalidateBike, queryKeys } from '../../lib/query';
-import { PartFields, WhenField, allPages } from './fit-replacement';
+import {
+    PartFields,
+    PartsLoadState,
+    WhenField,
+    useGarageParts,
+} from './fit-replacement';
 import { problemText } from './ActionDialog';
 import {
     useComponentCatalog,
@@ -26,7 +32,7 @@ import {
     typeLabel,
     positionLabel,
 } from './catalog';
-import { useBikes, useOverview } from '../garage/queries';
+import { useAllBikes, useOverview } from '../garage/queries';
 type Source = 'new' | 'garage' | 'bike';
 type Part = Validated<ComponentResponse>;
 /** Pair types fitted to both ends by default (owner-approved V3 design). */
@@ -52,7 +58,7 @@ export function FitComponentForm({
     const [destination] = useState({ bikeId, position });
     const catalog = useComponentCatalog();
     const overview = useOverview(bikeId);
-    const bikes = useBikes();
+    const bikes = useAllBikes();
     const entry = entryOf(catalog.data, destination.position);
     const opposite = entry ? oppositeOf(catalog.data, entry) : undefined;
     const oppositeState = overview.data?.positionStatuses.find(
@@ -90,7 +96,8 @@ export function FitComponentForm({
     >('idle');
     const [uncertain, setUncertain] = useState<'create' | 'fit' | null>(null);
     const [reviewed, setReviewed] = useState(false);
-    const [parts, setParts] = useState<Part[]>([]);
+    const garageParts = useGarageParts();
+    const parts = garageParts.parts;
     const [validationAttempt, setValidationAttempt] = useState(0);
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
     const [errors, setErrors] = useState<string[]>([]);
@@ -104,13 +111,7 @@ export function FitComponentForm({
     const bikeName = (id: string) =>
         bikes.data?.pages.flatMap((p) => p.items).find((b) => b.id === id)
             ?.displayName ?? 'another bike';
-    async function readParts() {
-        setParts(
-            await allPages((cursor) =>
-                getApi().listComponents({ pageSize: 50, cursor }),
-            ),
-        );
-    }
+    const readParts = garageParts.reload;
     async function refresh() {
         setReading(true);
         setReviewed(false);
@@ -118,24 +119,11 @@ export function FitComponentForm({
             await readParts();
             setReviewed(true);
         } catch (e) {
-            setErrors([String(e)]);
+            setErrors([errorText(e)]);
         } finally {
             setReading(false);
         }
     }
-    useEffect(() => {
-        let active = true;
-        allPages((cursor) => getApi().listComponents({ pageSize: 50, cursor }))
-            .then((p) => {
-                if (active) setParts(p);
-            })
-            .catch((e) => {
-                if (active) setErrors([String(e)]);
-            });
-        return () => {
-            active = false;
-        };
-    }, []);
     useEffect(() => {
         onDirtyChange?.(
             !!make ||
@@ -197,7 +185,7 @@ export function FitComponentForm({
         try {
             weightGrams = parseGrams(weight);
         } catch (e) {
-            const message = e instanceof Error ? e.message : String(e);
+            const message = errorText(e);
             setFieldErrors({ weight: message });
             throw new Error(message);
         }
@@ -206,7 +194,7 @@ export function FitComponentForm({
                 ? parseKilometres(estimate, true)
                 : 0;
         } catch (e) {
-            const message = e instanceof Error ? e.message : String(e);
+            const message = errorText(e);
             setFieldErrors({ estimate: message });
             throw new Error(message);
         }
@@ -226,9 +214,9 @@ export function FitComponentForm({
             startUtc = toUtc(wall, offset || undefined);
         } catch (e) {
             setFieldErrors({
-                date: e instanceof Error ? e.message : String(e),
+                date: errorText(e),
             });
-            setErrors([String(e)]);
+            setErrors([errorText(e)]);
             return;
         }
         if (source === 'bike' && !createdComponentId)
@@ -424,16 +412,20 @@ export function FitComponentForm({
                             [
                                 'garage',
                                 'From your garage',
-                                garage.length
-                                    ? `${garage.length} spare`
-                                    : 'none',
+                                garageParts.status !== 'ready'
+                                    ? ''
+                                    : garage.length
+                                      ? `${garage.length} spare`
+                                      : 'none',
                             ],
                             [
                                 'bike',
                                 'From another bike',
-                                fittedElsewhere.length
-                                    ? `${fittedElsewhere.length} fitted`
-                                    : 'none',
+                                garageParts.status !== 'ready'
+                                    ? ''
+                                    : fittedElsewhere.length
+                                      ? `${fittedElsewhere.length} fitted`
+                                      : 'none',
                             ],
                         ] as const
                     ).map(([value, text, note]) => (
@@ -460,13 +452,19 @@ export function FitComponentForm({
                         disabled={busy || !!uncertain}
                     >
                         <legend>Part from your garage</legend>
-                        {garage.length === 0 && (
-                            <p className="empty-choice">
-                                No spare {kind} in your garage. Choose{' '}
-                                <strong>New part</strong>, or take one from
-                                another bike.
-                            </p>
-                        )}
+                        <PartsLoadState
+                            status={garageParts.status}
+                            error={garageParts.error}
+                            onRetry={garageParts.retry}
+                        />
+                        {garageParts.status === 'ready' &&
+                            garage.length === 0 && (
+                                <p className="empty-choice">
+                                    No spare {kind} in your garage. Choose{' '}
+                                    <strong>New part</strong>, or take one from
+                                    another bike.
+                                </p>
+                            )}
                         {garage.map((p) => {
                             const last = p.installations.at(-1);
                             return (
@@ -497,11 +495,17 @@ export function FitComponentForm({
                 {source === 'bike' && (
                     <fieldset className="choice-list" disabled={busy}>
                         <legend>Part fitted to another bike</legend>
-                        {fittedElsewhere.length === 0 && (
-                            <p className="empty-choice">
-                                No {kind} is fitted to your other bikes.
-                            </p>
-                        )}
+                        <PartsLoadState
+                            status={garageParts.status}
+                            error={garageParts.error}
+                            onRetry={garageParts.retry}
+                        />
+                        {garageParts.status === 'ready' &&
+                            fittedElsewhere.length === 0 && (
+                                <p className="empty-choice">
+                                    No {kind} is fitted to your other bikes.
+                                </p>
+                            )}
                         {fittedElsewhere.map(({ part: p, installation: i }) => (
                             <label className="choice" key={i.id}>
                                 <input

@@ -1,3 +1,4 @@
+import { readErrorCopy } from '../lib/errors';
 import type { ReactNode } from 'react';
 export function EmptyState({
     title,
@@ -16,20 +17,24 @@ export function EmptyState({
 export function ReadError({
     error,
     onRetry,
+    retrying = false,
 }: {
     error: Error;
     onRetry: () => void;
+    retrying?: boolean;
 }) {
+    const copy = readErrorCopy(error);
     return (
         <section className="card empty" role="alert">
-            <h2>
-                {error.name === 'ClientRangeError'
-                    ? 'Client range error'
-                    : 'Data unavailable'}
-            </h2>
-            <p>{error.message}</p>
-            <button className="button secondary" onClick={onRetry}>
-                Retry
+            <h2>{copy.title}</h2>
+            <p>{copy.body}</p>
+            <button
+                type="button"
+                className="button secondary"
+                disabled={retrying}
+                onClick={onRetry}
+            >
+                {retrying ? 'Retrying…' : 'Retry'}
             </button>
         </section>
     );

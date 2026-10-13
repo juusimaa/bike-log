@@ -35,7 +35,12 @@ export function Activity({
                         </div>
                     </div>
                 ))}
-                {!snapshot.recentActivity.length && <p>No activity recorded</p>}
+                {!snapshot.recentActivity.length && (
+                    <p>
+                        No activity recorded yet. Add a ride or log maintenance
+                        to start this bike’s story.
+                    </p>
+                )}
             </div>
         </section>
     );
