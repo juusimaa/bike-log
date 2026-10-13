@@ -183,6 +183,8 @@ Done when: you can use both the Next.js web app and React Native app for your ac
 
 ### Phase 3 — Azure and asynchronous processing
 
+Reordered on 2026-10-13: the first slice of this phase, a minimal hosted deployment without the queue, outbox and worker ([spec 004](specs/004-hosted-deployment/spec.md)), comes before the Phase 2 React Native app. Hosting first lets the owner use the web app daily with real bikes, which is how the web UI is judged ready, and gives the later native sign-in proof a real HTTPS endpoint instead of a temporary local-network setup. The asynchronous parts of this phase follow the mobile app as planned.
+
 Containerize web/API/worker on Azure Container Apps, using an Aiven for PostgreSQL free-plan service in an EU region for hosted PostgreSQL; create Bicep infrastructure for Azure resources and GitHub Actions delivery. Document Aiven setup separately ([decision 0003](docs/decisions/0003-aiven-postgres-and-container-apps-hosting.md)). Introduce Service Bus, the transactional outbox, idempotent recalculation, trace correlation and health checks. Add managed identities, secret storage and a measured cost baseline.
 
 Done when: a ride saved while the worker is stopped processes after restart; replaying work does not duplicate mileage; a failed deployment can roll back without incompatible database changes.
