@@ -138,6 +138,10 @@ apps/web/tests, apps/web/e2e               # new unit and workflow/visual cases
 docs/backend-workflows.md                  # contract additions + upgrade note + evidence
 ```
 
+**UI design**: the owner-approved clickable mock in
+[docs/ui-design/versions/v3/](../../docs/ui-design/versions/v3/README.md) (approved 2026-10-13) is the
+UI design for every web task. It extends the approved V1 baseline and follows `apps/web/DESIGN.md`.
+
 **Structure Decision**: Keep the existing monorepo layout and the per-feature folders in the API and web
 app. The only new folder is `src/Api/Features/Exemptions/`, for the new resource.
 
