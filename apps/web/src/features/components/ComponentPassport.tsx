@@ -167,6 +167,33 @@ export function ComponentPassport({
             open
             wide
             title={c ? `${c.make} ${c.model}` : 'History and details'}
+            description={
+                c && (
+                    <>
+                        {type} ·{' '}
+                        {open ? (
+                            <>
+                                {openPosition.toLowerCase() !==
+                                    type.toLowerCase() &&
+                                    `${openPosition.toLowerCase()} `}
+                                on <BikeIdentity bikeId={open.bikeId} /> since{' '}
+                                {formatDate(open.startUtc)}
+                            </>
+                        ) : (
+                            'in your garage'
+                        )}
+                    </>
+                )
+            }
+            footer={
+                <button
+                    type="button"
+                    className="button secondary"
+                    onClick={onClose}
+                >
+                    Close
+                </button>
+            }
             onCancel={onClose}
         >
             {detail.isPending && <p>Loading part…</p>}
@@ -180,20 +207,6 @@ export function ComponentPassport({
             )}
             {c && (
                 <>
-                    <p className="passport-subtitle">
-                        {type} ·{' '}
-                        {open ? (
-                            <>
-                                {openPosition.toLowerCase() !==
-                                    type.toLowerCase() &&
-                                    `${openPosition.toLowerCase()} `}
-                                on <BikeIdentity bikeId={open.bikeId} /> since{' '}
-                                {formatDate(open.startUtc)}
-                            </>
-                        ) : (
-                            'in your garage'
-                        )}
-                    </p>
                     <div className="passport-stats">
                         <div>
                             <span>Lifetime</span>
@@ -428,7 +441,6 @@ export function ComponentPassport({
                     </details>
                 </>
             )}
-            <button onClick={onClose}>Close</button>
         </Dialog>
     );
 }

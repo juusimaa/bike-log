@@ -746,6 +746,106 @@ dialog::backdrop {
     font-size: 21px;
     line-height: 1;
 }
+/* Dialog frame: the heading stays put, the body scrolls, and form actions stick to
+   the bottom edge so Save/Cancel never scroll out of reach on long content or phones. */
+.form-dialog {
+    padding: 0;
+    max-height: calc(100dvh - 32px);
+    overflow: hidden;
+}
+.form-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+.form-dialog > .dialog-heading {
+    display: block;
+    flex: none;
+    margin: 0;
+    padding: 26px 64px 18px 28px;
+}
+.form-dialog > .dialog-heading h2 {
+    margin: 0;
+}
+.dialog-subtitle {
+    margin: 6px 0 0;
+    color: var(--v3-muted);
+}
+.dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 4px 28px 0;
+}
+.dialog-body:not(:has(.dialog-actions)) {
+    padding-bottom: 28px;
+}
+.dialog-body:has(+ .dialog-footer) {
+    padding-bottom: 4px;
+}
+.dialog-body .dialog-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--white);
+    padding-bottom: 24px;
+}
+.form-dialog > .dialog-footer {
+    flex: none;
+    margin: 0;
+    padding: 16px 28px 24px;
+}
+.dialog-close {
+    position: absolute;
+    top: 22px;
+    right: 22px;
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    cursor: pointer;
+}
+.dialog-close::before {
+    /* 44px touch target around the 30px mark. */
+    content: '';
+    position: absolute;
+    inset: -7px;
+}
+.dialog-close svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+}
+.dialog-close:hover {
+    background: #eef3e6;
+}
+.dialog-close:focus-visible {
+    outline: 3px solid #7ba78a;
+    outline-offset: 2px;
+}
+@media (max-width: 650px) {
+    .form-dialog > .dialog-heading {
+        padding: 20px 58px 14px 20px;
+    }
+    .dialog-body {
+        padding: 4px 20px 0;
+    }
+    .dialog-body:not(:has(.dialog-actions)) {
+        padding-bottom: 20px;
+    }
+    .dialog-body .dialog-actions {
+        padding-bottom: 20px;
+    }
+    .form-dialog > .dialog-footer {
+        padding: 14px 20px 20px;
+    }
+    .dialog-close {
+        top: 16px;
+        right: 16px;
+    }
+}
 .field {
     display: block;
     margin-bottom: 17px;
@@ -1996,10 +2096,6 @@ dialog button[type='submit'] {
 dialog.wide {
     max-width: 640px;
 }
-.passport-subtitle {
-    margin: -16px 0 20px;
-    color: var(--v3-muted);
-}
 .passport-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2106,6 +2202,9 @@ dialog.wide {
 @media (max-width: 650px) {
     .passport-stats {
         grid-template-columns: 1fr 1fr;
+    }
+    .passport-stats > div:last-child:nth-child(odd) {
+        grid-column: 1 / -1;
     }
 }
 .stats {
