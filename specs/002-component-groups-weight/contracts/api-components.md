@@ -111,5 +111,5 @@ Lists the bike's exemption history, newest first. This is the wheel setup histor
 | Pair requested for a type without front/rear positions | 400 | validation |
 | Inner tube fitted during a tubeless period, or any position overlap | 409 | `installation_overlap` |
 | Exemption would orphan recorded maintenance | 409 | `maintenance_history_conflict` |
-| Stale `expectedVersion` or `expectedInstallationVersion` | 409 | existing version conflict |
+| Stale `expectedVersion`, `expectedInstallationVersion` or `expectedDestinationInstallationVersion` | 409 | existing version conflict |
 | Exemption requested while an installation is open, without `expectedInstallationVersion` | 409 | existing version conflict |

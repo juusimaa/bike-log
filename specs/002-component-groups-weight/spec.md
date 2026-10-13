@@ -195,7 +195,8 @@ usage totals are identical before and after.
 - A position declared intentionally empty (the front derailleur marked "none fitted", or the inner tube
   on a tubeless wheel) shows no gap and receives no usage.
 - Switching a wheel from tubeless back to tubed reopens the inner tube position from that date; the
-  period before it remains not applicable.
+  period before it remains not applicable. Until a tube is fitted, the tube is missing and the bike is
+  incomplete. Ending "none fitted" for the front derailleur works the same way.
 - Fitting matching front and rear parts in one step where one of the two positions is already occupied
   for an overlapping period is rejected as a whole; nothing is partially saved.
 - A weight of zero or a negative weight is rejected; an implausibly large weight (above 20 kg for a
@@ -281,8 +282,8 @@ usage totals are identical before and after.
   currently fitted on another of their bikes. Ending its installation there, removing the destination's
   current part (which returns to the garage) and fitting it MUST happen as one step that succeeds or
   fails as a whole, and MUST be rejected if either bike's history changed since the owner viewed it.
-- **FR-019**: A bike MUST be shown as incomplete while any position that previously had a part is empty
-  and not declared intentionally empty. The garage and the bike view MUST show which parts are missing
+- **FR-019**: A bike MUST be shown as incomplete while any position is empty, not declared intentionally
+  empty, and either previously had a part or had an intentionally-empty period that has ended. The garage and the bike view MUST show which parts are missing
   and since when. Logging a ride on an incomplete bike MUST warn the owner but MUST NOT be blocked.
 
 ### Key Entities
@@ -315,8 +316,7 @@ usage totals are identical before and after.
   unchanged, verified for at least one position in each group.
 - **SC-005**: Group and bike weight subtotals equal the sum of the recorded weights of currently fitted
   parts in every tested case, and always disclose missing weights.
-- **SC-006**: No position marked "none fitted" or "not applicable" is ever shown as missing installation
-  history.
+- **SC-006**: No position marked "none fitted" or "not applicable" is ever shown as a gap or as missing.
 
 ## Assumptions
 

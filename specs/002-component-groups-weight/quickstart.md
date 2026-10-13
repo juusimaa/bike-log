@@ -41,7 +41,7 @@ section).
 | 9 | FR-012 | Fit a rotor pair while the rear rotor position is occupied | 409. No component or installation is created |
 | 10 | US4-1 | With a rear tube fitted, switch the rear wheel to tubeless on a date | The tube's installation ends on that date, and the position shows "tubeless" |
 | 11 | US4-2 | Fit a front tube during a tubeless period | 409 `installation_overlap` |
-| 12 | US4-3 | Switch the rear wheel back to tubed | The setup history shows both periods. The position shows "not recorded" |
+| 12 | US4-3 | Switch the rear wheel back to tubed | The setup history shows both periods. The rear inner tube shows "Missing since …" and the bike is incomplete until a tube is fitted |
 | 13 | US5, SC-005 | Fit Build parts of 250, 300 and 95 g plus one without a weight. Set the frame weight | Build subtotal is 645 g with "1 part without weight". The total includes the frame |
 | 14 | Edge | Enter weights 0, −5, 20001 and 12.5 | Each is rejected with a field message |
 | 15 | FR-016 | As a second synthetic user, read or modify user A's exemption or component | 404 |

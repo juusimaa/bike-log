@@ -93,6 +93,7 @@ src/Domain/
 ├── Installations/InstallationRules.cs # overlap over installations + exemptions
 ├── Installations/PositionExemption.cs # NEW entity + ExemptionReason
 ├── Bikes/Bike.cs                      # FrameWeightGrams
+├── Bikes/BikeCompleteness.cs          # NEW: missing positions (incomplete bikes, D12)
 ├── Usage/UsageCalculator.cs           # skip exempt positions; per-position gap summary
 └── Weights/WeightSummary.cs           # NEW: group/frame/total from current parts
 
@@ -115,19 +116,24 @@ src/Api/Features/
 ├── Bikes/*                            # frameWeightGrams; overview statuses, gaps, weights
 └── Usage/BikeUsageReader.cs           # positionStatuses, positionGaps
 
-tests/Domain.Tests/        ComponentCatalogTests, ExemptionRulesTests, UsageCalculator gap cases
-tests/Integration.Tests/   ComponentGroupsUpgradeTests, PairInstallationTests, TubelessTests,
-                           ComponentWeightTests, exemption ownership cases in AuthenticatedOwnershipTests
+tests/Domain.Tests/        ComponentCatalogTests, ComponentWeightTests, ExemptionRulesTests,
+                           WeightSummaryTests, UsageCalculator gap cases
+tests/Integration.Tests/   FullPositionsApiTests, AnyPositionReplacementTests, MoveAndRefitTests,
+                           ComponentGroupsUpgradeTests, PairInstallationTests, TubelessTests,
+                           new routes in AuthenticatedOwnershipTests
 
-packages/api-client/       openapi.json + generated types regenerated; dto.ts Position/Type unions
+packages/api-client/       openapi.json + generated types regenerated; dto.ts catalog-driven string aliases (D13)
 apps/web/src/features/components/
 ├── Components.tsx         # grouped Build/Groupset/Wheels position board from catalog
 ├── FitComponentForm.tsx   # type from position, weight field, "fit front and rear" option
-├── ComponentPassport.tsx  # weight display + details edit
+├── ComponentPassport.tsx  # weight display + details edit; move (incl. into an occupied position)
+├── ReplacementForm.tsx    # new part / part from garage / from another bike
 ├── WheelSetup.tsx         # NEW: per-wheel tubeless switch + history
 └── queries.ts / mutations.ts  # catalog query; pair, exemption, details mutations
 apps/web/src/features/bikes/BikeForm.tsx   # frame weight
-apps/web/src/features/overview/            # gap summary per position; weight subtotals
+apps/web/src/features/overview/            # gap summary per position; weight subtotals; incomplete badge
+apps/web/src/features/garage/Garage.tsx     # incomplete badge
+apps/web/src/features/rides/               # per-ride gap count; non-blocking incomplete-bike warning
 apps/web/tests, apps/web/e2e               # new unit and workflow/visual cases
 docs/backend-workflows.md                  # contract additions + upgrade note + evidence
 ```

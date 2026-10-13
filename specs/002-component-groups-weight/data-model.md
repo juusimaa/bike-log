@@ -92,10 +92,12 @@ tubed ──switch-to-tubeless(T)──▶ tubeless      ends any open inner tub
                                                 (requires its version; stale returns 409),
   ▲                                │            opens a Tubeless exemption [T, ∞)
   └────switch-to-tubed(T)──────────┘            ends the open exemption at T; the inner tube
-                                                position then shows "not recorded" until fitted
+                                                position is then `missing` (bike incomplete) until
+                                                a tube is fitted
 ```
 
-The front derailleur works the same way with `none-fitted`. Marking it as none fitted ends any open
+The front derailleur works the same way with `none-fitted`; ending "none fitted" makes the position
+`missing` until a front derailleur is fitted. Marking it as none fitted ends any open
 installation at T. The request must carry that installation's version as `expectedInstallationVersion`;
 a missing or stale version returns 409 and nothing changes.
 
@@ -109,9 +111,10 @@ a missing or stale version returns 409 and nothing changes.
 ## Read models (not stored)
 
 - **PositionStatus** (per bike position, at evaluation time): `fitted` (with component and installation),
-  `exempt` (with reason and since when), `missing` (empty now, but this bike had a part in this position
-  before and the position is not exempt; `sinceUtc` is when the last part's installation ended), or
-  `not-recorded` (never had a part on this bike).
+  `exempt` (with reason and since when), `missing` (empty now and not exempt, and this bike either had a part in
+  this position before or had an intentionally-empty period there that has ended; `sinceUtc` is the
+  later of the last installation's end and the last exemption's end), or `not-recorded` (neither has
+  ever happened on this bike).
   Display labels: `exempt` + `none-fitted` → "None fitted"; `exempt` + `tubeless` → "Not applicable
   (tubeless)"; `missing` → "Missing since …"; `not-recorded` → "Not recorded".
 - **Bike completeness** (D12): `missingPositions` — the positions currently in the `missing` state. A bike
