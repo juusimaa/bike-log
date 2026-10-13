@@ -182,6 +182,7 @@ lifetime usage continues. Quickstart scenarios 6–7.
   - `POST /api/installations/{id}/move` moves pedals from bike A to bike B, and their lifetime usage continues.
   - Moving pedals into `saddle` returns 400.
   - A destination position that is occupied returns 409, and the source installation stays open.
+  - Replace the cassette on bike A (`POST /installations/{id}/replacement-with-service`) after rides, then fit the old cassette to bike B's `cassette` position (`POST /installations`) and log a ride on each bike. The old cassette's lifetime is its bike A total plus the bike B ride, its history lists both installations, and the new cassette has only the bike A ride (US2-3).
   - A stale `expectedInstallationVersion` returns 409.
   - User B moving user A's installation returns 404.
 
@@ -199,7 +200,7 @@ lifetime usage continues. Quickstart scenarios 6–7.
 - [ ] T040 [US2] Add a "Remove" action for a currently fitted part on the position board in apps/web/src/features/components/Components.tsx. It takes a date and calls `PUT /installations/{id}` with `endUtc` and `expectedVersion`. The part stays in "Other parts in your garage", and the position shows "Not recorded" from that date. On 409, show `ConflictPanel`.
 - [ ] T041 [P] [US2] Add Vitest cases in apps/web/tests/replacement.test.tsx: the replacement form sends `newWeightGrams` and shows the catalog label, the move flow makes a single `POST /installations/{id}/move` call, and the remove action sends `endUtc` with `expectedVersion`.
 
-**Checkpoint**: Quickstart scenarios 6–7 pass.
+**Checkpoint**: Quickstart scenarios 6, 7 and 18 pass.
 
 ---
 
@@ -335,7 +336,7 @@ scenarios 10–12.
 - [ ] T064 [P] Extend apps/web/e2e/workflow.spec.ts with the following flow against the synthetic API: fit a saddle with weight, mark the front derailleur none fitted, fit a brake pair, switch the rear wheel to tubeless, log a ride, and see the saddle and brakes carry the ride with no front derailleur or rear tube gap.
 - [ ] T065 [P] Update apps/web/e2e/visual.spec.ts so the grouped position board and the wheel setup appear in the `visual-desktop`, `visual-tablet` and `visual-mobile` projects. There must be no horizontal page scroll at 390 px. Update the baselines after review.
 - [ ] T066 Update the `OpenAPI` contract assertions in tests/Integration.Tests/UiBackendContractTests.cs for the new routes, required fields, wire enums (20 types, 27 positions, 3 groups, 2 reasons) and nullable `weightGrams`/`frameWeightGrams`.
-- [ ] T067 Run every gate in specs/002-component-groups-weight/quickstart.md "Automated gates", then walk scenarios 1–17 (including the timed SC-001 walkthrough) against `./scripts/dev.sh run` + `npm run web:dev` with synthetic data. Record a dated "Local verification" entry with test counts and per-scenario results in docs/backend-workflows.md under a new "Component groups and weights (2026-10)" section. Report any failure as observed, and turn it into a fix task.
+- [ ] T067 Run every gate in specs/002-component-groups-weight/quickstart.md "Automated gates", then walk scenarios 1–18 (including the timed SC-001 walkthrough) against `./scripts/dev.sh run` + `npm run web:dev` with synthetic data. Record a dated "Local verification" entry with test counts and per-scenario results in docs/backend-workflows.md under a new "Component groups and weights (2026-10)" section. Report any failure as observed, and turn it into a fix task.
 - [ ] T068 Update apps/web/PRODUCT.md (and apps/web/DESIGN.md if the board introduces new patterns) to describe the grouped position board, weights and wheel setup.
 
 ---

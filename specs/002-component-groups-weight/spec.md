@@ -23,6 +23,10 @@ organised into three groups (Build, Groupset, Wheels), and record each component
 position behaves like the existing ones: parts are fitted, replaced and moved with dated history, and
 rides accumulate usage on whatever is fitted at the ride's start.
 
+A component exists on its own, not as part of a bike. A bike is only where a component is fitted for a
+dated period. A component can be fitted to any of the owner's bikes, or kept unfitted (removed, or bought
+as a spare), and its usage follows it from bike to bike.
+
 The frame is not a replaceable component. It is part of the bike's identity: a different frame means a
 different bike.
 
@@ -76,7 +80,11 @@ the old tyre's total is unchanged and the new tyre carries only the new ride.
    only on the new tape.
 2. **Given** pedals fitted on bike A, **When** the owner moves them to bike B on a date, **Then**
    rides on bike B after that date accumulate on the same pedals and their lifetime usage continues.
-3. **Given** the owner wants to change the frame, **When** they look for a frame position, **Then**
+3. **Given** a cassette with 4,000 km on bike A, **When** the owner replaces it on bike A with a new
+   cassette and later fits the old cassette to bike B, **Then** the old cassette keeps its 4,000 km and
+   its bike A history, rides on bike B after the fit date add to the old cassette, and rides on bike A
+   add only to the new cassette.
+4. **Given** the owner wants to change the frame, **When** they look for a frame position, **Then**
    none exists; the frame is edited as bike details, and a new frame is recorded by creating a new bike.
 
 ---
@@ -217,7 +225,8 @@ usage totals are identical before and after.
 - **FR-007**: Fitting, replacing, moving and removing components MUST work for every position with the
   same dated-history rules that already apply to chain, cassette and tyres: half-open installation
   periods, no overlap in a position, a component in only one place at a time, and replacement creating a
-  new component identity while the old one keeps its history and usage.
+  new component identity while the old one keeps its history and usage. A removed or replaced component
+  MUST remain available to fit again, on the same or another bike.
 - **FR-008**: Rides MUST allocate usage to every component fitted at the ride's start time, in every
   position.
 - **FR-009**: The owner MUST be able to mark the front derailleur position as "none fitted" from a date;
@@ -256,7 +265,8 @@ usage totals are identical before and after.
 ### Key Entities
 
 - **Component**: An individual physical part owned by a user. Type, group (derived from type), make,
-  model, weight in grams (may be unrecorded), starting usage estimate, lifetime usage.
+  model, weight in grams (may be unrecorded), starting usage estimate, lifetime usage. Not tied to a
+  bike: it is linked to bikes only through its installations, and may currently be unfitted.
 - **Component group**: Build, Groupset or Wheels. A fixed classification used for display and weight
   subtotals.
 - **Position**: A place on a bike where one component of a matching type can be fitted at a time (for

@@ -47,6 +47,7 @@ section).
 | 15 | FR-016 | As a second synthetic user, read or modify user A's exemption or component | 404 |
 | 16 | FR-017 | Run `rebuild-usage` twice | Identical totals |
 | 17 | SC-001 | Time recording all 27 positions on a fresh synthetic road bike, using front/rear pairs where offered | Under 15 minutes. Record the time |
+| 18 | US2-3 | Replace the cassette on bike A. Fit the old cassette to bike B. Ride both bikes | The old cassette keeps its bike A total and adds the bike B ride; the new cassette has only the bike A ride |
 
 Check the bike workspace at 1440, 768 and 390 px wide. All three groups must be readable, and the
 page must not scroll horizontally.
