@@ -170,9 +170,17 @@ public class AuthenticatedOwnershipTests
             BikeId = bike.Id,
             Enabled = false,
         };
+        var exemption = new PositionExemption
+        {
+            OwnerId = s.OwnerA,
+            BikeId = bike.Id,
+            Position = InstallationPosition.FrontInnerTube,
+            Reason = ExemptionReason.Tubeless,
+            StartUtc = ApiScenario.Start,
+        };
         await using (var db = TestDatabase.Open(s.ConnectionString))
         {
-            db.AddRange(bike, component, installation, ride, maintenance, reminder);
+            db.AddRange(bike, component, installation, ride, maintenance, reminder, exemption);
             await db.SaveChangesAsync();
             await new UsageRebuilder(db, new UsageCalculator()).RebuildAsync(
                 s.OwnerA,
@@ -189,6 +197,7 @@ public class AuthenticatedOwnershipTests
             $"/api/bikes/{bike.Id}/rides",
             $"/api/bikes/{bike.Id}/maintenance",
             $"/api/bikes/{bike.Id}/installations",
+            $"/api/bikes/{bike.Id}/position-exemptions",
             $"/api/components/{component.Id}",
             $"/api/components/{component.Id}/usage",
             $"/api/components/{component.Id}/maintenance",
@@ -307,7 +316,147 @@ public class AuthenticatedOwnershipTests
             ).StatusCode
         );
 
+        var ownB = await s.B.PostAsJsonAsync(
+            "/api/bikes",
+            new
+            {
+                name = "Owner B bike",
+                make = "Test",
+                model = "B",
+                kind = "road",
+                year = 2026,
+            }
+        );
+        var bikeB = (await ownB.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var foreignWrites = new (string Route, Func<Task<HttpResponseMessage>> Send)[]
+        {
+            (
+                "create exemption",
+                () =>
+                    s.B.PostAsJsonAsync(
+                        $"/api/bikes/{bike.Id}/position-exemptions",
+                        new { position = "front-derailleur", startUtc = ApiScenario.Start }
+                    )
+            ),
+            (
+                "correct exemption",
+                () =>
+                    s.B.PutAsJsonAsync(
+                        $"/api/position-exemptions/{exemption.Id}",
+                        new
+                        {
+                            startUtc = ApiScenario.Start,
+                            endUtc = ApiScenario.Start.AddDays(1),
+                            expectedVersion = 1,
+                        }
+                    )
+            ),
+            (
+                "edit component",
+                () =>
+                    s.B.PutAsJsonAsync(
+                        $"/api/components/{component.Id}",
+                        new
+                        {
+                            make = "Stolen",
+                            model = "Stolen",
+                            weightGrams = 1,
+                            expectedVersion = 1,
+                        }
+                    )
+            ),
+            (
+                "pair",
+                () =>
+                    s.B.PostAsJsonAsync(
+                        "/api/installations/pair",
+                        new
+                        {
+                            bikeId = bike.Id,
+                            type = "brake",
+                            make = "Stolen",
+                            model = "Stolen",
+                            startUtc = ApiScenario.Start,
+                        }
+                    )
+            ),
+            (
+                "move foreign installation",
+                () =>
+                    s.B.PostAsJsonAsync(
+                        $"/api/installations/{installation.Id}/move",
+                        new
+                        {
+                            toBikeId = bikeB,
+                            movedAtUtc = ApiScenario.Start.AddDays(1),
+                            expectedInstallationVersion = 1,
+                        }
+                    )
+            ),
+        };
+        foreach (var (route, send) in foreignWrites)
+        {
+            var response = await send();
+            Assert.True(
+                response.StatusCode == HttpStatusCode.NotFound,
+                $"{route}: {(int)response.StatusCode}"
+            );
+            Assert.DoesNotContain("currentVersion", await response.Content.ReadAsStringAsync());
+        }
+        var chainB = await s.B.PostAsJsonAsync(
+            "/api/components",
+            new
+            {
+                type = "chain",
+                make = "B",
+                model = "B",
+            }
+        );
+        var chainBId = (await chainB.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        var fittedB = await s.B.PostAsJsonAsync(
+            "/api/installations",
+            new
+            {
+                bikeId = bikeB,
+                componentId = chainBId,
+                position = "chain",
+                startUtc = ApiScenario.Start,
+            }
+        );
+        var installationB = (await fittedB.Content.ReadFromJsonAsync<JsonElement>())
+            .GetProperty("id")
+            .GetGuid();
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (
+                await s.B.PostAsJsonAsync(
+                    $"/api/installations/{installationB}/move",
+                    new
+                    {
+                        toBikeId = bike.Id,
+                        movedAtUtc = ApiScenario.Start.AddDays(1),
+                        expectedInstallationVersion = 1,
+                        expectedDestinationInstallationVersion = 1,
+                    }
+                )
+            ).StatusCode
+        );
+        var overviewB = await s.B.GetStringAsync($"/api/bikes/{bikeB}/overview");
+        Assert.DoesNotContain(component.Id.ToString(), overviewB);
+        Assert.DoesNotContain(installation.Id.ToString(), overviewB);
+
         await using var verify = TestDatabase.Open(s.ConnectionString);
+        Assert.Null(
+            (await verify.PositionExemptions.SingleAsync(x => x.Id == exemption.Id)).EndUtc
+        );
+        Assert.Equal(1, (await verify.Components.SingleAsync(x => x.Id == component.Id)).Version);
+        Assert.Equal(1, await verify.Components.CountAsync(x => x.OwnerId == s.OwnerA));
+        Assert.Null((await verify.Installations.SingleAsync(x => x.Id == installation.Id)).EndUtc);
+        Assert.Null((await verify.Installations.SingleAsync(x => x.Id == installationB)).EndUtc);
         Assert.Equal(
             "Owner A secret bike",
             (await verify.Bikes.SingleAsync(x => x.Id == bike.Id)).Name

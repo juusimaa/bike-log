@@ -49,6 +49,54 @@ public static class ComponentEndpoints
                 }
             )
             .Produces<ComponentResponse>(201);
+        api.MapPut(
+                "/components/{id:guid}",
+                async (
+                    Guid id,
+                    EditComponent request,
+                    BikeLogDbContext db,
+                    OwnerMutation mutation,
+                    ICurrentOwner owner,
+                    CancellationToken ct
+                ) =>
+                {
+                    var make = ComponentValues.IdentityText(request.Make, "make");
+                    var model = ComponentValues.IdentityText(request.Model, "model");
+                    var weight = ComponentValues.Weight(request.WeightGrams);
+                    var c = await mutation.ExecuteAsync(
+                        owner.OwnerId,
+                        async token =>
+                        {
+                            var c =
+                                await db.Components.SingleOrDefaultAsync(
+                                    x => x.OwnerId == owner.OwnerId && x.Id == id,
+                                    token
+                                ) ?? throw ApiInput.Missing();
+                            ApiInput.Version(request.ExpectedVersion, c.Version);
+                            c.Make = make;
+                            c.Model = model;
+                            c.WeightGrams = weight;
+                            c.Version = checked(c.Version + 1);
+                            return c;
+                        },
+                        false,
+                        ct
+                    );
+                    var history = await db
+                        .Installations.AsNoTracking()
+                        .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
+                        .OrderBy(x => x.StartUtc)
+                        .ToListAsync(ct);
+                    return ComponentResponse.From(
+                        c,
+                        history.Select(InstallationResponse.From).ToArray()
+                    );
+                }
+            )
+            .Produces<ComponentResponse>()
+            .WithDescription(
+                "Edit make, model and weight with expectedVersion. Type, installations and usage never change."
+            );
         api.MapGet(
             "/components/{id:guid}",
             async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>

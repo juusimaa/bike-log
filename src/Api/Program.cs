@@ -143,6 +143,8 @@ api.MapPositionExemptions();
 api.MapComponentEstimates();
 api.MapInstallations();
 api.MapReplacementWithService();
+api.MapMoveInstallation();
+api.MapFitPair();
 api.MapMaintenance();
 api.MapReminders();
 api.MapRides();

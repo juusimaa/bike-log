@@ -15,9 +15,9 @@ public static class ExemptionEndpoints
     public static void MapPositionExemptions(this RouteGroupBuilder api)
     {
         api.MapPost(
-                "/bikes/{bikeId:guid}/position-exemptions",
+                "/bikes/{id:guid}/position-exemptions",
                 async (
-                    Guid bikeId,
+                    Guid id,
                     CreatePositionExemption request,
                     BikeLogDbContext db,
                     OwnerMutation mutation,
@@ -40,7 +40,7 @@ public static class ExemptionEndpoints
                         {
                             if (
                                 !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == bikeId,
+                                    x => x.OwnerId == owner.OwnerId && x.Id == id,
                                     token
                                 )
                             )
@@ -51,7 +51,7 @@ public static class ExemptionEndpoints
                                 .Installations.Where(x => x.OwnerId == owner.OwnerId)
                                 .ToListAsync(token);
                             var open = installations.SingleOrDefault(x =>
-                                x.BikeId == bikeId && x.Position == position && x.EndUtc == null
+                                x.BikeId == id && x.Position == position && x.EndUtc == null
                             );
                             if (open is not null)
                             {
@@ -74,7 +74,7 @@ public static class ExemptionEndpoints
                             var e = new PositionExemption
                             {
                                 OwnerId = owner.OwnerId,
-                                BikeId = bikeId,
+                                BikeId = id,
                                 Position = position,
                                 Reason = reason,
                                 StartUtc = start,
@@ -152,31 +152,21 @@ public static class ExemptionEndpoints
                 "Correct or end an exemption with expectedVersion. Ending it means the position needs a part again."
             );
         api.MapGet(
-                "/bikes/{bikeId:guid}/position-exemptions",
-                async (
-                    Guid bikeId,
-                    BikeLogDbContext db,
-                    ICurrentOwner owner,
-                    CancellationToken ct
-                ) =>
+                "/bikes/{id:guid}/position-exemptions",
+                async (Guid id, BikeLogDbContext db, ICurrentOwner owner, CancellationToken ct) =>
                 {
                     await using var snapshot = await db.Database.BeginTransactionAsync(
                         IsolationLevel.RepeatableRead,
                         ct
                     );
-                    if (
-                        !await db.Bikes.AnyAsync(
-                            x => x.OwnerId == owner.OwnerId && x.Id == bikeId,
-                            ct
-                        )
-                    )
+                    if (!await db.Bikes.AnyAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct))
                     {
                         throw ApiInput.Missing();
                     }
                     return (
                         await db
                             .PositionExemptions.AsNoTracking()
-                            .Where(x => x.OwnerId == owner.OwnerId && x.BikeId == bikeId)
+                            .Where(x => x.OwnerId == owner.OwnerId && x.BikeId == id)
                             .OrderByDescending(x => x.StartUtc)
                             .ThenByDescending(x => x.Id)
                             .ToListAsync(ct)

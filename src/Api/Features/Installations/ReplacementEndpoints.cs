@@ -36,6 +36,7 @@ public static class ReplacementEndpoints
                             ApiInput.Version(request.ExpectedInstallationVersion, old.Version);
                             var make = ComponentValues.IdentityText(request.NewMake, "newMake");
                             var model = ComponentValues.IdentityText(request.NewModel, "newModel");
+                            var weight = ComponentValues.Weight(request.NewWeightGrams);
                             MaintenanceInput.ValidateCost(request.Cost, request.Currency);
                             var at = request.ReplacedAtUtc.ToUniversalTime();
                             ApiInput.Require(
@@ -54,6 +55,7 @@ public static class ReplacementEndpoints
                                 Type = previous.Type,
                                 Make = make,
                                 Model = model,
+                                WeightGrams = weight,
                             };
                             old.EndUtc = at;
                             old.Version = checked(old.Version + 1);
@@ -80,14 +82,9 @@ public static class ReplacementEndpoints
                                 OwnerId = owner.OwnerId,
                                 BikeId = old.BikeId,
                                 ComponentId = component.Id,
-                                Task = old.Position switch
-                                {
-                                    InstallationPosition.Chain => "Replace chain",
-                                    InstallationPosition.Cassette => "Replace cassette",
-                                    InstallationPosition.FrontTyre => "Replace front tyre",
-                                    InstallationPosition.RearTyre => "Replace rear tyre",
-                                    _ => throw new InvalidOperationException("Unknown position."),
-                                },
+                                Task =
+                                    "Replace "
+                                    + ComponentCatalog.Entry(old.Position).Label.ToLowerInvariant(),
                                 PerformedUtc = at,
                                 Cost = request.Cost,
                                 Currency = request.Currency,

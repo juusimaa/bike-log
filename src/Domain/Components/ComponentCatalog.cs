@@ -58,13 +58,13 @@ public static class ComponentCatalog
         Build(
             InstallationPosition.FrontThroughAxle,
             ComponentType.ThroughAxle,
-            "Front through axle",
+            "Front through-axle",
             WheelEnd.Front
         ),
         Build(
             InstallationPosition.RearThroughAxle,
             ComponentType.ThroughAxle,
-            "Rear through axle",
+            "Rear through-axle",
             WheelEnd.Rear
         ),
         Groupset(

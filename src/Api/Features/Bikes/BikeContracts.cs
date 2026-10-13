@@ -9,7 +9,8 @@ public sealed record CreateBike(
     [property: JsonRequired] string? Model,
     [property: JsonRequired] string? Kind,
     [property: JsonRequired] int Year,
-    string? Color
+    string? Color,
+    int? FrameWeightGrams
 );
 
 public sealed record EditBike(
@@ -19,7 +20,8 @@ public sealed record EditBike(
     [property: JsonRequired] string? Kind,
     [property: JsonRequired] int Year,
     string? Color,
-    [property: JsonRequired] long ExpectedVersion
+    [property: JsonRequired] long ExpectedVersion,
+    int? FrameWeightGrams
 );
 
 public sealed record BikeResponse(
@@ -31,10 +33,13 @@ public sealed record BikeResponse(
     string? Kind,
     int? Year,
     string? Color,
-    string DisplayName
+    string DisplayName,
+    int? FrameWeightGrams,
+    IReadOnlyList<string> MissingPositions
 )
 {
-    public static BikeResponse From(Bike b) =>
+    /// <param name="missing">Positions currently missing a part; empty means the bike is complete.</param>
+    public static BikeResponse From(Bike b, IReadOnlyList<string> missing) =>
         new(
             b.Id,
             b.Name,
@@ -52,6 +57,8 @@ public sealed record BikeResponse(
             },
             b.Year,
             b.Color,
-            BikeNaming.DisplayName(b)
+            BikeNaming.DisplayName(b),
+            b.FrameWeightGrams,
+            missing
         );
 }

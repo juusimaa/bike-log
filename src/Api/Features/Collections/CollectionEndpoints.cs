@@ -141,11 +141,16 @@ public static class CollectionEndpoints
                     string? cursor,
                     BikeLogDbContext db,
                     ICurrentOwner owner,
+                    TimeProvider clock,
                     CancellationToken ct
                 ) =>
                 {
                     var scope = OwnerScope("bikes", owner.OwnerId);
                     var (size, p) = Parse(pageSize, cursor, scope, false);
+                    await using var snapshot = await db.Database.BeginTransactionAsync(
+                        IsolationLevel.RepeatableRead,
+                        ct
+                    );
                     var q = db.Bikes.AsNoTracking().Where(x => x.OwnerId == owner.OwnerId);
                     if (p != null)
                     {
@@ -153,7 +158,20 @@ public static class CollectionEndpoints
                     }
 
                     var rows = await q.OrderBy(x => x.Id).Take(size + 1).ToListAsync(ct);
-                    return Page(rows, size, scope, BikeResponse.From, _ => null);
+                    var missing = await BikeCompletenessReader.MissingAsync(
+                        db,
+                        owner.OwnerId,
+                        rows.Select(x => x.Id).ToArray(),
+                        clock.GetUtcNow(),
+                        ct
+                    );
+                    return Page(
+                        rows,
+                        size,
+                        scope,
+                        x => BikeResponse.From(x, missing[x.Id]),
+                        _ => null
+                    );
                 }
             )
             .Produces<PageResponse<BikeResponse>>();

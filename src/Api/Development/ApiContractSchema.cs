@@ -21,7 +21,11 @@ public static class ApiContractSchema
                 type.Name.StartsWith("Create")
                 || type.Name.StartsWith("Edit")
                 || type.Name.StartsWith("Correct")
-                || type.Name is "ReplaceInstallation" or "ReplaceWithService"
+                || type.Name
+                    is "ReplaceInstallation"
+                        or "ReplaceWithService"
+                        or "MoveInstallation"
+                        or "FitPair"
             )
         )
         {

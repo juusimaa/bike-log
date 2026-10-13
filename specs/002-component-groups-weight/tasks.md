@@ -178,12 +178,12 @@ lifetime usage continues. Quickstart scenarios 6–7.
 
 ### Tests for User Story 2
 
-- [ ] T033 [P] [US2] Write tests/Integration.Tests/AnyPositionReplacementTests.cs:
+- [X] T033 [P] [US2] Write tests/Integration.Tests/AnyPositionReplacementTests.cs:
   - For one position in each group (`handlebar-tape`, `rear-derailleur`, `rear-tyre`), `POST /installations/{id}/replacement-with-service` with `newWeightGrams` ends the old installation, keeps its metres, and creates a maintenance task named `"Replace " + label.ToLowerInvariant()` (for example "Replace handlebar tape").
   - A subsequent ride counts only on the new part.
   - Every other fitted part's usage is unchanged (SC-004).
   - `POST /installations/{id}/replacement` with an unfitted spare saddle fits the spare, and the removed saddle stays available with its usage (US2-4). The same call with a part of the wrong type (pedals) returns 400; with a saddle currently fitted on another bike, it returns 409 `installation_overlap`.
-- [ ] T034 [P] [US2] Write tests/Integration.Tests/MoveAndRefitTests.cs:
+- [X] T034 [P] [US2] Write tests/Integration.Tests/MoveAndRefitTests.cs:
   - `POST /api/installations/{id}/move` moves pedals from bike A to bike B, and their lifetime usage continues.
   - Moving pedals into `saddle` returns 400.
   - A destination position that is occupied returns 409, and the source installation stays open.
@@ -196,13 +196,13 @@ lifetime usage continues. Quickstart scenarios 6–7.
 
 ### Implementation for User Story 2
 
-- [ ] T035 [US2] Update src/Api/Features/Installations/ReplacementContracts.cs and ReplacementEndpoints.cs:
+- [X] T035 [US2] Update src/Api/Features/Installations/ReplacementContracts.cs and ReplacementEndpoints.cs:
   - Add `int? NewWeightGrams`, validated via `ComponentValues.Weight` and set on the new component.
   - Replace the `Task` switch with `"Replace " + ComponentCatalog.Entry(old.Position).Label.ToLowerInvariant()`. Existing chain, cassette and tyre task strings must stay identical ("Replace chain", "Replace cassette", "Replace front tyre", "Replace rear tyre").
   - Include `group` and `weightGrams` in the returned `ComponentResponse`.
-- [ ] T036 [US2] Add `PUT /components/{id}` to src/Api/Features/Components/ComponentEndpoints.cs, with `EditComponent(make, model, int? weightGrams, long expectedVersion)` in ComponentContracts.cs. It validates like creation, returns 409 on a stale version and increments `Version`. Type cannot change, and installations and usage are untouched (US6-2).
-- [ ] T037 [US2] Create `POST /installations/{id}/move` in src/Api/Features/Installations/MoveEndpoints.cs with request `{ toBikeId, toPosition?, movedAtUtc, expectedInstallationVersion }` (contracts/api-components.md). In one `OwnerMutation`: check the version with `ApiInput.Version`, check the destination bike belongs to the owner (404 otherwise), check type compatibility with `ComponentCatalog` (`toPosition` defaults to the current position), close the old installation at `movedAtUtc`, add the new one, then run `ValidateHistory`. Response 200 `{ oldInstallation, newInstallation }`. Map the route in src/Api/Program.cs. If the destination position has an open installation, require `expectedDestinationInstallationVersion` (409 if missing or stale), end that installation at `movedAtUtc` too, and return it as `displacedInstallation`.
-- [ ] T038 [US2] Add `string[] MissingPositions` to `BikeResponse` in src/Api/Features/Bikes/BikeContracts.cs, computed by a shared helper (for example `BikeCompleteness.MissingPositions(installations, exemptions, now)` in src/Domain/Bikes/BikeCompleteness.cs) using the `missing` rule from T025. Populate it in every place a `BikeResponse` is built: src/Api/Features/Bikes/BikeEndpoints.cs, the bike list in src/Api/Features/Collections/CollectionEndpoints.cs (one installations and exemptions query per page, not per bike) and src/Api/Features/Bikes/BikeOverviewEndpoints.cs.
+- [X] T036 [US2] Add `PUT /components/{id}` to src/Api/Features/Components/ComponentEndpoints.cs, with `EditComponent(make, model, int? weightGrams, long expectedVersion)` in ComponentContracts.cs. It validates like creation, returns 409 on a stale version and increments `Version`. Type cannot change, and installations and usage are untouched (US6-2).
+- [X] T037 [US2] Create `POST /installations/{id}/move` in src/Api/Features/Installations/MoveEndpoints.cs with request `{ toBikeId, toPosition?, movedAtUtc, expectedInstallationVersion }` (contracts/api-components.md). In one `OwnerMutation`: check the version with `ApiInput.Version`, check the destination bike belongs to the owner (404 otherwise), check type compatibility with `ComponentCatalog` (`toPosition` defaults to the current position), close the old installation at `movedAtUtc`, add the new one, then run `ValidateHistory`. Response 200 `{ oldInstallation, newInstallation }`. Map the route in src/Api/Program.cs. If the destination position has an open installation, require `expectedDestinationInstallationVersion` (409 if missing or stale), end that installation at `movedAtUtc` too, and return it as `displacedInstallation`.
+- [X] T038 [US2] Add `string[] MissingPositions` to `BikeResponse` in src/Api/Features/Bikes/BikeContracts.cs, computed by a shared helper (for example `BikeCompleteness.MissingPositions(installations, exemptions, now)` in src/Domain/Bikes/BikeCompleteness.cs) using the `missing` rule from T025. Populate it in every place a `BikeResponse` is built: src/Api/Features/Bikes/BikeEndpoints.cs, the bike list in src/Api/Features/Collections/CollectionEndpoints.cs (one installations and exemptions query per page, not per bike) and src/Api/Features/Bikes/BikeOverviewEndpoints.cs.
 - [ ] T039 [US2] Regenerate the client (`npm run api:generate`, `npm run api:check`).
 - [ ] T040 [US2] Update apps/web/src/features/components/ReplacementForm.tsx: add the optional "Weight (g)" field (same validation as T030), use the catalog label in the title and help text, and send `newWeightGrams`. Add a choice between "New part" (the current fields plus weight), "Part from your garage" and "From another bike". The second option lists only parts whose `type` equals the replaced part's type and that have no open installation, and calls the existing `POST /installations/{id}/replacement` with `newComponentId`, `replacedAtUtc` and `expectedInstallationVersion`. "From another bike" lists same-type parts currently fitted on the owner's other bikes, labelled with the bike's display name, and calls `POST /installations/{source installation id}/move` with `toBikeId`, `toPosition`, the source version and this installation's version as `expectedDestinationInstallationVersion`. Warn before saving that the other bike will be marked incomplete. Add a `replaceWithExisting` mutation in apps/web/src/features/components/mutations.ts that invalidates the bike and both components. On 409, show `ConflictPanel`. Design: V3 Replace dialog.
 - [ ] T041 [US2] Add a "Move to another bike" action in apps/web/src/features/components/ComponentPassport.tsx for a currently fitted part. It takes a destination bike and a date and makes one call to `POST /installations/{id}/move` with the installation's `version` as `expectedInstallationVersion`. It reads the destination bike's `positionStatuses`: if the destination position is fitted, it warns that the current part there will return to the garage and also sends that installation's version as `expectedDestinationInstallationVersion`; if the position is empty, it sends only the source version. The call goes via a new `useMoveInstallation` mutation in apps/web/src/features/components/mutations.ts that invalidates both bikes' installation, overview and usage queries. On 409, show `ConflictPanel` and refetch. Design: V3 Move dialog (bike, position with current state, garage and incomplete warnings).
@@ -224,13 +224,13 @@ Quickstart scenario 1.
 
 ### Tests for User Story 6
 
-- [ ] T045 [P] [US6] Write tests/Integration.Tests/ComponentGroupsUpgradeTests.cs, following tests/Integration.Tests/MilestoneUpgradeTests.cs:
+- [X] T045 [P] [US6] Write tests/Integration.Tests/ComponentGroupsUpgradeTests.cs, following tests/Integration.Tests/MilestoneUpgradeTests.cs:
   - Migrate a fresh database to the migration before `ComponentGroupsWeight` (`20261009051928_AddAuthenticationOwnership`) using `IMigrator`.
   - Insert a bike, a chain, a cassette and two tyres with installations and rides via SQL, then run `ProjectionUpgrade.RebuildAllAsync` and capture totals.
   - Migrate to latest and rebuild again.
   - Assert identical `LifetimeMetres` and installation metres for every component (SC-003), unchanged maintenance task strings, `WeightGrams IS NULL`, and `group` of `groupset` for chain/cassette and `wheels` for tyres in `GET /api/components/{id}`.
   - A second rebuild yields identical totals (FR-017).
-- [ ] T046 [P] [US6] Add a case to tests/Integration.Tests/ComponentMetadataTests.cs: `PUT /api/components/{id}` on an existing chain sets `weightGrams: 9` and keeps installations, usage and `initialUsageEstimateMetres` unchanged. A stale `expectedVersion` returns 409.
+- [X] T046 [P] [US6] Add a case to tests/Integration.Tests/ComponentMetadataTests.cs: `PUT /api/components/{id}` on an existing chain sets `weightGrams: 9` and keeps installations, usage and `initialUsageEstimateMetres` unchanged. A stale `expectedVersion` returns 409.
 
 ### Implementation for User Story 6
 
@@ -250,7 +250,7 @@ Quickstart scenarios 8–9.
 
 ### Tests for User Story 3
 
-- [ ] T049 [P] [US3] Write tests/Integration.Tests/PairInstallationTests.cs:
+- [X] T049 [P] [US3] Write tests/Integration.Tests/PairInstallationTests.cs:
   - `POST /api/installations/pair` with `type: "brake"` creates 2 components (same make, model and weight; different ids) at `front-brake` and `rear-brake`.
   - Replacing only the rear leaves the front installation and usage unchanged.
   - The same works for `brake-lever` and `disc-rotor`.
@@ -260,7 +260,7 @@ Quickstart scenarios 8–9.
 
 ### Implementation for User Story 3
 
-- [ ] T050 [US3] Create src/Api/Features/Installations/PairContracts.cs and PairEndpoints.cs for `POST /installations/pair`:
+- [X] T050 [US3] Create src/Api/Features/Installations/PairContracts.cs and PairEndpoints.cs for `POST /installations/pair`:
   - Request: `{ bikeId, type, make, model, weightGrams?, startUtc, initialUsageEstimateMetres? }`.
   - 400 unless the type is in `ComponentCatalog.PairTypes`.
   - In one `OwnerMutation`: verify the bike belongs to the owner (404 otherwise), create two components, add installations at `FrontRearPositions(type)`, and run `ValidateHistory` over all proposed installations before adding anything.
@@ -285,7 +285,7 @@ scenarios 10–12.
 
 ### Tests for User Story 4
 
-- [ ] T054 [P] [US4] Write tests/Integration.Tests/TubelessTests.cs:
+- [X] T054 [P] [US4] Write tests/Integration.Tests/TubelessTests.cs:
   - With a rear inner tube fitted, `POST /api/bikes/{id}/position-exemptions { position: "rear-inner-tube", startUtc: T }` returns 201 with `reason: "tubeless"`, ends the tube installation at T and keeps its metres.
   - `positionStatuses` shows `exempt` with reason `tubeless`.
   - Rides after T produce no `rear-inner-tube` gap.
@@ -299,7 +299,7 @@ scenarios 10–12.
 
 ### Implementation for User Story 4
 
-- [ ] T055 [US4] Make T054 pass for inner tubes in src/Api/Features/Exemptions/ExemptionEndpoints.cs: closing the open tube with a version check, the maintenance conflict, and the ownership 404. Then extend the cross-user matrix in tests/Integration.Tests/AuthenticatedOwnershipTests.cs with the exemption routes, `PUT /api/components/{id}`, `POST /api/installations/pair` with another user's `bikeId`, and `POST /api/installations/{id}/move` (including a destination installation owned by another user). Each returns 404 and changes nothing. User B's overview `weights` and `positionStatuses` never include user A's components.
+- [X] T055 [US4] Make T054 pass for inner tubes in src/Api/Features/Exemptions/ExemptionEndpoints.cs: closing the open tube with a version check, the maintenance conflict, and the ownership 404. Then extend the cross-user matrix in tests/Integration.Tests/AuthenticatedOwnershipTests.cs with the exemption routes, `PUT /api/components/{id}`, `POST /api/installations/pair` with another user's `bikeId`, and `POST /api/installations/{id}/move` (including a destination installation owned by another user). Each returns 404 and changes nothing. User B's overview `weights` and `positionStatuses` never include user A's components.
 - [ ] T056 [US4] Create apps/web/src/features/components/WheelSetup.tsx: for each wheel, show "Tubed" or "Tubeless since …", with a "Switch to tubeless" / "Switch to tubed" action that takes a date. Tubeless calls `useCreateExemption`; tubed calls a new `useEndExemption` mutation (`PUT /position-exemptions/{id}` with `endUtc` and `expectedVersion`). Show a collapsible history list from `GET /bikes/{id}/position-exemptions`. Render it at the top of the Wheels section in Components.tsx, and show the inner tube rows as "Not applicable (tubeless)" while exempt. When switching to tubeless with a tube fitted, send the tube installation's `version` as `expectedInstallationVersion`; on 409, show `ConflictPanel` and refetch. Design: V3 wheel setup strip at the top of Wheels, tubeless history and switch dialogs.
 - [ ] T057 [P] [US4] Add Vitest coverage in a new apps/web/tests/wheel-setup.test.tsx: switching to tubeless sends the correct position and date, a tubeless wheel hides "Fit" on its inner tube row, and the history lists both periods.
 
@@ -316,17 +316,17 @@ scenarios 10–12.
 
 ### Tests for User Story 5
 
-- [ ] T058 [P] [US5] Write tests/Domain.Tests/WeightSummaryTests.cs: given currently fitted components across groups and a frame weight, the result has per-group `Grams` and `MissingCount`, `FrameGrams`, `TotalGrams` (frame plus parts) and `MissingCount` (parts plus 1 if the frame weight is null). A replaced (ended) installation is excluded. An empty bike gives 0 g with no parts missing.
-- [ ] T059 [P] [US5] Extend tests/Integration.Tests/BikeOverviewTests.cs:
+- [X] T058 [P] [US5] Write tests/Domain.Tests/WeightSummaryTests.cs: given currently fitted components across groups and a frame weight, the result has per-group `Grams` and `MissingCount`, `FrameGrams`, `TotalGrams` (frame plus parts) and `MissingCount` (parts plus 1 if the frame weight is null). A replaced (ended) installation is excluded. An empty bike gives 0 g with no parts missing.
+- [X] T059 [P] [US5] Extend tests/Integration.Tests/BikeOverviewTests.cs:
   - `POST/PUT /api/bikes` accepts `frameWeightGrams` (null, 1–20000; 0 returns 400).
   - The overview `weights` for the T058 scenario equals the expected JSON.
   - After replacing a part with a lighter one, the subtotal reflects only the new part.
 
 ### Implementation for User Story 5
 
-- [ ] T060 [US5] Create src/Domain/Weights/WeightSummary.cs: `static WeightSummary Calculate(IEnumerable<Component> fitted, int? frameGrams)` returning `GroupWeight[] Groups` (one per catalog group, in catalog order; never a fixed count, D13), `int? FrameGrams`, `int TotalGrams` and `int MissingCount` (D9).
-- [ ] T061 [US5] Add `int? FrameWeightGrams` to `CreateBike`, `EditBike` and `BikeResponse` in src/Api/Features/Bikes/BikeContracts.cs, validated with `ComponentValues.Weight` in src/Api/Features/Bikes/BikeEndpoints.cs.
-- [ ] T062 [US5] Add `Weights` (`{ groups: [{ group, grams, missingCount }], frameGrams, totalGrams, missingCount }`) to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs, computed in BikeOverviewEndpoints.cs from installations current at `EvaluatedAtUtc`.
+- [X] T060 [US5] Create src/Domain/Weights/WeightSummary.cs: `static WeightSummary Calculate(IEnumerable<Component> fitted, int? frameGrams)` returning `GroupWeight[] Groups` (one per catalog group, in catalog order; never a fixed count, D13), `int? FrameGrams`, `int TotalGrams` and `int MissingCount` (D9).
+- [X] T061 [US5] Add `int? FrameWeightGrams` to `CreateBike`, `EditBike` and `BikeResponse` in src/Api/Features/Bikes/BikeContracts.cs, validated with `ComponentValues.Weight` in src/Api/Features/Bikes/BikeEndpoints.cs.
+- [X] T062 [US5] Add `Weights` (`{ groups: [{ group, grams, missingCount }], frameGrams, totalGrams, missingCount }`) to `BikeOverviewResponse` in src/Api/Features/Bikes/BikeOverviewContracts.cs, computed in BikeOverviewEndpoints.cs from installations current at `EvaluatedAtUtc`.
 - [ ] T063 [US5] Regenerate the client (`npm run api:generate`, `npm run api:check`).
 - [ ] T064 [US5] Add an optional "Frame weight (g)" field to apps/web/src/features/bikes/BikeForm.tsx, with help text explaining that make and model describe the frame and that a different frame means a new bike. Design: V3 Edit bike dialog.
 - [ ] T065 [US5] Show weights in the web app (design: V3 board summary, group subtotals and Overview "Weight by group" card):

@@ -341,4 +341,132 @@ public class BikeOverviewTests
                 .GetString()
         );
     }
+
+    [Fact]
+    public async Task FrameWeightIsOptionalAndBounded()
+    {
+        await using var s = await ApiScenario.Open();
+        var created = await s.Create(
+            "/api/bikes",
+            new
+            {
+                make = "Synthetic",
+                model = "Frame",
+                kind = "road",
+                year = 2026,
+                frameWeightGrams = 1180,
+            }
+        );
+        Assert.Equal(1180, created.GetProperty("frameWeightGrams").GetInt32());
+        var id = ApiScenario.Id(created);
+        var cleared = await s.Client.PutAsJsonAsync(
+            $"/api/bikes/{id}",
+            new
+            {
+                make = "Synthetic",
+                model = "Frame",
+                kind = "road",
+                year = 2026,
+                expectedVersion = 1,
+                frameWeightGrams = (int?)null,
+            }
+        );
+        Assert.Equal(200, (int)cleared.StatusCode);
+        Assert.Equal(
+            JsonValueKind.Null,
+            (await cleared.Content.ReadFromJsonAsync<JsonElement>())
+                .GetProperty("frameWeightGrams")
+                .ValueKind
+        );
+        var zero = await s.Client.PostAsJsonAsync(
+            "/api/bikes",
+            new
+            {
+                make = "Synthetic",
+                model = "Frame",
+                kind = "road",
+                year = 2026,
+                frameWeightGrams = 0,
+            }
+        );
+        Assert.Equal(400, (int)zero.StatusCode);
+    }
+
+    [Fact]
+    public async Task WeightsSummariseCurrentPartsByGroup()
+    {
+        await using var s = await ApiScenario.Open();
+        var bike = ApiScenario.Id(
+            await s.Create(
+                "/api/bikes",
+                new
+                {
+                    make = "Synthetic",
+                    model = "Frame",
+                    kind = "road",
+                    year = 2026,
+                    frameWeightGrams = 1180,
+                }
+            )
+        );
+        await s.Fit(bike, ApiScenario.Id(await s.Part("saddle", 250)), "saddle");
+        await s.Fit(bike, ApiScenario.Id(await s.Part("handlebar", 300)), "handlebar");
+        var tape = ApiScenario.Id(
+            await s.Fit(bike, ApiScenario.Id(await s.Part("handlebar-tape", 95)), "handlebar-tape")
+        );
+        await s.Fit(bike, ApiScenario.Id(await s.Part("pedals")), "pedals");
+        var weights = (await s.Read($"/api/bikes/{bike}/overview")).GetProperty("weights");
+        Assert.Equal(
+            JsonSerializer.Serialize(
+                new
+                {
+                    groups = new object[]
+                    {
+                        new
+                        {
+                            group = "build",
+                            grams = 645,
+                            missingCount = 1,
+                        },
+                        new
+                        {
+                            group = "groupset",
+                            grams = 0,
+                            missingCount = 0,
+                        },
+                        new
+                        {
+                            group = "wheels",
+                            grams = 0,
+                            missingCount = 0,
+                        },
+                    },
+                    frameGrams = 1180,
+                    totalGrams = 1825,
+                    missingCount = 1,
+                }
+            ),
+            weights.GetRawText()
+        );
+        var replaced = await s.Client.PostAsJsonAsync(
+            $"/api/installations/{tape}/replacement-with-service",
+            new
+            {
+                newMake = "Synthetic",
+                newModel = "Light tape",
+                newWeightGrams = 60,
+                replacedAtUtc = ApiScenario.Start.AddDays(1),
+                expectedInstallationVersion = 1,
+            }
+        );
+        Assert.Equal(200, (int)replaced.StatusCode);
+        Assert.Equal(
+            610,
+            (await s.Read($"/api/bikes/{bike}/overview"))
+                .GetProperty("weights")
+                .GetProperty("groups")[0]
+                .GetProperty("grams")
+                .GetInt32()
+        );
+    }
 }
