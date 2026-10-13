@@ -41,6 +41,14 @@ recorded decision MUST be narrowed by amending this specification before plannin
 - Q: Are rides from a newly seen Strava bike held back until the owner decides? → A: No. They are
   imported immediately as "pending bike" and assigned once the owner decides.
 - Q: When a link is changed, do already-imported rides move? → A: The owner chooses each time.
+- Q: How should new Strava rides reach Bike Log in the first release? → A: Strava notifies Bike Log of
+  new, changed and deleted rides as they happen; **Sync now** remains as a manual fallback.
+- Q: When the owner disconnects Strava, or access is revoked, what happens to rides already imported?
+  → A: To follow Strava's terms, all data obtained from Strava is deleted, including imported rides and
+  everything derived from them, so component totals drop by the imported distance. Before an owner-initiated
+  disconnect, a warning shows exactly what will be lost.
+- Q: Should indoor virtual rides from trainer apps be imported? → A: Off by default; the owner can turn them
+  on, and then they count on all fitted parts like any other ride.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -262,26 +270,36 @@ stays on bike B and the components' usage reflects that.
 
 ### User Story 8 - Disconnect Strava (Priority: P3)
 
-The owner can disconnect Strava from Bike Log, or revoke access from Strava's side. After disconnection no
-more rides are imported, and rides imported from Strava are removed. Component totals are recalculated
-from the remaining (manually logged) rides. Bikes and components stay.
+The owner can disconnect Strava from Bike Log, or revoke access from Strava's side. To follow Strava's
+terms, all data obtained from Strava is then deleted: imported rides, Strava bike details and links, and
+the usage those rides added to components. Component totals therefore drop to what manually logged rides
+and starting estimates support. Because this cannot be undone, the owner is warned before disconnecting,
+with the rides, kilometres and parts affected. Bikes, components and manual rides stay.
 
 **Why this priority**: Required for trust and for provider terms, but used rarely.
 
-**Independent Test**: With imported and manual rides, disconnect, and verify that only manual rides
-remain, that component totals equal those from manual rides only, and that bikes and components are
-unchanged.
+**Independent Test**: With imported and manual rides, disconnect, and verify that no Strava data remains,
+that component totals equal those rebuilt from manual rides and starting estimates only, and that bikes and
+components are unchanged.
 
 **Acceptance Scenarios**:
 
-1. **Given** a connected account, **When** the owner chooses Disconnect, **Then** a confirmation states
-   how many imported rides will be removed and that bikes, components and manual rides stay.
-2. **Given** the owner confirms, **When** disconnection completes, **Then** imported rides, bike links,
-   ignored-bike choices and the default bike setting are removed, and component totals are recalculated.
-3. **Given** the owner revokes access from Strava's side, **When** Bike Log learns of it, **Then** the
-   same outcome as scenario 2 applies and the connection page shows "Disconnected from Strava".
-4. **Given** a disconnected owner, **When** they connect again, **Then** setup starts again as in User
-   Story 2 (their bikes still exist).
+1. **Given** a connected account, **When** the owner chooses Disconnect, **Then** a warning states that
+   all Strava data will be deleted and cannot be recovered in Bike Log, how many imported rides and
+   kilometres will be deleted, how much each affected bike's total drops, and which parts will have a
+   service reminder change; and that bikes, components and manual rides stay.
+2. **Given** the warning, **When** the owner confirms by typing or explicitly choosing "Delete Strava data
+   and disconnect", **Then** imported rides, Strava bike details, bike links, ignored-bike choices and the
+   default bike setting are deleted, and a chain with 3,400 km (2,900 km from imported rides) now shows
+   500 km.
+3. **Given** the warning, **When** the owner cancels, **Then** nothing changes.
+4. **Given** the owner revokes access from Strava's side, **When** Bike Log learns of it, **Then** the
+   same deletion as scenario 2 happens without a prior warning, and on their next visit the owner sees a
+   notice that Strava access was revoked, that Strava data was deleted, and how much each bike's total
+   dropped.
+5. **Given** a disconnected owner, **When** they connect again, **Then** setup starts again as in User
+   Story 2 (their bikes still exist), and rides from the chosen start date are imported again, restoring
+   the usage they carry.
 
 ---
 
@@ -317,6 +335,9 @@ unchanged.
   match only; the other has no suggestion.
 - **Owner changes the import start date later**: moving it earlier imports the missing older rides;
   moving it later removes imported rides before the new date after confirmation.
+- **Disconnect and maintenance**: usage since a component's last maintenance drops by the deleted rides'
+  distance too, so a service reminder that was due may stop being due. The warning names those parts.
+- **Disconnect during an import**: the import stops, and rides already imported are deleted with the rest.
 - **Imported ride edited in Bike Log**: only its bike can be changed. Distance, time and date come from
   Strava and are read-only; manual rides are unaffected.
 
@@ -361,8 +382,9 @@ unchanged.
 - **FR-012**: On first connection the owner MUST choose the import start date. The default MUST be the
   earliest component installation date in their garage, or 1 January of the current year if they have
   none.
-- **FR-013**: New rides MUST be imported automatically after they are recorded in Strava; 95% of them MUST
-  appear within 15 minutes.
+- **FR-013**: New rides MUST be imported automatically when Strava notifies Bike Log that a ride was created,
+  changed or deleted; 95% of them MUST appear within 15 minutes. Bike Log MUST NOT poll Strava on a timer
+  for new rides; a manual sync (FR-004) is the fallback when a notification is missed.
 - **FR-014**: Each imported ride MUST keep its Strava start time, distance, moving time, name and type, be
   labelled as imported from Strava, and link to the ride on Strava. These values MUST be read-only in Bike
   Log.
@@ -426,7 +448,19 @@ unchanged.
 
 - **FR-030**: The owner MUST be able to disconnect Strava. Disconnecting, or revocation of access from
   Strava's side, MUST stop imports and remove imported rides, bike links, ignored-bike choices and the
-  default bike setting, and recalculate usage. Bikes, components and manual rides MUST stay.
+  default bike setting. Bikes, components and manual rides MUST stay.
+- **FR-030a**: On disconnect, all data obtained from Strava MUST be deleted, including anything derived
+  from it: imported rides, Strava bike details and identifiers, links, and the usage imported rides added to
+  components. Component totals MUST then equal those rebuilt from the remaining manual rides, installations
+  and starting estimates. No Strava-derived total, summary or backup copy may be kept.
+- **FR-030b**: Before an owner-initiated disconnect, the system MUST show a warning that the deletion
+  cannot be undone, with the number of imported rides and kilometres to be deleted, the drop in each
+  affected bike's total, and the parts whose service reminders change. Disconnecting MUST require an
+  explicit confirmation separate from a plain "OK".
+- **FR-030c**: When access is revoked from Strava's side, the same deletion MUST happen promptly without a
+  prior warning, and the owner MUST see a notice afterwards explaining what was deleted.
+- **FR-030d**: The connect page MUST tell the owner, before they connect, that disconnecting later deletes
+  imported rides and the usage they added.
 - **FR-031**: Imported rides MUST remain distinguishable from manual rides everywhere they are shown and in
   data export.
 - **FR-032**: Strava data and links MUST be visible to and changeable by only their owner. Strava access
@@ -469,17 +503,23 @@ unchanged.
   the number of eligible Strava rides.
 - **SC-006**: After any link change, override, default bike change or disconnect, every component total
   equals the total rebuilt from rides and installation history.
-- **SC-007**: After disconnection, no Strava-derived ride remains visible to the owner, and manual-only
-  component totals are unchanged from what they would be had Strava never been connected.
+- **SC-007**: After disconnection, no Strava-derived data remains stored for the owner (rides, bike details,
+  identifiers or derived totals), and component totals equal those had Strava never been connected.
+- **SC-008**: In testing, 100% of owners shown the disconnect warning can correctly state, before
+  confirming, that their part totals will drop.
 
 ## Assumptions
 
 - A Bike Log account connects to one Strava account; multiple Strava accounts per owner are out of scope.
 - "Cycling activities" means Strava's ride types: road, gravel, mountain bike, e-bike, e-mountain bike,
   handcycle and velomobile. Virtual rides are off by default because trainer rides wear drivetrains but not
-  tyres or rims, and owners often use a separate trainer setup.
+  tyres or rims, and owners often use a separate trainer setup. Counting virtual rides only on drivetrain positions is out of scope for this
+  feature and can be added later.
 - The import start date defaults to the earliest installation date so that rides before any recorded
   components are not imported only to show gaps.
+- Bikes created from Strava bike details become the owner's own records once confirmed (they can be
+  edited like any bike), so they stay after disconnect with their Strava identifiers removed. This is to
+  be confirmed by the feasibility decision.
 - Only the ride's bike can be changed in Bike Log. Distance and time corrections are made in Strava.
 - The 30-day re-check window on manual sync matches typical correction behaviour and keeps request use
   modest. Older bike changes in Strava need a per-ride correction in Bike Log.
@@ -488,6 +528,8 @@ unchanged.
   with the Bike Log bike's name, make and model; the exact method is decided in planning.
 - Strava's per-app athlete limit (initially the developer only, later up to ten athletes after upgrade)
   bounds who can use this feature in the private pilot.
+- Automatic import needs Strava to be able to reach Bike Log, so it works only in a hosted environment.
+  In local development, rides arrive through **Sync now** and synthetic notification fixtures.
 - Web is the target client for this feature. Mobile follows after the web UI, per the project's ordering.
 - Importing from other providers (Garmin, Wahoo, files) is out of scope.
 
@@ -497,7 +539,9 @@ unchanged.
   decision in `docs/decisions/` on what Strava's API terms permit: how long imported rides may be stored,
   and whether component totals may be calculated and kept from them. If it limits storage (for example to a
   short cache), FR-014, FR-015, FR-016, FR-030, FR-035 and the success criteria MUST be revised before
-  `/speckit-plan`.
+  `/speckit-plan`. The decision MUST also confirm whether bikes the owner created from Strava bike details
+  (FR-006) may stay after disconnect as the owner's own records, with all Strava identifiers removed, as this
+  specification assumes.
 - Strava developer application settings and athlete capacity (PROJECT_PLAN.md section 5, spike step 1).
 - Feature 002 (component groups): imported rides allocate to all positions defined there.
 - Existing authentication and per-owner authorization (feature 001).

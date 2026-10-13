@@ -44,7 +44,9 @@ Use **Preview scenario** in the top bar to start from one of three states:
 - **Dialogs**: new Strava bike (create, link, ignore); change link and remove link, each asking whether
   already-imported rides move or stay and showing how many rides and kilometres would move; stop
   ignoring; change one ride's bike (kept even if Strava changes later, undone with *Follow Strava
-  again*); same ride twice; default bike; import start date; disconnect.
+  again*); same ride twice; default bike; import start date; disconnect (a warning that all Strava data is deleted, including the kilometres
+  imported rides added to parts, with each bike's total before and after, and a required *I understand*
+  tick).
 - **Bike settings** (Overview → *Bike settings*): the bike's Strava link with *Change link* and
   *Remove link*, or, for an unlinked bike, buttons to link it to an unlinked or ignored Strava bike.
 
@@ -60,13 +62,16 @@ Use **Preview scenario** in the top bar to start from one of three states:
 4. *Connected*: on the Strava page, open the menu on *Tarmac* → **Change link…** → *Winter bike* and
    compare *Move them* with *Keep them*.
 5. Use **Preview only** on the Strava page to have a new bike ridden, a ride deleted, or access revoked
-   in Strava.
-6. Narrow the window to phone width.
+   in Strava. Revoking deletes the Strava data without a warning and shows a notice afterwards.
+6. *Connected*: **Disconnect Strava** to see the deletion warning.
+7. Narrow the window to phone width.
 
 ## Notes for implementation
 
 - The rules in `v5.js` only imitate the API (assignment order in spec FR-015, re-check window,
   duplicate thresholds). The connected client must show API results and not reimplement them.
+- The real disconnect warning also names the parts whose service reminders change; the mock has no
+  parts, so it says this generally.
 - Production must use Strava's official *Connect with Strava* button and attribution assets, per
   Strava's brand guidelines. The orange button and the *Strava* tag here are stand-ins.
 - Storage of imported rides depends on the Strava feasibility decision (spec → Dependencies). If that

@@ -253,6 +253,7 @@ function render() {
   $('#page-subtitle').textContent = heading[1];
   $('#heading-actions').innerHTML = headingActions();
   $('#attention').innerHTML = view === 'strava' && c?.status === 'setup' ? '' : attention();
+  if (c && state.revoked) state.revoked = null;
   $('#view-content').innerHTML = { overview: overviewView, components: unchangedView, rides: ridesView, maintenance: unchangedView, strava: stravaView }[view]();
 }
 const needsAttention = () => !!(pending().length || unassigned().length || dupes().length);
@@ -268,6 +269,10 @@ const syncButton = () => `<button class="button secondary" type="button" data-ac
 
 /* The notices that follow the owner everywhere until resolved (FR-020, FR-022, FR-029). */
 function attention() {
+  const rv = state.revoked;
+  if (rv) {
+    return `<div class="notice" role="status">${icon('i-alert')}<div><strong>Strava access was revoked.</strong> As Strava's terms require, Bike Log deleted all Strava data: ${plural(rv.rides, 'imported ride')} (${fmtKm(rv.metres)} km)${rv.rows.length ? `, so ${rv.rows.map((x) => `${esc(bikeName(x.bike))} dropped by ${fmtKm(x.metres)} km`).join(', ')}` : ''}. Your bikes, parts and manual rides are unchanged. You can connect again at any time.</div><div class="notice-actions"><button class="button small secondary" type="button" data-action="dismiss-revoked">OK</button></div></div>`;
+  }
   if (!connected()) return '';
   const out = unresolvedBikes().map((g) => {
     const sb = sbOf(g); const n = pending(g).length;
@@ -313,7 +318,7 @@ function connectView() {
       <li>${icon('i-check')}<span>Strava doesn't know your parts. Bike Log works out their usage from your rides; Strava's own bike totals are not used.</span></li>
     </ul>
     <button class="button strava-button" type="button" data-action="connect">Connect with Strava</button>
-    <p class="fine">Strava will ask you to let Bike Log read your profile, including your bikes, and your activities, including ones only you can see. You can disconnect at any time; imported rides are then removed.</p></section>`;
+    <p class="fine">Strava will ask you to let Bike Log read your profile, including your bikes, and your activities, including ones only you can see. </p><p class="fine"><strong>If you disconnect later</strong>, Bike Log deletes all Strava data, as Strava's terms require: imported rides and the kilometres they added to your parts.</p></section>`;
 }
 
 function setupView() {
@@ -397,7 +402,7 @@ function connectedView() {
       <button class="button small secondary" type="button" data-action="sim-delete">A ride is deleted in Strava</button>
       <button class="button small secondary" type="button" data-action="sim-revoke">Access is revoked in Strava</button>
     </div></section>
-  <section class="panel"><div class="panel-head"><div><h2>Disconnect</h2><p class="fine" style="margin-top:4px">Stops importing and removes imported rides. Your bikes, parts and manual rides stay.</p></div><button class="button danger" type="button" data-action="disconnect">Disconnect Strava</button></div></section>
+  <section class="panel"><div class="panel-head"><div><h2>Disconnect</h2><p class="fine" style="margin-top:4px">Stops importing and deletes all Strava data, including the kilometres imported rides added to your parts. Bikes, parts and manual rides stay.</p></div><button class="button danger" type="button" data-action="disconnect">Disconnect Strava</button></div></section>
   <p class="attribution">Ride data powered by Strava.</p>`;
 }
 
@@ -780,21 +785,47 @@ function virtualDialog(on) {
   dialog.addEventListener('close', () => render(), { once: true });
 }
 
+/* Disconnect deletes all Strava data, including the usage imported rides added (FR-030a–c).
+   The owner is warned first and must confirm explicitly; revocation in Strava cannot warn, so a
+   notice explains afterwards what was deleted. */
+function lossByBike() {
+  const imp = imported().filter((r) => r.status === 'assigned');
+  return state.bikes.map((b) => {
+    const mine = imp.filter((r) => r.bike === b.id);
+    return { bike: b, rides: mine.length, metres: sumKm(mine), total: sumKm(ridesOfBike(b.id)) };
+  }).filter((x) => x.rides);
+}
+function lossTable(rows) {
+  return `<div class="table-wrap"><table class="loss-table"><thead><tr><th>Bike</th><th class="number">Now</th><th class="number">After</th></tr></thead>
+    <tbody>${rows.map((x) => `<tr><td>${esc(bikeName(x.bike))}</td><td class="number">${fmtKm(x.total)} km</td><td class="number"><strong>${fmtKm(x.total - x.metres)} km</strong></td></tr>`).join('')}</tbody></table></div>`;
+}
 function disconnectDialog(revoked = false) {
   const imp = imported();
+  const rows = lossByBike();
   const doIt = () => {
     clearInterval(timer);
     state.rides = state.rides.filter((r) => r.source !== 'strava');
     state.links = {}; state.conn = null; state.excluded = new Set(); state.notDup = new Set();
+    state.bikes.forEach((b) => { delete b.fromStrava; });
   };
-  if (revoked) { doIt(); render(); toast('Access was revoked in Strava. Disconnected; imported rides removed.'); return; }
+  if (revoked) { doIt(); state.revoked = { rides: imp.length, metres: sumKm(imp), rows }; render(); return; }
   openDialog({
-    title: 'Disconnect Strava?', submitLabel: 'Disconnect', danger: true,
-    render: () => `<p class="dialog-description">Bike Log stops importing from Strava.</p>
-      <ul class="intro-list" style="margin:0 0 8px"><li>${icon('i-close')}<span>${plural(imp.length, 'imported ride')} (${fmtKm(sumKm(imp))} km) are removed, and part totals recalculated from your manual rides.</span></li>
-      <li>${icon('i-close')}<span>Bike links, ignored bikes and your default bike are forgotten.</span></li>
-      <li>${icon('i-check')}<span>Your bikes, parts and manual rides stay.</span></li></ul>`,
-    submit: () => { doIt(); toast('Disconnected from Strava.'); return null; },
+    title: 'Delete Strava data and disconnect?', submitLabel: 'Delete Strava data and disconnect', danger: true, wide: true,
+    draft: { understood: false },
+    render: (d) => `<div class="notice" role="alert">${icon('i-alert')}<div><strong>This can't be undone.</strong> To follow Strava's terms, Bike Log deletes everything it got from Strava, including the kilometres your parts gained from imported rides.</div></div>
+      <ul class="intro-list" style="margin:0 0 14px">
+        <li>${icon('i-close')}<span><strong>${plural(imp.length, 'imported ride')}</strong> (${fmtKm(sumKm(imp))} km) are deleted.</span></li>
+        <li>${icon('i-close')}<span>Part totals drop by the distance of those rides, and so does usage since the last service. Service reminders that were due may no longer be due.</span></li>
+        <li>${icon('i-close')}<span>Strava bike details, links, ignored bikes and your default bike are deleted.</span></li>
+        <li>${icon('i-check')}<span>Your bikes, parts, manual rides and maintenance history stay.</span></li>
+      </ul>
+      ${rows.length ? lossTable(rows) : ''}
+      <p class="fine">If you connect again later, rides are imported again from the start date you choose.</p>
+      <label class="check" style="margin-top:14px"><input type="checkbox" name="understood" ${d.understood ? 'checked' : ''} data-rerender><span>I understand that my part totals will drop and this can't be undone</span></label>`,
+    submit: (d) => {
+      if (!d.understood) return 'Tick the box to confirm you understand what will be deleted.';
+      doIt(); toast(`Disconnected. ${plural(imp.length, 'imported ride')} and all Strava data deleted.`); return null;
+    },
   });
 }
 
@@ -879,6 +910,7 @@ document.addEventListener('click', (ev) => {
       state.rides = state.rides.filter((x) => x !== r); render(); toast(`"${r.name}" (${fmtDate(r.start)}) was deleted in Strava, so it is removed here. Part totals recalculated.`); break;
     }
     case 'sim-revoke': disconnectDialog(true); break;
+    case 'dismiss-revoked': state.revoked = null; render(); break;
     case 'add-ride': toast('Adding a manual ride is unchanged from V4.'); break;
     case 'create-bike': toast('Creating a bike is unchanged from V4.'); break;
     default: break;

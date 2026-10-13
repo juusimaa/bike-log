@@ -121,3 +121,5 @@ td,th,.table-wrap{position:relative}
   .rides-card{padding:14px 12px}
   .rides-card table{min-width:560px}
 }
+.loss-table{font-size:13px;margin-bottom:6px}
+.loss-table td{padding:8px 0}
