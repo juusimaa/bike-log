@@ -71,6 +71,11 @@ throwaway PostgreSQL service container (same pinned image as `compose.yaml`) on
 loopback port 54329 with a CI-only synthetic `.env`. Browser e2e and OpenAPI drift checks remain
 local (see [web workflows](docs/web-workflows.md)).
 
+[`.github/workflows/containers.yml`](.github/workflows/containers.yml) builds the
+`api`, `migrations` and `web` images for amd64 and arm64, and publishes them to
+GitHub Container Registry from `main` and `v*` tags. Run the same images locally
+with `./scripts/dev.sh app-up` (see [container images](docs/containers.md)).
+
 `main` is protected: changes land only through pull requests, and both `dotnet`
 and `web` checks must pass on an up-to-date branch before merging. Direct pushes
 and force pushes are blocked, including for admins.

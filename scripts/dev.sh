@@ -25,6 +25,9 @@ export BIKELOG_TEST_ADMIN="Host=127.0.0.1;Port=54329;Database=postgres;Username=
 case "${1:-}" in
   db-up) docker compose up -d --wait ;;
   db-down) docker compose down ;;
+  # Build and run the container images with synthetic data on http://127.0.0.1:3000.
+  app-up) shift; docker compose -f compose.app.yaml up --build --wait "$@" ;;
+  app-down) docker compose -f compose.app.yaml down ;;
   db-reset)
     [ "${2:-}" = --confirm-delete-local-data ] || { echo 'Refused: db-reset --confirm-delete-local-data permanently deletes all local database records.' >&2; exit 2; }
     echo 'Deleting the local PostgreSQL volume and its records.' >&2
@@ -33,5 +36,5 @@ case "${1:-}" in
   rebuild-usage) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile -- --rebuild-usage ;;
   run) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile ;;
   test) shift; "$sdk" test --solution BikeLog.slnx "$@" ;;
-  *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|db-reset --confirm-delete-local-data|migrate|rebuild-usage|run|test}' >&2; exit 2 ;;
+  *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|app-up|app-down|db-reset --confirm-delete-local-data|migrate|rebuild-usage|run|test}' >&2; exit 2 ;;
 esac
