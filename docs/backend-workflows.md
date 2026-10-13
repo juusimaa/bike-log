@@ -6,7 +6,7 @@ This milestone is synthetic-data development on loopback only. It is not authent
 
 Follow README.md to select the pinned SDK, set local `.env` credentials, start Docker PostgreSQL, apply migrations and run the API. No migrations run automatically at API startup. `GET /health/ready` queries PostgreSQL. `GET /openapi/v1.json` describes the contracts and error responses.
 
-The named `bikelog-local_postgres-data` volume survives `db-down`, restart and normal Docker shutdown. `db-reset --confirm-delete-local-data` deletes local records permanently. Test databases use unique `bikelog_test_*` names and are dropped independently of `bikelog_dev`.
+The named `bikelog-local_postgres18-data` volume survives `db-down`, restart and normal Docker shutdown. `db-reset --confirm-delete-local-data` deletes local records permanently. Test databases use unique `bikelog_test_*` names and are dropped independently of `bikelog_dev`.
 
 ## API contract
 

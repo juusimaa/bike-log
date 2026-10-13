@@ -1,12 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <IsTestProject>true</IsTestProject>
+        <OutputType>Exe</OutputType>
+        <!-- xUnit v3 asks every async call to take TestContext.Current.CancellationToken.
+             Adopting that across the suite is separate work, not part of the v3 upgrade. -->
+        <NoWarn>$(NoWarn);xUnit1051</NoWarn>
         <IsPackable>false</IsPackable>
     </PropertyGroup>
     <ItemGroup>
         <ProjectReference Include="../../src/Api/BikeLog.Api.csproj" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
-        <PackageReference Include="xunit" />
+        <PackageReference Include="xunit.v3" />
         <PackageReference Include="xunit.runner.visualstudio">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

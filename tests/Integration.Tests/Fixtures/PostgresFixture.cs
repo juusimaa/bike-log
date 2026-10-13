@@ -8,7 +8,7 @@ public sealed class PostgresFixture : IAsyncLifetime
     private string database = "";
     private string admin = "";
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         admin =
             Environment.GetEnvironmentVariable("BIKELOG_TEST_ADMIN")
@@ -30,7 +30,7 @@ public sealed class PostgresFixture : IAsyncLifetime
         ConnectionString = b.ConnectionString;
     }
 
-    public async Task DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         NpgsqlConnection.ClearAllPools();
         if (database.Length == 0)

@@ -32,6 +32,6 @@ case "${1:-}" in
   migrate) export AccessMode=Synthetic; "$sdk" tool restore; "$sdk" ef database update --project src/Infrastructure --startup-project src/Api ;;
   rebuild-usage) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile -- --rebuild-usage ;;
   run) export AccessMode=Synthetic; "$sdk" run --project src/Api --no-launch-profile ;;
-  test) shift; "$sdk" test BikeLog.slnx "$@" ;;
+  test) shift; "$sdk" test --solution BikeLog.slnx "$@" ;;
   *) echo 'Usage: scripts/dev.sh {format|lint|db-up|db-down|db-reset --confirm-delete-local-data|migrate|rebuild-usage|run|test}' >&2; exit 2 ;;
 esac
