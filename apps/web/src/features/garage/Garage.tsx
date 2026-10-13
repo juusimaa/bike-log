@@ -14,7 +14,7 @@ import type {
 } from '@bikelog/api-client';
 import { ApiError } from '@bikelog/api-client';
 import { AppShell, viewTitles } from '../../components/AppShell';
-import { BikeSelector } from '../../components/BikeSelector';
+import { BikeSwitcher } from '../../components/BikeSwitcher';
 import { EmptyState, ReadError } from '../../components/EmptyState';
 import { DirtyFormGuard } from '../../components/DirtyFormGuard';
 import { Overview } from '../overview/Overview';
@@ -110,13 +110,23 @@ export function Garage({
         new URLSearchParams(hydrated ? search : ''),
     );
     const supplied = new URLSearchParams(hydrated ? search : '').has('bike');
+    // A save resets the bike queries; keep showing the last answer until the refetch lands,
+    // so the switcher and the open view do not collapse and lose their place.
+    const [lastPages, setLastPages] = useState(bikes.data);
+    if (bikes.data && bikes.data !== lastPages) setLastPages(bikes.data);
+    const pages = bikes.data ?? (bikes.error ? undefined : lastPages);
     const all = Array.from(
         new Map(
-            bikes.data?.pages.flatMap((p) => p.items).map((b) => [b.id, b]),
+            pages?.pages.flatMap((p) => p.items).map((b) => [b.id, b]),
         ).values(),
     );
     const bikeId = selection.bikeId ?? (supplied ? null : (all[0]?.id ?? null));
     const bike = useBike(bikeId);
+    const [lastBike, setLastBike] = useState(bike.data);
+    if (bike.data && bike.data !== lastBike) setLastBike(bike.data);
+    const bikeData =
+        bike.data ??
+        (!bike.error && lastBike?.id === bikeId ? lastBike : undefined);
     const view = selection.view;
     function action(kind: GarageAction, id: Uuid | null) {
         if (onAction) request(() => onAction(kind, id));
@@ -187,7 +197,7 @@ export function Garage({
     }, [supplied, bikeId, view, history]);
     const context: GarageIntegration = {
         bikeId,
-        bike: bike.data,
+        bike: bikeData,
         view,
         requestNavigation: navigate,
         requestCancel: request,
@@ -196,7 +206,7 @@ export function Garage({
         (supplied && !selection.bikeId) ||
         (bike.error instanceof ApiError &&
             (bike.error.status === 404 || bike.error.status === 403));
-    const usable = !!bike.data && !bike.error;
+    const usable = !!bikeData && !bike.error;
     return (
         <AppShell
             view={view}
@@ -256,14 +266,19 @@ export function Garage({
                     {notice}
                 </p>
             )}
-            <BikeSelector
+            <BikeSwitcher
                 onCreate={() => action('create-bike', null)}
                 bikes={all}
+                current={
+                    bikeData ?? all.find((b) => b.id === bikeId) ?? undefined
+                }
                 disabled={navigationLocked}
                 bikeId={bikeId}
                 onSelect={(id) => navigate(id, view)}
                 hasMore={!!bikes.hasNextPage}
-                loading={bikes.isFetchingNextPage}
+                loading={
+                    bikes.isFetchingNextPage || (!pages && bikes.isPending)
+                }
                 onLoadMore={() => void bikes.fetchNextPage()}
             />
             {bikes.error && (
@@ -285,7 +300,7 @@ export function Garage({
                     onRetry={() => void bike.refetch()}
                 />
             ) : !bikeId ? (
-                bikes.isPending ? (
+                !pages && bikes.isPending ? (
                     <p role="status">Loading garage…</p>
                 ) : (
                     !bikes.error && (
@@ -297,7 +312,7 @@ export function Garage({
                         </EmptyState>
                     )
                 )
-            ) : !bike.data ? (
+            ) : !bikeData ? (
                 <p role="status">Loading bike…</p>
             ) : view === 'overview' ? (
                 <Overview
@@ -328,7 +343,7 @@ export function Garage({
             ) : (
                 (renderView?.(context) ?? (
                     <section className="card integration-placeholder">
-                        <h2>{bike.data.displayName}</h2>
+                        <h2>{bikeData.displayName}</h2>
                         <p>
                             {viewTitles[view]} will be connected in the next
                             implementation steps.

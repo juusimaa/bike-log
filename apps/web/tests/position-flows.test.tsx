@@ -3,13 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FitComponentForm } from '../src/features/components/FitComponentForm';
 import { ReplacementForm } from '../src/features/components/ReplacementForm';
-import { Components } from '../src/features/components/Components';
+import {
+    Components,
+    type JustFitted,
+} from '../src/features/components/Components';
+import { invalidateBike } from '../src/lib/query';
 import {
     ExemptionDialog,
     MoveDialog,
     RemoveDialog,
 } from '../src/features/components/PositionDialogs';
-import { BikeSelector } from '../src/components/BikeSelector';
+import { BikeSwitcher } from '../src/components/BikeSwitcher';
 import { BikeForm } from '../src/features/bikes/BikeForm';
 import { RideForm } from '../src/features/rides/RideForm';
 import { Stats } from '../src/features/overview/Stats';
@@ -451,8 +455,9 @@ it('removeEndsTheInstallationWithItsVersion', async () => {
 });
 it('incompleteBikeShowsBadgeAndRideWarningWithoutBlockingSave', async () => {
     mount(
-        <BikeSelector
+        <BikeSwitcher
             bikes={[bike('b1', 'Road', ['saddle'])]}
+            current={bike('b1', 'Road', ['saddle'])}
             bikeId="b1"
             onSelect={() => {}}
             hasMore={false}
@@ -460,7 +465,8 @@ it('incompleteBikeShowsBadgeAndRideWarningWithoutBlockingSave', async () => {
             onLoadMore={() => {}}
         />,
     );
-    expect(screen.getByText('Incomplete · 1 part missing')).toBeInTheDocument();
+    expect(screen.getByText('1 part missing')).toBeInTheDocument();
+    expect(screen.getByText('1 incomplete')).toBeInTheDocument();
     api.getBike.mockResolvedValue(bike('b1', 'Road', ['saddle']));
     mount(<RideForm bikeId="b1" onSaved={() => {}} onCancel={() => {}} />);
     expect(
@@ -615,4 +621,106 @@ it('overviewSummarisesGapsPerPositionAndFoldsTheRest', async () => {
         screen.getByRole('button', { name: 'Show all 4 positions' }),
     );
     expect(screen.getByText('Chain')).toBeInTheDocument();
+});
+it('switcherSearchesAndChoosesWithTheKeyboard', async () => {
+    const select = vi.fn();
+    mount(
+        <BikeSwitcher
+            bikes={[
+                bike('b1', 'Road'),
+                { ...bike('b2', 'Gravel'), year: 2019 },
+                bike('b3', 'Winter', ['chain']),
+            ]}
+            current={bike('b1', 'Road')}
+            bikeId="b1"
+            onSelect={select}
+            hasMore={false}
+            loading={false}
+            onLoadMore={() => {}}
+        />,
+    );
+    const trigger = screen.getByRole('button', { name: /Road.*Change bike/ });
+    expect(screen.getByText(/^3 bikes in your garage/)).toBeInTheDocument();
+    fireEvent.click(trigger);
+    const search = screen.getByRole('searchbox', { name: 'Search bikes' });
+    await waitFor(() => expect(search).toHaveFocus());
+    fireEvent.change(search, { target: { value: '2019' } });
+    expect(screen.getByText('1 match')).toBeInTheDocument();
+    fireEvent.keyDown(search, { key: 'Enter' });
+    expect(select).toHaveBeenCalledWith('b2');
+    expect(trigger).toHaveFocus();
+    expect(screen.queryByRole('dialog', { name: 'Choose a bike' })).toBeNull();
+    fireEvent.click(trigger);
+    fireEvent.change(screen.getByRole('searchbox'), {
+        target: { value: 'tandem' },
+    });
+    expect(screen.getByText(/No bike matches “tandem”/)).toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('searchbox'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Choose a bike' })).toBeNull();
+    expect(trigger).toHaveFocus();
+});
+it('fitThenNextCarriesTheDateToTheNextEmptyPositionInTheGroup', async () => {
+    const saved = vi.fn();
+    api.createInstallation.mockResolvedValue(installation('new-i', 'fork'));
+    mount(
+        <FitComponentForm
+            bikeId="b1"
+            position="fork"
+            onSaved={saved}
+            onCancel={() => {}}
+        />,
+    );
+    const next = await screen.findByRole('button', {
+        name: 'Fit, then bottom bracket',
+    });
+    fireEvent.change(screen.getByLabelText('Make'), {
+        target: { value: 'Columbus' },
+    });
+    fireEvent.change(screen.getByLabelText('Model'), {
+        target: { value: 'Futura' },
+    });
+    date('Date and time');
+    fireEvent.click(next);
+    await waitFor(() => expect(saved).toHaveBeenCalled());
+    expect(saved.mock.calls[0][1]).toEqual({
+        positions: ['fork'],
+        next: {
+            position: 'bottom-bracket',
+            wall: '2026-10-01T12:00',
+            offset: '',
+        },
+    });
+});
+it('notRecordedPanelStaysOpenAndHandsFocusToTheNextFit', async () => {
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+    client.setQueryData(['catalog'], catalog);
+    const board = (justFitted?: JustFitted) => (
+        <QueryClientProvider client={client}>
+            <Components bikeId="b1" onFit={() => {}} justFitted={justFitted} />
+        </QueryClientProvider>
+    );
+    const { rerender } = render(board());
+    const fork = await screen.findByRole('button', { name: 'Fit fork' });
+    const panel = fork.closest('details')!;
+    // Nothing recorded in the group yet, so its panel starts open.
+    expect(panel).toHaveAttribute('open');
+    api.getOverview.mockResolvedValue(
+        overview('b1', {
+            fork: status('fork', 'fitted', {
+                sinceUtc: '2026-10-01T09:00:00Z',
+            }),
+        }),
+    );
+    await invalidateBike(client, 'b1');
+    rerender(board({ bikeId: 'b1', positions: ['fork'], seq: 1, focus: true }));
+    await screen.findByText('Fitted');
+    // The group now has a fitted row, but the panel keeps the state it had.
+    const rest = screen.getByRole('button', { name: 'Fit bottom bracket' });
+    expect(rest.closest('details')).toHaveAttribute('open');
+    await waitFor(() => expect(rest).toHaveFocus());
+    expect(screen.getByText('Fitted').closest('.pos-row')).toHaveClass(
+        'just-fitted',
+    );
 });

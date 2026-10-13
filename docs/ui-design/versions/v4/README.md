@@ -1,6 +1,6 @@
 # V4: a garage with many bikes
 
-Status: **Draft for review, 2026-10-13.** Builds on the approved [V3](../v3/README.md). V3 still
+Status: **Draft for review, 2026-10-13.** Implemented in the connected web app (`apps/web`) for review; approval is still the owner's call. Builds on the approved [V3](../v3/README.md). V3 still
 governs everything below except the two changes listed here.
 
 Why: review of the running web app with a well-filled database found two problems the V1–V3 mocks
@@ -57,3 +57,13 @@ Changes live in memory until **Reset**.
   `features/components/Components.tsx`. It needs open state kept per bike and group outside the
   refetched data, so a save and refresh do not reset it.
 - The rules in `app.js` only imitate the API. The connected client keeps showing API results.
+
+## As implemented in `apps/web`
+
+- Switcher rows show the missing-parts pill but no kilometres: `GET /api/bikes` does not return a
+  distance, and the client does not add one up itself.
+- *Recently viewed* leaves out the bike already shown on the button and lasts for the browser tab
+  (session storage, bike ids only).
+- Search covers the bikes loaded so far. With more than one page, the count reads *50+ bikes* and
+  *Load more bikes* sits at the end of the list; server-side search is still to come.
+- Focus after cancelling a chained *Fit, then …* dialog returns to the group's next *Fit*.

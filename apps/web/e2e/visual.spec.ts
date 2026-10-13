@@ -1,6 +1,14 @@
 import { test, expect } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { mockVisual, bikeId, secondId } from './fixtures';
+import {
+    mockVisual,
+    bikeId,
+    secondId,
+    chooseBike,
+    openSwitcher,
+    startCreateBike,
+    fitButton,
+} from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
     console.log(`Browser ${info.project.name}: ${browser.version()}`);
 });
@@ -163,8 +171,8 @@ test('native dialog traps Tab, Escape returns focus and repeat validation focuse
 }) => {
     await mockVisual(page);
     await page.goto(`/?bike=${bikeId}`);
-    const trigger = page.getByRole('button', { name: 'Create bike' });
-    await trigger.click();
+    const trigger = page.getByRole('button', { name: /Change bike/ });
+    await startCreateBike(page);
     const dialog = page.getByRole('dialog', { name: 'Create bike' });
     await expect(dialog).toBeVisible();
     for (let i = 0; i < 15; i++) {
@@ -182,7 +190,7 @@ test('native dialog traps Tab, Escape returns focus and repeat validation focuse
     await page.keyboard.press('Escape');
     await expect(dialog).not.toBeVisible();
     await expect(trigger).toBeFocused();
-    await trigger.click();
+    await startCreateBike(page);
     for (let i = 0; i < 2; i++) {
         await page.getByRole('button', { name: 'Save bike' }).click();
         await expect(page.locator('.form-error')).toBeFocused();
@@ -194,7 +202,7 @@ test('real clean and dirty Back/Forward preserve both history branches', async (
     await mockVisual(page);
     await page.goto(`/?bike=${bikeId}&view=overview`);
     await page.getByRole('link', { name: 'Rides', exact: true }).click();
-    await page.getByRole('button', { name: 'Create bike' }).click();
+    await startCreateBike(page);
     await page.goBack();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.goForward();
@@ -295,8 +303,7 @@ test('blank component model has explicit label and fit validation refocuses ever
         });
     });
     await page.goto(`/?bike=${bikeId}&view=components`);
-    await page.locator('details.unrecorded > summary').first().click();
-    await page.getByRole('button', { name: 'Fit fork', exact: true }).click();
+    await (await fitButton(page, 'fork')).click();
     for (let i = 0; i < 2; i++) {
         await page.getByLabel('Model', { exact: true }).focus();
         await page
@@ -343,7 +350,7 @@ test('late previous-bike overview with distinct totals cannot replace selected b
     });
     await page.goto(`/?bike=${bikeId}`);
     await started;
-    await page.getByRole('button', { name: /Specialized Allez/ }).click();
+    await chooseBike(page, /Specialized Allez/);
     await expect(
         page
             .getByRole('region', { name: 'Bike statistics' })
@@ -484,10 +491,9 @@ test('design action placement, spacing and component replacement remain usable',
     const heading = page.locator('.heading-actions');
     await expect(heading.getByRole('button')).toHaveCount(2);
     await expect(
-        page
-            .locator('.bike-selector')
-            .getByRole('button', { name: 'Create bike' }),
+        (await openSwitcher(page)).getByRole('button', { name: 'Create bike' }),
     ).toBeVisible();
+    await page.keyboard.press('Escape');
     const buttons = await heading.getByRole('button').all();
     const first = (await buttons[0].boundingBox())!;
     const second = (await buttons[1].boundingBox())!;
@@ -585,8 +591,7 @@ test('grouped position board, wheel setup and part dialogs fit every viewport', 
     await noSideScroll();
     await page.screenshot({ path: info.outputPath('replace-dialog.png') });
     await page.keyboard.press('Escape');
-    await page.locator('details.unrecorded > summary').first().click();
-    await page.getByRole('button', { name: 'Fit saddle', exact: true }).click();
+    await (await fitButton(page, 'saddle')).click();
     await expect(page.getByLabel('Weight (g)')).toBeVisible();
     await noSideScroll();
     await page.screenshot({ path: info.outputPath('fit-dialog.png') });

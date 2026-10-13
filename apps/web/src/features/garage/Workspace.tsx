@@ -24,7 +24,11 @@ import { DirtyFormGuard } from '../../components/DirtyFormGuard';
 import { RideForm } from '../rides/RideForm';
 import { DeleteRideDialog } from '../rides/DeleteRideDialog';
 import { Rides } from '../rides/Rides';
-import { Components, type BoardRequest } from '../components/Components';
+import {
+    Components,
+    type BoardRequest,
+    type JustFitted,
+} from '../components/Components';
 import {
     EditPartDialog,
     EndExemptionDialog,
@@ -179,6 +183,9 @@ export function Workspace(
               bikeId: string;
               position: Position;
               exemption?: Validated<PositionExemptionResponse>;
+              /** The date carried over from the previous fit in a "Fit, then …" run. */
+              wall?: string;
+              offset?: string;
               key: number;
           }
         | { kind: 'board'; bikeId: string; request: BoardRequest; key: number }
@@ -209,6 +216,7 @@ export function Workspace(
               key: number;
           };
     const [editor, setEditor] = useState<Editor | null>(null);
+    const [justFitted, setJustFitted] = useState<JustFitted | null>(null);
     const [dirty, setDirty] = useState(false);
     const [busy, setBusy] = useState(false);
     const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -395,6 +403,7 @@ export function Workspace(
                                         key={context.bikeId}
                                         bikeId={context.bikeId}
                                         disabled={busy}
+                                        justFitted={justFitted}
                                         onFit={(position, exemption) =>
                                             context.requestCancel(() =>
                                                 setEditor({
@@ -522,13 +531,44 @@ export function Workspace(
                                     bikeId={editor.bikeId}
                                     position={editor.position}
                                     exemption={editor.exemption}
+                                    initialWall={editor.wall}
+                                    initialOffset={editor.offset}
                                     onDirtyChange={setDirty}
                                     onBusyChange={setBusy}
                                     onCancel={() =>
-                                        context.requestCancel(close)
+                                        context.requestCancel(() => {
+                                            close();
+                                            // A chained dialog has no opener left; return to the board.
+                                            if (editor.wall !== undefined)
+                                                setJustFitted(
+                                                    (last) =>
+                                                        last && {
+                                                            ...last,
+                                                            seq: last.seq + 1,
+                                                            focus: true,
+                                                        },
+                                                );
+                                        })
                                     }
-                                    onSaved={() => {
-                                        close();
+                                    onSaved={(_, outcome) => {
+                                        setJustFitted((last) => ({
+                                            bikeId: editor.bikeId,
+                                            positions: outcome.positions,
+                                            seq: (last?.seq ?? 0) + 1,
+                                            focus: !outcome.next,
+                                        }));
+                                        if (outcome.next) {
+                                            setDirty(false);
+                                            setBusy(false);
+                                            setEditor({
+                                                kind: 'fit',
+                                                bikeId: editor.bikeId,
+                                                position: outcome.next.position,
+                                                wall: outcome.next.wall,
+                                                offset: outcome.next.offset,
+                                                key: ++editorSequence.current,
+                                            });
+                                        } else close();
                                         setNotice('Component fitted.');
                                     }}
                                 />

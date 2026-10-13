@@ -2,7 +2,7 @@
 import { errorText } from '../../lib/errors';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../../lib/query';
-import { useEffect, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import type {
     ComponentResponse,
     InstallationResponse,
@@ -27,6 +27,7 @@ import {
 } from './catalog';
 import { WheelSetup } from './WheelSetup';
 import { ReadError } from '../../components/EmptyState';
+import { Icon } from '../../components/Icon';
 import { formatDate } from '../../lib/dates';
 import {
     formatGrams,
@@ -78,6 +79,20 @@ function Lifetime({ componentId }: { componentId: string }) {
         </>
     );
 }
+/**
+ * Whether each group's "not recorded" panel is open, per bike, for the life of the page.
+ * It lives outside the refetched data so a save and refresh never close it (V4).
+ */
+const panelOpen = new Map<string, boolean>();
+const panelKey = (bikeId: string, group: string) => `${bikeId}:${group}`;
+/** Positions fitted by the last save, highlighted where they land on the board. */
+export type JustFitted = {
+    bikeId: string;
+    positions: Position[];
+    seq: number;
+    /** Hand keyboard focus to the next Fit; false when another dialog opens straight away. */
+    focus: boolean;
+};
 function plural(n: number, one: string, many = `${one}s`) {
     return `${n} ${n === 1 ? one : many}`;
 }
@@ -123,6 +138,7 @@ export type ComponentsProps = {
     onFit?: (position: Position, exemption?: Exemption) => void;
     onRequest?: (request: BoardRequest) => void;
     onEditBike?: () => void;
+    justFitted?: JustFitted | null;
 };
 export function Components({
     bikeId,
@@ -132,8 +148,11 @@ export function Components({
     onFit,
     onRequest,
     onEditBike,
+    justFitted,
 }: ComponentsProps) {
     const client = useQueryClient();
+    const boardRef = useRef<HTMLDivElement>(null);
+    const [, repaint] = useReducer((n: number) => n + 1, 0);
     const [switching, setSwitching] = useState(false);
     const [status, setStatus] = useState<'current' | 'all'>('current');
     async function selectFilter(next: 'current' | 'all') {
@@ -185,7 +204,58 @@ export function Components({
     const spares = parts.filter((c) =>
         c.installations.every((i) => i.endUtc !== null),
     );
-    const snapshot = overview.data;
+    // Keep the last snapshot through a save's reset so the board stays in place.
+    const [lastSnapshot, setLastSnapshot] = useState(overview.data);
+    if (overview.data && overview.data !== lastSnapshot)
+        setLastSnapshot(overview.data);
+    const snapshot =
+        overview.data ?? (overview.error ? undefined : lastSnapshot);
+    const fresh = justFitted?.bikeId === bikeId ? justFitted : null;
+    const fittedNow = new Set(fresh?.positions);
+    // A group with nothing recorded yet starts open, since the panel is all it has. The first
+    // answer is remembered so fitting the group's first part does not fold the panel away.
+    useEffect(() => {
+        if (!catalog.data || !snapshot) return;
+        for (const group of catalog.data.groups) {
+            const key = panelKey(bikeId, group);
+            if (panelOpen.has(key)) continue;
+            panelOpen.set(
+                key,
+                catalog.data.positions
+                    .filter((p) => p.group === group)
+                    .every(
+                        (p) =>
+                            snapshot.positionStatuses.find(
+                                (s) => s.position === p.position,
+                            )?.state === 'not-recorded',
+                    ),
+            );
+        }
+    }, [catalog.data, snapshot, bikeId]);
+    const focused = useRef(0);
+    useEffect(() => {
+        if (!fresh?.focus || focused.current === fresh.seq || !catalog.data)
+            return;
+        const landed = fresh.positions.some(
+            (p) =>
+                snapshot?.positionStatuses.find((s) => s.position === p)
+                    ?.state === 'fitted',
+        );
+        if (!landed) return;
+        focused.current = fresh.seq;
+        const group = catalog.data.positions.find(
+            (p) => p.position === fresh.positions[0],
+        )?.group;
+        const board = boardRef.current;
+        const target =
+            board?.querySelector<HTMLElement>(
+                `[data-group="${group}"] [data-fit]:not(:disabled)`,
+            ) ??
+            board?.querySelector<HTMLElement>(
+                `[data-position="${fresh.positions[0]}"] .part-link`,
+            );
+        target?.focus();
+    }, [fresh, snapshot, catalog.data]);
     const statuses = snapshot?.positionStatuses ?? [];
     const openExemption = (position: string) =>
         exemptions.data?.find(
@@ -218,9 +288,22 @@ export function Components({
                 ? fitted.get(s.installationId)
                 : undefined;
             const c = identity?.component;
+            const flash = fittedNow.has(entry.position);
             return (
-                <div className="pos-row state-fitted" key={entry.position}>
-                    <span className="pos-label">{entry.label}</span>
+                <div
+                    className={`pos-row state-fitted${flash ? ' just-fitted' : ''}`}
+                    key={entry.position}
+                    data-position={entry.position}
+                >
+                    <span className="pos-label">
+                        {entry.label}
+                        {flash && (
+                            <span className="fitted-tag">
+                                <Icon name="check" />
+                                Fitted
+                            </span>
+                        )}
+                    </span>
                     <span className="part">
                         {c ? (
                             <button
@@ -393,7 +476,11 @@ export function Components({
         }
         if (s?.state === 'missing') {
             return (
-                <div className="pos-row state-missing" key={entry.position}>
+                <div
+                    className="pos-row state-missing"
+                    key={entry.position}
+                    data-position={entry.position}
+                >
                     <span className="pos-label">{entry.label}</span>
                     <span className="part">
                         <span className="pill missing">
@@ -412,6 +499,7 @@ export function Components({
                                 type="button"
                                 className="button small primary keep"
                                 disabled={disabled}
+                                data-fit
                                 aria-label={`Fit ${label}`}
                                 onClick={() => onFit(entry.position)}
                             >
@@ -424,7 +512,11 @@ export function Components({
             );
         }
         return (
-            <div className="pos-row state-empty" key={entry.position}>
+            <div
+                className="pos-row state-empty"
+                key={entry.position}
+                data-position={entry.position}
+            >
                 <span className="pos-label">{entry.label}</span>
                 <span className="part">
                     <span className="pill quiet">Not recorded</span>
@@ -437,10 +529,12 @@ export function Components({
                             type="button"
                             className="text-button keep"
                             disabled={disabled}
+                            data-fit
                             aria-label={`Fit ${label}`}
                             onClick={() => onFit(entry.position)}
                         >
-                            <span aria-hidden="true">＋</span>Fit
+                            <Icon name="plus" />
+                            Fit
                         </button>
                     )}
                     {noneFittedMenu}
@@ -460,6 +554,8 @@ export function Components({
                 (p) => stateOf(p)?.state === 'not-recorded',
             );
             const subtotal = weights?.groups.find((g) => g.group === group);
+            const key = panelKey(bikeId, group);
+            const open = panelOpen.get(key) ?? main.length === 0;
             const showWheels =
                 group ===
                 entries.find((p) => p.exemption === 'tubeless')?.group;
@@ -467,6 +563,7 @@ export function Components({
                 <section
                     className="group"
                     key={group}
+                    data-group={group}
                     aria-labelledby={`group-${group}`}
                 >
                     <div className="group-head">
@@ -509,8 +606,17 @@ export function Components({
                     )}
                     {main.map((p) => row(p, stateOf(p)))}
                     {quiet.length > 0 && (
-                        <details className="unrecorded">
+                        <details
+                            className="unrecorded"
+                            open={open}
+                            onToggle={(e) => {
+                                if (e.currentTarget.open === open) return;
+                                panelOpen.set(key, e.currentTarget.open);
+                                repaint();
+                            }}
+                        >
                             <summary>
+                                <Icon name="plus" className="lead" />
                                 <span>
                                     <strong>{quiet.length} not recorded</strong>{' '}
                                     ·{' '}
@@ -518,6 +624,7 @@ export function Components({
                                         .map((p) => p.label.toLowerCase())
                                         .join(', ')}
                                 </span>
+                                <Icon name="chevron" className="chev" />
                             </summary>
                             {quiet.map((p) => row(p, stateOf(p)))}
                         </details>
@@ -527,7 +634,7 @@ export function Components({
         });
     }
     return (
-        <div className="position-board">
+        <div className="position-board" ref={boardRef}>
             {missing.length > 0 && catalog.data && (
                 <div className="notice" role="status">
                     <p>
