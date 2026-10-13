@@ -94,16 +94,24 @@ export function DeleteRideDialog({
                         : []),
                 ]}
             />
-            <button
-                className="button primary"
-                disabled={busy || recovery}
-                onClick={() => void submit()}
-            >
-                Delete ride
-            </button>
-            <button disabled={busy} onClick={cancel}>
-                Cancel
-            </button>
+            <div className="dialog-actions">
+                <button
+                    type="button"
+                    className="button secondary"
+                    disabled={busy}
+                    onClick={cancel}
+                >
+                    Cancel
+                </button>
+                <button
+                    type="button"
+                    className="button primary"
+                    disabled={busy || recovery}
+                    onClick={() => void submit()}
+                >
+                    Delete ride
+                </button>
+            </div>
             <RideRecovery
                 phase={remove.state.phase}
                 refreshed={remove.state.refreshed}

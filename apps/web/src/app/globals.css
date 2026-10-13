@@ -830,6 +830,31 @@ dialog::backdrop {
     outline: 3px solid #7ba78a;
     outline-offset: 2px;
 }
+/* Safety net: recovery and retry buttons without a class still read as product
+   buttons (small secondary), never as the browser's grey default. */
+.form-dialog button:not([class]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    margin: 6px 6px 0 0;
+    padding: 6px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.form-dialog button:not([class]):hover {
+    background: #f0f3eb;
+}
+.form-dialog button:not([class]):disabled {
+    opacity: 0.5;
+    cursor: default;
+}
 @media (max-width: 650px) {
     .form-dialog > .dialog-heading {
         padding: 20px 58px 14px 20px;
@@ -896,6 +921,7 @@ dialog::backdrop {
 }
 .dialog-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 8px;
     margin-top: 22px;
@@ -2651,9 +2677,6 @@ dialog.wide {
 .fitted-tag .icon {
     width: 13px;
     height: 13px;
-}
-.dialog-actions {
-    flex-wrap: wrap;
 }
 @media (prefers-reduced-motion: reduce) {
     .pos-row.just-fitted {

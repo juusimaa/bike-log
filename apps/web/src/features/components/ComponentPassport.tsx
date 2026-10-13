@@ -52,7 +52,11 @@ function CurrentStatus({
     return (
         <span>
             Current status unavailable.{' '}
-            <button onClick={() => void current.refetch()}>
+            <button
+                type="button"
+                className="button small secondary"
+                onClick={() => void current.refetch()}
+            >
                 Retry current status
             </button>
         </span>
@@ -200,7 +204,11 @@ export function ComponentPassport({
             {detail.isError && (
                 <p role="alert">
                     Couldn’t load this part.{' '}
-                    <button onClick={() => void detail.refetch()}>
+                    <button
+                        type="button"
+                        className="button small secondary"
+                        onClick={() => void detail.refetch()}
+                    >
                         Retry component
                     </button>
                 </p>
@@ -268,7 +276,11 @@ export function ComponentPassport({
                     {usage.isError && (
                         <p role="alert">
                             Couldn’t load distance and duration.{' '}
-                            <button onClick={() => void usage.refetch()}>
+                            <button
+                                type="button"
+                                className="button small secondary"
+                                onClick={() => void usage.refetch()}
+                            >
                                 Retry usage
                             </button>
                         </p>
@@ -342,68 +354,71 @@ export function ComponentPassport({
                             );
                         })}
                     </ol>
-                </>
-            )}
-            <h3>Service history</h3>
-            <p className="passport-note">
-                Includes service done while it was on other bikes.
-            </p>
-            {maintenance.isPending && <p>Loading service history…</p>}
-            {maintenance.isError && (
-                <p role="alert">
-                    Couldn’t load service history.{' '}
-                    <button onClick={() => void maintenance.refetch()}>
-                        Retry component maintenance
-                    </button>
-                </p>
-            )}
-            {maintenance.isSuccess &&
-                services.length === 0 &&
-                !maintenance.hasNextPage && (
-                    <p>No service recorded for this part yet.</p>
-                )}
-            {services.length > 0 && (
-                <ol className="history">
-                    {services.map((m) => (
-                        <li key={m.id}>
-                            <span>
-                                <strong>{m.task}</strong>
-                                <small>
-                                    {formatDate(m.performedUtc)} · on{' '}
-                                    <BikeIdentity bikeId={m.bikeId} />
-                                </small>
-                                {m.notes && <small>{m.notes}</small>}
-                            </span>
-                            <span className="history-figure">
-                                {m.cost === null ? (
-                                    <small>Cost unknown</small>
-                                ) : (
-                                    <span className="tabular">
-                                        {m.currency === 'EUR'
-                                            ? formatEuroCost(m.cost)
-                                            : `${m.cost} ${m.currency ?? 'currency unknown'}`}
+                    <h3>Service history</h3>
+                    <p className="passport-note">
+                        Includes service done while it was on other bikes.
+                    </p>
+                    {maintenance.isPending && <p>Loading service history…</p>}
+                    {maintenance.isError && (
+                        <p role="alert">
+                            Couldn’t load service history.{' '}
+                            <button
+                                type="button"
+                                className="button small secondary"
+                                onClick={() => void maintenance.refetch()}
+                            >
+                                Retry component maintenance
+                            </button>
+                        </p>
+                    )}
+                    {maintenance.isSuccess &&
+                        services.length === 0 &&
+                        !maintenance.hasNextPage && (
+                            <p>No service recorded for this part yet.</p>
+                        )}
+                    {services.length > 0 && (
+                        <ol className="history">
+                            {services.map((m) => (
+                                <li key={m.id}>
+                                    <span>
+                                        <strong>{m.task}</strong>
+                                        <small>
+                                            {formatDate(m.performedUtc)} · on{' '}
+                                            <BikeIdentity bikeId={m.bikeId} />
+                                        </small>
+                                        {m.notes && <small>{m.notes}</small>}
                                     </span>
-                                )}
-                            </span>
-                        </li>
-                    ))}
-                </ol>
-            )}
-            {maintenance.hasNextPage && (
-                <button
-                    disabled={maintenance.isFetchingNextPage}
-                    onClick={() => void maintenance.fetchNextPage()}
-                >
-                    {maintenance.isFetchingNextPage
-                        ? 'Loading service history…'
-                        : 'Load more service history'}
-                </button>
-            )}
-            {c && (
-                <>
+                                    <span className="history-figure">
+                                        {m.cost === null ? (
+                                            <small>Cost unknown</small>
+                                        ) : (
+                                            <span className="tabular">
+                                                {m.currency === 'EUR'
+                                                    ? formatEuroCost(m.cost)
+                                                    : `${m.cost} ${m.currency ?? 'currency unknown'}`}
+                                            </span>
+                                        )}
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+                    {maintenance.hasNextPage && (
+                        <button
+                            type="button"
+                            className="button small secondary"
+                            disabled={maintenance.isFetchingNextPage}
+                            onClick={() => void maintenance.fetchNextPage()}
+                        >
+                            {maintenance.isFetchingNextPage
+                                ? 'Loading service history…'
+                                : 'Load more service history'}
+                        </button>
+                    )}
                     <div className="passport-actions">
                         {onEditDetails && (
                             <button
+                                type="button"
                                 className="button small secondary"
                                 onClick={() => onEditDetails(c)}
                             >
@@ -412,6 +427,7 @@ export function ComponentPassport({
                         )}
                         {onEditEstimate && (
                             <button
+                                type="button"
                                 className="button small secondary"
                                 onClick={() => onEditEstimate(c)}
                             >
@@ -420,6 +436,7 @@ export function ComponentPassport({
                         )}
                         {open && onMove && (
                             <button
+                                type="button"
                                 className="button small secondary"
                                 onClick={() => onMove(open, c)}
                             >
@@ -428,6 +445,7 @@ export function ComponentPassport({
                         )}
                         {open && onRemove && (
                             <button
+                                type="button"
                                 className="button small secondary"
                                 onClick={() => onRemove(open, c)}
                             >
