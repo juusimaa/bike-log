@@ -179,7 +179,7 @@ Automated gates on branch `002-component-groups-weight`: CSharpier and `dotnet b
 | 14 | Pass | API 400 for 0, −5, 20001, 12.5; web field errors for 0 and 12.5 |
 | 15 | Pass | `AuthenticatedOwnershipTests`: exemption, component edit, pair and move routes return 404 for another user |
 | 16 | Pass | Two `rebuild-usage` runs on the local database (3 owners): identical usage digest |
-| 17 | Not run | Timed SC-001 walkthrough needs a person; pending owner check |
+| 17 | Pass | Owner walkthrough on 2026-10-13: all 27 positions recorded through the web app in about 6 minutes (target under 15) |
 | 18 | Pass | `MoveAndRefitTests` old cassette refit to bike B |
 | 19 | Pass | Move taking an occupied saddle: one call, displaced saddle to garage, lifetime continues |
 | 20 | Pass | `missingPositions` on bike, list and overview; ride still saves with a saddle gap; web badge and non-blocking ride warning |
