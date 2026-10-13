@@ -144,7 +144,6 @@ it('passportUsesOwnerWideHistory', async () => {
     mount(
         <ComponentPassport
             componentId="c1"
-            selectedBikeId="b1"
             onClose={() => {}}
         />,
     );
@@ -178,7 +177,6 @@ it('incompleteDurationAndUnfittedPartAreExplainable', async () => {
     mount(
         <ComponentPassport
             componentId="c1"
-            selectedBikeId="b1"
             onClose={() => {}}
         />,
     );
@@ -293,7 +291,6 @@ it('unresolvedBikeShowsUuidAndNeverSelectedBikeName', async () => {
     mount(
         <ComponentPassport
             componentId="c1"
-            selectedBikeId="b1"
             onClose={() => {}}
         />,
     );
@@ -556,16 +553,25 @@ it('passport displays make and model alongside prose durations', async () => {
     mount(
         <ComponentPassport
             componentId="c1"
-            selectedBikeId="b1"
             onClose={() => {}}
         />,
     );
     expect(
         await screen.findByRole('dialog', {
-            name: 'Synthetic Retained chain passport',
+            name: 'Synthetic Retained chain',
         }),
     ).toBeVisible();
-    expect(screen.getByText('Make: Synthetic')).toBeVisible();
-    expect(screen.getByText('Model: Retained chain')).toBeVisible();
+    expect(screen.getByText('Component ID: c1')).not.toBeVisible();
     expect(await screen.findByText('Recorded duration: 1.5 min')).toBeVisible();
+});
+it('passport names an empty service history instead of showing a bike id', async () => {
+    api.listComponentMaintenance.mockResolvedValue({
+        items: [],
+        nextCursor: null,
+    });
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
+    expect(
+        await screen.findByText('No service recorded for this part yet.'),
+    ).toBeVisible();
+    expect(screen.queryByText(/b1/)).not.toBeInTheDocument();
 });

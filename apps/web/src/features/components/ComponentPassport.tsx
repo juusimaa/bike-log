@@ -42,14 +42,17 @@ function CurrentStatus({
     const fitted = current.data?.pages.some((p) =>
         p.items.some((r) => r.installation.id === installationId),
     );
+    const failed = current.isError || isFetchNextPageError;
     return (
         <span>
             {fitted
                 ? 'Currently fitted'
                 : current.isSuccess && !current.hasNextPage
                   ? 'Not currently fitted'
-                  : 'Current status unavailable'}
-            {current.isError && (
+                  : failed
+                    ? 'Current status unavailable. '
+                    : 'Checking current status…'}
+            {failed && (
                 <button onClick={() => void current.refetch()}>
                     Retry current status
                 </button>
@@ -59,7 +62,6 @@ function CurrentStatus({
 }
 export function ComponentPassport({
     componentId,
-    selectedBikeId,
     onClose,
     onEditEstimate,
     onEditDetails,
@@ -67,7 +69,6 @@ export function ComponentPassport({
     onRemove,
 }: {
     componentId: string;
-    selectedBikeId: string;
     onClose: () => void;
     onEditEstimate?: (component: Validated<ComponentResponse>) => void;
     onEditDetails?: (component: Validated<ComponentResponse>) => void;
@@ -85,16 +86,23 @@ export function ComponentPassport({
     const open = detail.data?.installations.find((i) => i.endUtc === null);
     const c = detail.data,
         u = usage.data;
+    const services = [
+        ...new Map(
+            (maintenance.data?.pages.flatMap((p) => p.items) ?? []).map(
+                (m) => [m.id, m],
+            ),
+        ).values(),
+    ];
     return (
         <Dialog
             open
-            title={c ? `${c.make} ${c.model} passport` : 'Component passport'}
+            title={c ? `${c.make} ${c.model}` : 'History and details'}
             onCancel={onClose}
         >
-            {detail.isPending && <p>Loading component…</p>}
+            {detail.isPending && <p>Loading part…</p>}
             {detail.isError && (
                 <p role="alert">
-                    Unable to load component.{' '}
+                    Couldn’t load this part.{' '}
                     <button onClick={() => void detail.refetch()}>
                         Retry component
                     </button>
@@ -102,14 +110,11 @@ export function ComponentPassport({
             )}
             {c && (
                 <>
-                    <p>Component identity: {c.id}</p>
                     <p>Type: {capitalised(typeLabel(catalog, c.type))}</p>
-                    <p>Make: {c.make}</p>
-                    <p>Model: {c.model}</p>
                     <p>
                         Weight:{' '}
                         {c.weightGrams === null
-                            ? 'Weight not recorded'
+                            ? 'not recorded'
                             : formatGrams(c.weightGrams)}
                     </p>
                     <div className="passport-actions">
@@ -147,9 +152,6 @@ export function ComponentPassport({
                             Edit starting estimate
                         </button>
                     )}
-                    {c.installations.length === 0 && (
-                        <p>Never fitted. No installation chapters.</p>
-                    )}
                     {u && (
                         <>
                             <p>
@@ -169,11 +171,17 @@ export function ComponentPassport({
                         </>
                     )}
                     {usage.isError && (
-                        <button onClick={() => void usage.refetch()}>
-                            Retry usage
-                        </button>
+                        <p role="alert">
+                            Couldn’t load distance and duration.{' '}
+                            <button onClick={() => void usage.refetch()}>
+                                Retry usage
+                            </button>
+                        </p>
                     )}
-                    <h3>All dated installation chapters</h3>
+                    <h3>Installation history</h3>
+                    {c.installations.length === 0 && (
+                        <p>Never fitted to a bike.</p>
+                    )}
                     {c.installations.map((i) => {
                         const chapter = u?.installations.find(
                             (x) => x.installation.id === i.id,
@@ -186,7 +194,7 @@ export function ComponentPassport({
                                     {formatDateTime(i.startUtc)} —{' '}
                                     {i.endUtc
                                         ? formatDateTime(i.endUtc)
-                                        : 'Open-ended'}
+                                        : 'now'}
                                 </p>
                                 <CurrentStatus
                                     bikeId={i.bikeId}
@@ -208,25 +216,29 @@ export function ComponentPassport({
                             </article>
                         );
                     })}
+                    <details>
+                        <summary>Technical details</summary>
+                        <p>Component ID: {c.id}</p>
+                    </details>
                 </>
             )}
-            <h3>Owner-wide maintenance history</h3>
-            <p>
-                Includes service on bikes other than the selected bike (
-                {selectedBikeId}).
-            </p>
+            <h3>Service history</h3>
+            <p>Includes service done while it was on other bikes.</p>
+            {maintenance.isPending && <p>Loading service history…</p>}
             {maintenance.isError && (
-                <button onClick={() => void maintenance.refetch()}>
-                    Retry component maintenance
-                </button>
+                <p role="alert">
+                    Couldn’t load service history.{' '}
+                    <button onClick={() => void maintenance.refetch()}>
+                        Retry component maintenance
+                    </button>
+                </p>
             )}
-            {[
-                ...new Map(
-                    (maintenance.data?.pages.flatMap((p) => p.items) ?? []).map(
-                        (m) => [m.id, m],
-                    ),
-                ).values(),
-            ].map((m) => (
+            {maintenance.isSuccess &&
+                services.length === 0 &&
+                !maintenance.hasNextPage && (
+                    <p>No service recorded for this part yet.</p>
+                )}
+            {services.map((m) => (
                 <article key={m.id}>
                     <h4>{m.task}</h4>
                     <BikeIdentity bikeId={m.bikeId} />
@@ -246,10 +258,12 @@ export function ComponentPassport({
                     disabled={maintenance.isFetchingNextPage}
                     onClick={() => void maintenance.fetchNextPage()}
                 >
-                    Load more component maintenance
+                    {maintenance.isFetchingNextPage
+                        ? 'Loading service history…'
+                        : 'Load more service history'}
                 </button>
             )}
-            <button onClick={onClose}>Close passport</button>
+            <button onClick={onClose}>Close</button>
         </Dialog>
     );
 }

@@ -236,8 +236,9 @@ test('real adapter persistence: two bikes, all positions, estimates, atomic repl
             exact: true,
         })
         .click();
+    await reload.getByText('Technical details', { exact: true }).click();
     await expect(
-        reload.getByText(`Component identity: ${old.component.id}`, {
+        reload.getByText(`Component ID: ${old.component.id}`, {
             exact: true,
         }),
     ).toBeVisible();
