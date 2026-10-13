@@ -1,0 +1,15 @@
+**/node_modules
+**/.next
+**/bin
+**/obj
+**/TestResults
+**/*.tsbuildinfo
+.git
+.github
+.local
+.impeccable
+.env
+.env.*
+docs
+tests
+probes

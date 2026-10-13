@@ -1,0 +1,70 @@
+# Runs the container images locally with synthetic data: scripts/dev.sh app-up.
+# A separate project and volume, so the development database is untouched.
+#
+# Every service shares the db container's network namespace, as containers in
+# one Azure Container App share localhost. The API's synthetic mode accepts only
+# loopback callers and a loopback database, and the web proxy expects the API at
+# http://127.0.0.1:5080. Only the web port is published. The connection strings
+# disable GSS encryption: the slim .NET images ship no Kerberos library.
+name: bikelog-app
+services:
+  db:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Copy .env.example to .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a local password}
+      POSTGRES_DB: bikelog_dev
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - app-postgres18-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d bikelog_dev"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  migrate:
+    image: ${BIKELOG_IMAGE_PREFIX:-bikelog}/migrations:${BIKELOG_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: src/Api/Dockerfile
+      target: migrations
+    network_mode: service:db
+    environment:
+      ConnectionStrings__Postgres: Host=127.0.0.1;Port=5432;Database=bikelog_dev;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    image: ${BIKELOG_IMAGE_PREFIX:-bikelog}/api:${BIKELOG_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: src/Api/Dockerfile
+      target: api
+    network_mode: service:db
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      AccessMode: Synthetic
+      LocalSyntheticMode: "true"
+      ASPNETCORE_URLS: http://127.0.0.1:5080
+      ConnectionStrings__Postgres: Host=127.0.0.1;Port=5432;Database=bikelog_dev;Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};GSS Encryption Mode=Disable
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    image: ${BIKELOG_IMAGE_PREFIX:-bikelog}/web:${BIKELOG_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    network_mode: service:db
+    environment:
+      BIKELOG_WEB_ACCESS_MODE: Synthetic
+    depends_on:
+      - api
+
+volumes:
+  app-postgres18-data:
