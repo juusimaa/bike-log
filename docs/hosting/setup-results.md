@@ -60,7 +60,7 @@ the code or docs named.
 
 | Scenario | Date | Result |
 | --- | --- | --- |
-| C1 first deployment: duration, migration execution, `/healthz` | | |
+| C1 first deployment: duration, migration execution, `/healthz` | 2026-10-14 | Dispatched for `sha-e15d0b7` (run 38514727538). First attempt failed sign-in (immutable OIDC subject; see findings). The re-run created the environment, app and jobs in 3 min 43 s; migration execution `job-bikelog-migrate-g3g8t6y` succeeded in 35 s; the app update took 1 min 37 s; total 6 min 25 s. The run then failed in "Wait for the new revision" on its first poll: a `read` at end of input under `bash -e` (fixed in `deploy.yml`). The revision itself was Provisioned, Healthy and `RunningAtMaxScale`. From the allowed address: `/healthz` 200 `ok` in 0.15 s; `/openapi/v1.json` 404; `http://` 301 to `https://`; HSTS, `nosniff`, `same-origin` and `DENY` headers present. |
 | C2 database round trip median (backup log) | | |
 | C3 sign-in from a phone on mobile data and a laptop, timed | | |
 | C4 refusals: uninvited address; `http://`; altered Host; foreign Origin; `/openapi/v1.json`; no API ingress; other address while the allow-list is set | | |

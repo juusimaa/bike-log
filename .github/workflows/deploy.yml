@@ -161,8 +161,9 @@ jobs:
           echo "revision=$revision" >> "$GITHUB_OUTPUT"
           [ "$revision" != "$PREVIOUS" ] || echo 'No template change, so no new revision.'
           for _ in $(seq 60); do
-            read -r provisioning running health < <(az containerapp revision show -g "$RG" -n ca-bikelog \
-              --revision "$revision" --query "[properties.provisioningState, properties.runningState, properties.healthState]" -o tsv | tr '\n' ' ')
+            state=$(az containerapp revision show -g "$RG" -n ca-bikelog --revision "$revision" -o json \
+              --query "{p: properties.provisioningState, r: properties.runningState, h: properties.healthState}")
+            provisioning=$(jq -r .p <<< "$state") running=$(jq -r .r <<< "$state") health=$(jq -r .h <<< "$state")
             echo "$revision: provisioning=$provisioning running=$running health=$health"
             case "$provisioning:$running" in
               Failed:* | *:Failed | *:Degraded)
