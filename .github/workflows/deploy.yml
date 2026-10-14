@@ -1,14 +1,17 @@
 name: Deploy
 
-# Deploys a published commit to the hosted environment by image digest
-# (research D12, D13; contracts/operations.md "Deploy").
-#   - after Containers publishes a push to main, with migrations;
-#   - by hand for a rollback:
-#       gh workflow run deploy.yml -f image_tag=sha-<previous> -f skip_migrations=true
-# Signs in with a short-lived OIDC token for the `production` environment. No
-# credential is read here: OWNER_ALERT_EMAIL, AIVEN_DATABASE_HOST and
-# INGRESS_ALLOW_CIDRS are environment secrets only so that GitHub masks them in
-# these public logs.
+# Deploys a published commit to the UpCloud server by image digest (spec 005,
+# research D4 and D5; docs/hosting/upcloud.md "Deploy"):
+#   - after Containers publishes a push to main;
+#   - by hand:     gh workflow run deploy.yml -f image_tag=sha-<7 hex>
+#   - rollback:    gh workflow run deploy.yml -f rollback=true
+# The runner signs in over SSH with a key whose only use on the server is the forced
+# command bikelog-deploy, which accepts deploy, rollback and status. The server's
+# host key is pinned in UPCLOUD_SSH_KNOWN_HOSTS. UPCLOUD_HOST is a secret only so
+# that GitHub masks it in these public logs.
+#
+# DISABLED until cutover step D1 (specs/005-upcloud-hosting/tasks.md T045): the job
+# starts with `false &&`. Remove that to enable automatic deploys.
 on:
   workflow_run:
     workflows: [Containers]
@@ -17,11 +20,11 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: Image tag to deploy, sha-<7 hex characters>
-        required: true
+        description: Image tag to deploy, sha-<7 hex characters>; defaults to the commit dispatched from
+        required: false
         type: string
-      skip_migrations:
-        description: Skip the migration job (rollback)
+      rollback:
+        description: Roll back to the previous release instead (no migrations)
         type: boolean
         default: false
 
@@ -35,36 +38,32 @@ jobs:
   deploy:
     name: deploy
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event != 'pull_request')
+      false &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event != 'pull_request'))
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: production
     permissions:
-      id-token: write
       contents: read
     env:
-      RG: ${{ vars.AZURE_RESOURCE_GROUP }}
       REGISTRY: ghcr.io/${{ github.repository }}
       DISPATCH_TAG: ${{ inputs.image_tag }}
-      HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
-      SKIP_MIGRATIONS: ${{ github.event_name == 'workflow_dispatch' && inputs.skip_migrations }}
+      HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      ROLLBACK: ${{ github.event_name == 'workflow_dispatch' && inputs.rollback }}
     steps:
       - name: Choose the image tag
         id: tag
+        if: env.ROLLBACK != 'true'
         run: |
           if [ -n "$DISPATCH_TAG" ]; then tag=$DISPATCH_TAG; else tag="sha-${HEAD_SHA:0:7}"; fi
           [[ "$tag" =~ ^sha-[0-9a-f]{7}$ ]] || { echo "::error::image_tag must look like sha-abc1234, got '$tag'."; exit 1; }
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # Deploy the infrastructure code of the commit being deployed.
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
       - name: Resolve image digests
         id: images
+        if: env.ROLLBACK != 'true'
         env:
           TAG: ${{ steps.tag.outputs.tag }}
         run: |
@@ -74,145 +73,93 @@ jobs:
             echo "$image=$REGISTRY/$image@$digest" >> "$GITHUB_OUTPUT"
           done
 
-      - uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
-        with:
-          client-id: ${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-
-      - run: scripts/hosted/install-bicep.sh
-
-      - name: Read the current app images
-        id: current
+      - name: Prepare the deploy key
+        env:
+          DEPLOY_KEY: ${{ secrets.UPCLOUD_DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.UPCLOUD_SSH_KNOWN_HOSTS }}
         run: |
-          if az containerapp show -g "$RG" -n ca-bikelog -o none 2> /dev/null; then
-            query() { az containerapp show -g "$RG" -n ca-bikelog --query "$1" -o tsv; }
-            {
-              echo "web=$(query "properties.template.containers[?name=='web'].image | [0]")"
-              echo "api=$(query "properties.template.containers[?name=='api'].image | [0]")"
-              echo "tag=$(query tags.imageTag)"
-              echo "revision=$(query properties.latestRevisionName)"
-            } >> "$GITHUB_OUTPUT"
-          else
-            echo 'First deployment: no app yet.'
-          fi
+          [ -n "$DEPLOY_KEY" ] || { echo '::error::The UPCLOUD_DEPLOY_SSH_KEY environment secret is not set.'; exit 1; }
+          [ -n "$KNOWN_HOSTS" ] || { echo '::error::The UPCLOUD_SSH_KNOWN_HOSTS environment variable is not set.'; exit 1; }
+          umask 077
+          printf '%s\n' "$DEPLOY_KEY" > "$RUNNER_TEMP/deploy_key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$RUNNER_TEMP/known_hosts"
 
-      - name: Update the infrastructure; the app keeps its current images
+      - name: Deploy on the server
+        id: deploy
         env:
-          WEB_IMAGE: ${{ steps.current.outputs.web || steps.images.outputs.web }}
-          API_IMAGE: ${{ steps.current.outputs.api || steps.images.outputs.api }}
-          APP_IMAGE_TAG: ${{ steps.current.outputs.tag || steps.tag.outputs.tag }}
-          MIGRATIONS_IMAGE: ${{ steps.images.outputs.migrations }}
-          BACKUP_IMAGE: ${{ steps.images.outputs.backup }}
-          OWNER_ALERT_EMAIL: ${{ secrets.OWNER_ALERT_EMAIL }}
-          AIVEN_DATABASE_HOST: ${{ secrets.AIVEN_DATABASE_HOST }}
-          AUTH0_ISSUER: ${{ vars.AUTH0_ISSUER }}
-          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ vars.AUTH0_CLIENT_ID }}
-          INGRESS_ALLOW_CIDRS: ${{ secrets.INGRESS_ALLOW_CIDRS }}
-        run: >-
-          az deployment group create -g "$RG" -n "infra-${{ github.run_id }}"
-          -f infra/main.bicep -p infra/main.bicepparam --only-show-errors -o none
-
-      - name: Run migrations
-        id: migrate
-        if: env.SKIP_MIGRATIONS != 'true'
-        run: |
-          # No overrides: the job already runs the new migrations digest, and an
-          # override would replace its container settings (secrets, CA mount).
-          execution=$(az containerapp job start -g "$RG" -n job-bikelog-migrate --query name -o tsv)
-          echo "execution=$execution" >> "$GITHUB_OUTPUT"
-          for _ in $(seq 60); do
-            status=$(az containerapp job execution show -g "$RG" -n job-bikelog-migrate \
-              --job-execution-name "$execution" --query properties.status -o tsv)
-            case "$status" in
-              Succeeded) echo "Migration $execution succeeded."; exit 0 ;;
-              Failed | Stopped | Degraded) echo "::error::Migration $execution ended $status; the app is unchanged."; exit 1 ;;
-            esac
-            sleep 10
-          done
-          echo "::error::Migration $execution did not finish in 10 minutes; the app is unchanged."
-          exit 1
-
-      - name: Update the app to the new images
-        env:
-          WEB_IMAGE: ${{ steps.images.outputs.web }}
-          API_IMAGE: ${{ steps.images.outputs.api }}
-          APP_IMAGE_TAG: ${{ steps.tag.outputs.tag }}
-          MIGRATIONS_IMAGE: ${{ steps.images.outputs.migrations }}
-          BACKUP_IMAGE: ${{ steps.images.outputs.backup }}
-          OWNER_ALERT_EMAIL: ${{ secrets.OWNER_ALERT_EMAIL }}
-          AIVEN_DATABASE_HOST: ${{ secrets.AIVEN_DATABASE_HOST }}
-          AUTH0_ISSUER: ${{ vars.AUTH0_ISSUER }}
-          AUTH0_AUDIENCE: ${{ vars.AUTH0_AUDIENCE }}
-          AUTH0_CLIENT_ID: ${{ vars.AUTH0_CLIENT_ID }}
-          INGRESS_ALLOW_CIDRS: ${{ secrets.INGRESS_ALLOW_CIDRS }}
-        # One template deployment changes both containers, so one revision is created.
-        run: >-
-          az deployment group create -g "$RG" -n "app-${{ github.run_id }}"
-          -f infra/main.bicep -p infra/main.bicepparam --only-show-errors -o none
-
-      - name: Wait for the new revision
-        id: revision
-        env:
-          PREVIOUS: ${{ steps.current.outputs.revision }}
-        run: |
-          revision=$(az containerapp show -g "$RG" -n ca-bikelog --query properties.latestRevisionName -o tsv)
-          echo "revision=$revision" >> "$GITHUB_OUTPUT"
-          [ "$revision" != "$PREVIOUS" ] || echo 'No template change, so no new revision.'
-          for _ in $(seq 60); do
-            state=$(az containerapp revision show -g "$RG" -n ca-bikelog --revision "$revision" -o json \
-              --query "{p: properties.provisioningState, r: properties.runningState, h: properties.healthState}")
-            provisioning=$(jq -r .p <<< "$state") running=$(jq -r .r <<< "$state") health=$(jq -r .h <<< "$state")
-            echo "$revision: provisioning=$provisioning running=$running health=$health"
-            case "$provisioning:$running" in
-              Failed:* | *:Failed | *:Degraded)
-                echo "::error::Revision $revision failed; the previous revision keeps serving."; exit 1 ;;
-            esac
-            if [ "$provisioning" = Provisioned ] && [ "$health" = Healthy ]; then exit 0; fi
-            sleep 10
-          done
-          echo "::error::Revision $revision was not healthy in 10 minutes; the previous revision keeps serving."
-          exit 1
-
-      - name: Check /healthz
-        id: health
-        env:
-          INGRESS_ALLOW_CIDRS: ${{ secrets.INGRESS_ALLOW_CIDRS }}
-        run: |
-          fqdn=$(az containerapp show -g "$RG" -n ca-bikelog --query properties.configuration.ingress.fqdn -o tsv)
-          echo "fqdn=$fqdn" >> "$GITHUB_OUTPUT"
-          # The runner is not on the ingress allow-list while it is set.
-          if [ -n "$INGRESS_ALLOW_CIDRS" ]; then
-            echo 'The ingress allow-list is set; check /healthz from an allowed address.'
-            exit 0
-          fi
-          # Retries cover a cold start from zero replicas (SC-002: 30 seconds).
-          curl -fsS --retry 6 --retry-delay 10 --retry-all-errors --max-time 30 "https://$fqdn/healthz"
-
-      - name: Summary
-        if: always()
-        env:
+          UPCLOUD_HOST: ${{ secrets.UPCLOUD_HOST }}
           TAG: ${{ steps.tag.outputs.tag }}
-          PREVIOUS_TAG: ${{ steps.current.outputs.tag }}
           WEB: ${{ steps.images.outputs.web }}
           API: ${{ steps.images.outputs.api }}
           MIGRATIONS: ${{ steps.images.outputs.migrations }}
           BACKUP: ${{ steps.images.outputs.backup }}
-          REVISION: ${{ steps.revision.outputs.revision }}
-          MIGRATION: ${{ steps.migrate.outputs.execution || 'skipped' }}
+        run: |
+          [ -n "$UPCLOUD_HOST" ] || { echo '::error::The UPCLOUD_HOST environment secret is not set.'; exit 1; }
+          ssh_options=(-i "$RUNNER_TEMP/deploy_key" -o IdentitiesOnly=yes -o BatchMode=yes
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" -o ConnectTimeout=30)
+          if [ "$ROLLBACK" = true ]; then
+            command=(rollback)
+          else
+            command=(deploy "$TAG" "$WEB" "$API" "$MIGRATIONS" "$BACKUP")
+          fi
+          # The forced command reads these words from SSH_ORIGINAL_COMMAND; they are
+          # meant to expand here, on the runner.
+          set +e
+          # shellcheck disable=SC2029
+          ssh "${ssh_options[@]}" "bikelog-deploy@$UPCLOUD_HOST" "${command[@]}" 2>&1 | tee "$RUNNER_TEMP/deploy.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          echo "result=$(grep -E '^result=' "$RUNNER_TEMP/deploy.log" | tail -1)" >> "$GITHUB_OUTPUT"
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          case "$status" in
+            0) ;;
+            1) echo '::error::The deploy failed; the previous release is serving.'; exit 1 ;;
+            2) echo '::error::The deploy failed and the previous release is not healthy either. Check the server now.'; exit 1 ;;
+            73) echo '::error::Not enough disk on the server; nothing was pulled.'; exit 1 ;;
+            75) echo '::error::Another deploy or job held the lock on the server.'; exit 1 ;;
+            *) echo "::error::bikelog-deploy exited $status."; exit 1 ;;
+          esac
+
+      - name: Server status
+        if: always() && steps.deploy.outcome != 'skipped'
+        env:
+          UPCLOUD_HOST: ${{ secrets.UPCLOUD_HOST }}
+        run: |
+          ssh -i "$RUNNER_TEMP/deploy_key" -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes \
+            -o UserKnownHostsFile="$RUNNER_TEMP/known_hosts" -o ConnectTimeout=30 \
+            "bikelog-deploy@$UPCLOUD_HOST" status 2>&1 | tee "$RUNNER_TEMP/status.log" || true
+
+      - name: Remove the deploy key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy_key" "$RUNNER_TEMP/known_hosts"
+
+      - name: Summary
+        if: always()
+        env:
+          RESULT: ${{ steps.deploy.outputs.result }}
+          WEB: ${{ steps.images.outputs.web }}
+          API: ${{ steps.images.outputs.api }}
+          MIGRATIONS: ${{ steps.images.outputs.migrations }}
+          BACKUP: ${{ steps.images.outputs.backup }}
         run: |
           {
-            echo "### Deploy ${TAG:-?} (${{ job.status }})"
+            if [ "$ROLLBACK" = true ]; then echo "### Rollback (${{ job.status }})"; else echo "### Deploy ${{ steps.tag.outputs.tag }} (${{ job.status }})"; fi
             echo
-            echo "| Item | Value |"
-            echo "| --- | --- |"
-            echo "| Previous tag (rollback target) | \`${PREVIOUS_TAG:-none}\` |"
-            echo "| Revision | \`${REVISION:-not created}\` |"
-            echo "| Migration execution | \`$MIGRATION\` |"
-            for line in "web $WEB" "api $API" "migrations $MIGRATIONS" "backup $BACKUP"; do
-              echo "| ${line%% *} | \`${line#* }\` |"
-            done
+            echo "\`${RESULT:-no result line}\`"
             echo
-            echo "Rollback: \`gh workflow run deploy.yml -f image_tag=${PREVIOUS_TAG:-sha-<previous>} -f skip_migrations=true\`"
+            if [ "$ROLLBACK" != true ]; then
+              echo "| Image | Reference |"
+              echo "| --- | --- |"
+              for line in "web $WEB" "api $API" "migrations $MIGRATIONS" "backup $BACKUP"; do
+                echo "| ${line%% *} | \`${line#* }\` |"
+              done
+              echo
+            fi
+            if [ -f "$RUNNER_TEMP/status.log" ]; then
+              echo '```text'
+              cat "$RUNNER_TEMP/status.log"
+              echo '```'
+              echo
+            fi
+            echo "Rollback to the previous release: \`gh workflow run deploy.yml -f rollback=true\`"
           } >> "$GITHUB_STEP_SUMMARY"
