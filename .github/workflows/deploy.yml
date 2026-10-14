@@ -9,9 +9,6 @@ name: Deploy
 # command bikelog-deploy, which accepts deploy, rollback and status. The server's
 # host key is pinned in UPCLOUD_SSH_KNOWN_HOSTS. UPCLOUD_HOST is a secret only so
 # that GitHub masks it in these public logs.
-#
-# DISABLED until cutover step D1 (specs/005-upcloud-hosting/tasks.md T045): the job
-# starts with `false &&`. Remove that to enable automatic deploys.
 on:
   workflow_run:
     workflows: [Containers]
@@ -38,10 +35,9 @@ jobs:
   deploy:
     name: deploy
     if: >-
-      false &&
-      (github.event_name == 'workflow_dispatch' ||
-       (github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event != 'pull_request'))
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event != 'pull_request')
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     environment: production
