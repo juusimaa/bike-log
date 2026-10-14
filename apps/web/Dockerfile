@@ -13,7 +13,8 @@ RUN npm ci --workspace @bikelog/web --include-workspace-root=false --ignore-scri
 COPY packages/api-client packages/api-client
 COPY apps/web apps/web
 RUN BIKELOG_STANDALONE=1 npm run build --workspace @bikelog/web \
-    && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+    && cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static \
+    && cp -r apps/web/public apps/web/.next/standalone/apps/web/public
 
 FROM node:24.21.0-trixie-slim@sha256:173f125896c3b47ddf056734c7ea789d04595a6a08769a8f78e0df642781fb66
 WORKDIR /app
