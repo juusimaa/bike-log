@@ -123,13 +123,14 @@ az account show --query tenantId -o tsv                 # AZURE_TENANT_ID
 runs as `postgres` (uid 999), which must be able to read the file.
 
 ```sh
-cd /srv/bikelog/secrets
-sudo sh -c 'umask 077 && openssl req -x509 -newkey rsa:3072 -nodes -days 365 \
+# secrets/ is root-only (0700), so everything goes through sudo with full paths.
+sudo sh -c 'cd /srv/bikelog/secrets && umask 077 && openssl req -x509 -newkey rsa:3072 -nodes -days 365 \
   -subj "/CN=Bike Log backup (UpCloud)" -keyout backup-client.key -out backup-client.crt \
   && cat backup-client.key backup-client.crt > backup-client.pem && rm backup-client.key'
-sudo chown 999:999 backup-client.pem && sudo chmod 0400 backup-client.pem
-sudo openssl x509 -in backup-client.crt -noout -enddate      # record the expiry date
-sudo cat backup-client.crt                                   # public part only
+sudo chown 999:999 /srv/bikelog/secrets/backup-client.pem
+sudo chmod 0400 /srv/bikelog/secrets/backup-client.pem
+sudo openssl x509 -in /srv/bikelog/secrets/backup-client.crt -noout -enddate   # record the expiry date
+sudo cat /srv/bikelog/secrets/backup-client.crt                                # public part only
 ```
 
 Copy the certificate text to `.local/upcloud/backup-client.crt` and upload it:
@@ -318,7 +319,8 @@ Certificate renewal, before the expiry recorded in upcloud-results.md:
 
 1. **(server)** create `backup-client.new.pem` and `.crt` as in [Setup step 4](#4-backup-identity-a4).
 2. Upload the new certificate with `az ad app credential reset --id <app> --cert @<new crt> --append`.
-3. **(server)** `sudo mv backup-client.new.pem backup-client.pem` (keep owner 999, mode 0400), run `backup`.
+3. **(server)** `sudo mv /srv/bikelog/secrets/backup-client.new.pem /srv/bikelog/secrets/backup-client.pem`
+   (keep owner 999, mode 0400), run `backup`.
 4. Remove the old certificate: `az ad app credential list --id <app> --cert -o table`, then
    `az ad app credential delete --id <app> --key-id <old keyId> --cert`. Record the new expiry.
 
