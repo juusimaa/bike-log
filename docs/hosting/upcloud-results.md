@@ -17,22 +17,22 @@ passed (quickstart "Gate").
 
 ## Server prerequisites
 
-Cutover A1 (research D13). Pending.
+Cutover A1 (research D13), checked 2026-10-14.
 
 | Check | Result |
 | --- | --- |
-| Docker Engine version | |
-| Docker Compose version (v2 or later) | |
-| Docker Buildx present | |
-| Architecture | |
-| Caddy version; in a container?; network name | |
-| Firewall allows 80, 443 and SSH | |
-| SSH key-only | |
-| Memory total / free (at least 1 GB free) | |
-| Disk total / free on Docker's data root | |
-| IPv4 present; IPv6 present | |
-| Default UpCloud hostname form; resolves forward to the server | |
-| `/srv/bikelog` absent before install | |
+| Docker Engine version | 29.9.0 |
+| Docker Compose version (v2 or later) | v5.6.0 |
+| Docker Buildx present | v0.38.0 |
+| Architecture | linux/amd64 |
+| Caddy version; in a container?; network name | 2.11.7, in a container owned by the Subscription Tracker Compose project; shared network `edge` (so `CADDY_NETWORK=edge`); site files mounted from a shared host directory at `/etc/caddy/sites`; publishes 80/tcp, 443/tcp and 443/udp |
+| Firewall allows 80, 443 and SSH | Host: ufw inactive; nftables holds only Docker's rules. UpCloud's firewall: pending. Bike Log publishes no port |
+| SSH key-only | Yes (`passwordauthentication no`, `kbdinteractiveauthentication no`) |
+| Memory total / free (at least 1 GB free) | 1,855 MB total, 1,067 MB available, no swap; the running apps use about 230 MB. Borderline: Bike Log's measured use is checked in U4 |
+| Disk total / free on Docker's data root | 20 GB, 13 GB free |
+| IPv4 present; IPv6 present | Both. Docker's bridge networks are IPv4-only, so containers reach Aiven over IPv4 (checked at B6) |
+| Default UpCloud hostname form; resolves forward to the server | `<ip-with-dashes>.fi-hel1.upcloud.host`; A record resolves to the server; no AAAA record |
+| `/srv/bikelog` absent before install | Absent |
 
 ## Cutover
 
