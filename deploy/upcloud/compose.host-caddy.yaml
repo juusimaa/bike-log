@@ -1,0 +1,11 @@
+# Only when Caddy runs on the host rather than in a container (research D2):
+# install.sh --caddy-on-host copies this next to compose.yaml, and bikelog-deploy
+# adds it. web is then published on loopback only and leaves the caddy network.
+services:
+  web:
+    ports:
+      - 127.0.0.1:3100:3000
+    networks: !override
+      default: {}
+
+networks: !reset {}

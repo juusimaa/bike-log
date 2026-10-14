@@ -1,0 +1,478 @@
+#!/usr/bin/env bash
+# Deploys and operates Bike Log on the UpCloud server (spec 005,
+# specs/005-upcloud-hosting/contracts/deploy-command.md). Installed as
+# /srv/bikelog/bin/bikelog-deploy (root 0755) and run as root:
+#
+#   bikelog-deploy deploy <tag> <web> <api> <migrations> <backup> [--api-env <file>]
+#   bikelog-deploy rollback
+#   bikelog-deploy status
+#   bikelog-deploy restart
+#   bikelog-deploy backup
+#   bikelog-deploy backup-verify-permissions
+#   bikelog-deploy provision-pilot-user --subject <sub> --email <address>
+#   bikelog-deploy disable-pilot-user --owner <uuid>
+#   bikelog-deploy enable-pilot-user --owner <uuid>
+#   bikelog-deploy db-connections
+#   bikelog-deploy gate open | gate owner-only <address>
+#
+# Callers: the GitHub deploy key reaches this through a forced command and sudo
+# (SUDO_USER=bikelog-deploy); its arguments come from SSH_ORIGINAL_COMMAND and it
+# may run deploy, rollback and status only. The backup timer sets
+# BIKELOG_CALLER=timer and may run backup only. The owner runs everything with sudo.
+#
+# Every command holds deploy.lock. Exit codes: 0 done; 1 failed, previous version
+# serving or nothing changed; 2 failed and the previous version is not healthy
+# either; 64 usage or not allowed; 73 not enough disk; 75 lock not acquired.
+# Never prints environment values or anything from secrets/.
+set -euo pipefail
+shopt -s inherit_errexit
+umask 022
+
+say() { printf 'bikelog-deploy: %s\n' "$*" >&2; }
+usage_error() {
+  say "$*"
+  exit 64
+}
+trap 'say "failed unexpectedly at line $LINENO"; exit 1' ERR
+
+# --- Settings ---------------------------------------------------------------------
+
+production_root=/srv/bikelog
+if [ "${BIKELOG_DEPLOY_TEST:-}" = 1 ]; then
+  root=${BIKELOG_ROOT:-$production_root}
+  [ "$root" != "$production_root" ] || usage_error "test mode cannot use $production_root"
+else
+  # Test-only overrides are refused outright, so a stray variable cannot redirect a
+  # production deploy.
+  for name in BIKELOG_ROOT BIKELOG_IMAGE_PREFIX BIKELOG_COMPOSE_PROJECT BIKELOG_TEST_FREE_BYTES; do
+    [ -z "${!name:-}" ] || usage_error "$name is accepted only in tests"
+  done
+  root=$production_root
+fi
+prefix=${BIKELOG_IMAGE_PREFIX:-ghcr.io/juusimaa/bike-log}
+project=${BIKELOG_COMPOSE_PROJECT:-bikelog}
+lock_wait=${BIKELOG_LOCK_WAIT:-900}
+[[ "$lock_wait" =~ ^[0-9]+$ ]] || usage_error 'BIKELOG_LOCK_WAIT must be a number of seconds'
+
+release=$root/release.env
+previous=$root/release.previous.env
+images=(web api migrations backup)
+min_free_bytes=$((3 * 1024 * 1024 * 1024))
+pull_margin_bytes=$((500 * 1024 * 1024))
+health_timeout=90
+
+# Docker runs with a clean environment, so variables of the calling session (a
+# stray WEB_IMAGE or COMPOSE_FILE) cannot change what Compose interpolates.
+docker_env=(env -i "PATH=$PATH" "HOME=${HOME:-/root}")
+[ -z "${DOCKER_HOST:-}" ] || docker_env+=("DOCKER_HOST=$DOCKER_HOST")
+dk() { "${docker_env[@]}" docker "$@"; }
+
+# compose_command RELEASE-FILE [VAR=value...] -- ARGS... -> sets the array `cmd`, so
+# callers can run it directly or under `timeout`.
+compose_command() {
+  local release_file=$1 extra=()
+  shift
+  while [ "$1" != -- ]; do
+    extra+=("$1")
+    shift
+  done
+  shift
+  local files=(-f "$root/compose.yaml")
+  [ ! -f "$root/compose.host-caddy.yaml" ] || files+=(-f "$root/compose.host-caddy.yaml")
+  cmd=("${docker_env[@]}" ${extra[@]+"${extra[@]}"} docker compose --project-name "$project"
+    --project-directory "$root" "${files[@]}"
+    --env-file "$root/settings.env" --env-file "$release_file" "$@")
+}
+compose() {
+  compose_command "$@"
+  "${cmd[@]}"
+}
+
+# value FILE KEY -> the value of KEY in a KEY=value file, without sourcing it.
+value() {
+  [ -f "$1" ] || return 0
+  sed -n "s/^$2=//p" "$1" | tail -1
+}
+tag_of() { if [ -f "$1" ]; then value "$1" IMAGE_TAG; else echo none; fi; }
+result() { printf 'result=%s tag=%s previous=%s\n' "$1" "$2" "$3"; }
+
+# --- Caller and arguments -----------------------------------------------------------
+
+caller=owner
+if [ "${SUDO_USER:-}" = bikelog-deploy ]; then
+  # The forced command ignores positional arguments: sudo is allowed only with none,
+  # and SSH_ORIGINAL_COMMAND is split on spaces without any shell evaluation.
+  caller=deploy-key
+  original=${SSH_ORIGINAL_COMMAND:-}
+  allowed='^[A-Za-z0-9@:/._ -]*$'
+  [[ "$original" =~ $allowed ]] || usage_error 'the command contains a character that is not allowed'
+  read -r -a words <<< "$original"
+  set -- ${words[@]+"${words[@]}"}
+elif [ "${BIKELOG_CALLER:-}" = timer ]; then
+  caller=timer
+fi
+
+[ $# -ge 1 ] || usage_error 'usage: bikelog-deploy <command> [arguments]; see the header of this script'
+command=$1
+shift
+case "$caller:$command" in
+  deploy-key:deploy | deploy-key:rollback | deploy-key:status) ;;
+  timer:backup) ;;
+  owner:*) ;;
+  *) usage_error "$command is not allowed for the $caller caller" ;;
+esac
+
+no_arguments() { [ $# -eq 0 ] || usage_error "$command takes no arguments"; }
+
+# option NAME ARGS... -> the value after NAME; every option must appear exactly once.
+option() {
+  local name=$1 found='' count=0
+  shift
+  while [ $# -gt 0 ]; do
+    if [ "$1" = "$name" ]; then
+      [ $# -ge 2 ] || usage_error "$name needs a value"
+      found=$2
+      count=$((count + 1))
+      shift
+    fi
+    shift
+  done
+  [ "$count" = 1 ] || usage_error "$name must be given once"
+  printf '%s' "$found"
+}
+
+image_ref_ok() { # name ref
+  local digest=${2#"$prefix/$1@sha256:"}
+  [ "$digest" != "$2" ] && [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+}
+
+ip_ok() {
+  local address=${1%/*} bits='' octet
+  [ "$address" = "$1" ] || bits=${1##*/}
+  if [[ "$address" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+    for octet in ${address//./ }; do [ "$((10#$octet))" -le 255 ] || return 1; done
+    [ -z "$bits" ] || { [[ "$bits" =~ ^[0-9]{1,2}$ ]] && [ "$bits" -le 32 ]; }
+  elif [[ "$address" =~ ^[0-9A-Fa-f:]+$ ]] && [[ "$address" == *:*:* ]]; then
+    [ -z "$bits" ] || { [[ "$bits" =~ ^[0-9]{1,3}$ ]] && [ "$bits" -le 128 ]; }
+  else
+    return 1
+  fi
+}
+
+# Everything is validated here, before the lock and before Docker runs.
+api_env=''
+job_args=()
+case "$command" in
+  deploy)
+    [ $# -eq 5 ] || [ $# -eq 7 ] || usage_error 'usage: deploy <tag> <web> <api> <migrations> <backup> [--api-env <file>]'
+    new_tag=$1
+    [[ "$new_tag" =~ ^sha-[0-9a-f]{7}$ ]] || usage_error 'the tag must look like sha-abc1234'
+    new_refs=("$2" "$3" "$4" "$5")
+    for i in 0 1 2 3; do
+      image_ref_ok "${images[$i]}" "${new_refs[$i]}" ||
+        usage_error "argument $((i + 2)) must be $prefix/${images[$i]}@sha256:<64 hex>"
+    done
+    if [ $# -eq 7 ]; then
+      [ "$6" = --api-env ] || usage_error "unexpected argument after the images"
+      [ "$caller" = owner ] || usage_error '--api-env is for the owner only'
+      api_env=$7
+      [[ "$api_env" =~ ^[A-Za-z0-9_-][A-Za-z0-9._-]*$ ]] || usage_error '--api-env must be a file name inside secrets/'
+      [ -f "$root/secrets/$api_env" ] || usage_error "secrets/$api_env does not exist"
+    fi
+    ;;
+  rollback | status | restart | backup | backup-verify-permissions | db-connections)
+    no_arguments "$@"
+    ;;
+  provision-pilot-user)
+    [ $# -eq 4 ] || usage_error 'usage: provision-pilot-user --subject <sub> --email <address>'
+    subject=$(option --subject "$@") || exit 64
+    email=$(option --email "$@") || exit 64
+    [[ "$subject" =~ ^(auth0|email)\|[A-Za-z0-9._-]+$ ]] || usage_error '--subject must look like auth0|<id> or email|<id>'
+    [[ "$email" =~ ^[^@[:space:]\"\'\\]+@[^@[:space:]\"\'\\]+$ ]] || usage_error '--email must be a plain email address'
+    ;;
+  disable-pilot-user | enable-pilot-user)
+    [ $# -eq 2 ] || usage_error "usage: $command --owner <uuid>"
+    owner=$(option --owner "$@") || exit 64
+    [[ "$owner" =~ ^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$ ]] ||
+      usage_error '--owner must be a UUID in the form 00000000-0000-0000-0000-000000000000'
+    ;;
+  gate)
+    case "$#:${1:-}" in
+      1:open) gate_address='' ;;
+      2:owner-only)
+        gate_address=$2
+        ip_ok "$gate_address" || usage_error 'the address must be an IPv4 or IPv6 address or CIDR range'
+        ;;
+      *) usage_error 'usage: gate open | gate owner-only <address>' ;;
+    esac
+    ;;
+  *) usage_error "unknown command: $command" ;;
+esac
+
+[ -d "$root" ] || usage_error "$root does not exist; run install.sh first"
+
+exec {lock_fd}>> "$root/deploy.lock"
+if ! flock -w "$lock_wait" "$lock_fd"; then
+  say "another deploy or job held the lock for ${lock_wait}s; nothing was done"
+  exit 75
+fi
+
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT
+
+# --- Deploy helpers -------------------------------------------------------------------
+
+free_bytes() {
+  if [ -n "${BIKELOG_TEST_FREE_BYTES:-}" ]; then
+    echo "$BIKELOG_TEST_FREE_BYTES"
+  else
+    df -B1 --output=avail "$(dk info --format '{{.DockerRootDir}}')" | tail -1 | tr -d ' '
+  fi
+}
+
+# Compressed size of one image for this server's platform, from the registry.
+image_bytes() {
+  local ref=$1 platform=$2 raw digest
+  raw=$(dk buildx imagetools inspect --raw "$ref") || return 1
+  if grep -q '"manifests"' <<< "$raw"; then
+    digest=$(dk buildx imagetools inspect "$ref" --format \
+      '{{range .Manifest.Manifests}}{{with .Platform}}{{.OS}}/{{.Architecture}}{{end}} {{.Digest}}{{"\n"}}{{end}}' |
+      awk -v p="$platform" '$1 == p { print $2; exit }')
+    [ -n "$digest" ] || return 1
+    raw=$(dk buildx imagetools inspect --raw "${ref%@*}@$digest") || return 1
+  fi
+  grep -oE '"size": *[0-9]+' <<< "$raw" | grep -oE '[0-9]+$' | awk '{ s += $1 } END { print s + 0 }'
+}
+
+# Step 1 of research D5: at least 3 GB must remain after the pull.
+check_disk() {
+  local platform needed=$pull_margin_bytes ref bytes free
+  platform=$(dk version --format '{{.Server.Os}}/{{.Server.Arch}}')
+  for ref in "$@"; do
+    dk image inspect "$ref" > /dev/null 2>&1 && continue
+    bytes=$(image_bytes "$ref" "$platform") || {
+      say "could not read the size of $ref from the registry; nothing was pulled"
+      result failed "$new_tag" "$(tag_of "$release")"
+      exit 1
+    }
+    needed=$((needed + bytes))
+  done
+  free=$(free_bytes)
+  if [ $((free - needed)) -lt "$min_free_bytes" ]; then
+    say "not enough disk: $((free / 1048576)) MB free, $((needed / 1048576)) MB needed, 3072 MB must remain; nothing was pulled"
+    result failed "$new_tag" "$(tag_of "$release")"
+    exit 73
+  fi
+}
+
+# Step 7: remove Bike Log images that are neither current nor previous, by explicit
+# reference. Never a prune: other projects' images on this server are not ours.
+prune_images() {
+  local keep=' ' file name ref
+  for file in "$release" "$previous"; do
+    [ -f "$file" ] || continue
+    for name in WEB_IMAGE API_IMAGE MIGRATIONS_IMAGE BACKUP_IMAGE; do keep+="$(value "$file" "$name") "; done
+  done
+  for name in "${images[@]}"; do
+    while IFS= read -r ref; do
+      [[ "$ref" == "$prefix/$name@sha256:"* ]] || continue
+      [[ "$keep" == *" $ref "* ]] && continue
+      if dk image rm "$ref" > /dev/null 2>&1; then say "removed $ref"; else say "kept $ref (in use)"; fi
+    done < <(dk images --digests --format '{{.Repository}}@{{.Digest}}' "$prefix/$name" | sort -u)
+  done
+}
+
+up_healthy() { # release-file [VAR=value...]
+  local file=$1
+  shift
+  compose "$file" "$@" -- up -d --wait --wait-timeout "$health_timeout" web api
+}
+
+# After a failed start: put the saved release files back and start that release.
+restore_and_exit() { # failed-tag
+  local failed_tag=$1
+  rm -f "$release" "$previous"
+  [ ! -f "$work/release.env" ] || cp -p "$work/release.env" "$release"
+  [ ! -f "$work/release.previous.env" ] || cp -p "$work/release.previous.env" "$previous"
+  if [ ! -f "$release" ]; then
+    say 'no earlier release to go back to; stopping web and api'
+    compose "$work/candidate.env" -- stop web api || true
+    result failed-unhealthy "$failed_tag" none
+    exit 2
+  fi
+  say "restoring $(tag_of "$release")"
+  if up_healthy "$release"; then
+    say "$(tag_of "$release") is serving again"
+    result failed "$failed_tag" "$(tag_of "$release")"
+    exit 1
+  fi
+  say "$(tag_of "$release") did not become healthy either; the owner must act"
+  result failed-unhealthy "$failed_tag" "$(tag_of "$release")"
+  exit 2
+}
+
+save_release_files() {
+  [ ! -f "$release" ] || cp -p "$release" "$work/release.env"
+  [ ! -f "$previous" ] || cp -p "$previous" "$work/release.previous.env"
+}
+
+# --- Commands -------------------------------------------------------------------------
+
+cmd_deploy() {
+  local current_tag ref
+  current_tag=$(tag_of "$release")
+  say "deploying $new_tag (current: $current_tag)"
+  check_disk "${new_refs[@]}"
+
+  for ref in "${new_refs[@]}"; do
+    dk pull --quiet "$ref" > /dev/null || {
+      say "pulling $ref failed; nothing changed"
+      result failed "$new_tag" "$current_tag"
+      exit 1
+    }
+  done
+
+  {
+    echo "IMAGE_TAG=$new_tag"
+    echo "WEB_IMAGE=${new_refs[0]}"
+    echo "API_IMAGE=${new_refs[1]}"
+    echo "MIGRATIONS_IMAGE=${new_refs[2]}"
+    echo "BACKUP_IMAGE=${new_refs[3]}"
+    echo "DEPLOYED_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$work/candidate.env"
+
+  say 'running migrations'
+  if ! timed_job 600 "$work/candidate.env" migrate; then
+    say "migrations failed; $current_tag keeps serving"
+    result failed "$new_tag" "$current_tag"
+    exit 1
+  fi
+
+  save_release_files
+  [ ! -f "$release" ] || mv "$release" "$previous"
+  cp "$work/candidate.env" "$release"
+
+  say "starting $new_tag"
+  local extra=()
+  [ -z "$api_env" ] || extra=("API_ENV_FILE=$api_env")
+  if up_healthy "$release" ${extra[@]+"${extra[@]}"}; then
+    say "$new_tag is serving and healthy"
+    prune_images
+    result ok "$new_tag" "$(tag_of "$previous")"
+    exit 0
+  fi
+  say "$new_tag did not become healthy"
+  restore_and_exit "$new_tag"
+}
+
+cmd_rollback() {
+  [ -f "$release" ] && [ -f "$previous" ] || usage_error 'there is no previous release to roll back to'
+  local from to
+  from=$(tag_of "$release")
+  to=$(tag_of "$previous")
+  say "rolling back from $from to $to (no migrations)"
+  save_release_files
+  mv "$release" "$work/swap.env"
+  mv "$previous" "$release"
+  mv "$work/swap.env" "$previous"
+  if up_healthy "$release"; then
+    say "$to is serving and healthy"
+    result ok "$to" "$from"
+    exit 0
+  fi
+  say "$to did not become healthy"
+  cp "$work/release.env" "$work/candidate.env"
+  restore_and_exit "$to"
+}
+
+require_release() { [ -f "$release" ] || usage_error 'no release has been deployed yet'; }
+
+cmd_status() {
+  local free
+  echo "current:  $(tag_of "$release") (deployed $(value "$release" DEPLOYED_UTC))"
+  echo "previous: $(tag_of "$previous")"
+  if [ -f "$release" ]; then
+    compose "$release" -- ps --all --format '{{.Service}}: {{.State}} {{.Health}}' web api
+  fi
+  free=$(free_bytes)
+  echo "free disk for Docker: $((free / 1048576)) MB"
+}
+
+cmd_restart() {
+  require_release
+  if compose "$release" -- up -d --wait --wait-timeout "$health_timeout" --force-recreate web api; then
+    say "restarted $(tag_of "$release")"
+  else
+    say "$(tag_of "$release") did not become healthy after the restart"
+    exit 1
+  fi
+}
+
+# timed_job SECONDS RELEASE-FILE SERVICE [run options and arguments...]
+# One-off job; a job still running at the timeout is stopped and removed.
+timed_job() {
+  local seconds=$1 file=$2 service=$3 name status=0
+  shift 3
+  name="$project-$service-job"
+  compose_command "$file" -- run --rm -T --no-deps --name "$name" "$@" "$service"
+  # Options for `run` come before the service; anything after is the job's arguments.
+  timeout "$seconds" "${cmd[@]}" "${job_args[@]+"${job_args[@]}"}" < /dev/null || status=$?
+  if [ "$status" = 124 ]; then
+    say "$service did not finish in ${seconds}s; stopping it"
+    dk rm -f "$name" > /dev/null 2>&1 || true
+  fi
+  return "$status"
+}
+
+run_job() { # seconds service [job arguments...]
+  local seconds=$1 service=$2
+  shift 2
+  require_release
+  job_args=("$@")
+  timed_job "$seconds" "$release" "$service"
+}
+
+cmd_db_connections() {
+  # Masks the last part of each address inside the container, so no full address
+  # leaves it; no query text is read.
+  local query="SELECT coalesce(regexp_replace(regexp_replace(host(client_addr), '\\.[0-9]+\$', '.x'), ':[0-9a-f]*\$', ':x'), 'local'), count(*) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid() GROUP BY 1 ORDER BY 1"
+  echo 'client sessions by address (last part masked):'
+  require_release
+  # shellcheck disable=SC2016 # expanded by bash inside the container, not here
+  job_args=(-c 'exec psql "$BIKELOG_DATABASE_URL" -X -q -At -F " " -v ON_ERROR_STOP=1 -c "$1"' db-connections "$query")
+  timed_job 60 "$release" backup --entrypoint bash
+}
+
+cmd_gate() {
+  local origin host upstream=bikelog-web:3000
+  origin=$(value "$root/settings.env" WEB_PUBLIC_ORIGIN)
+  host=${origin#https://}
+  [ -n "$host" ] || host='<server hostname>'
+  [ ! -f "$root/compose.host-caddy.yaml" ] || upstream=127.0.0.1:3100
+  echo "# Put this site block in Caddy, replacing the current Bike Log block, then reload Caddy."
+  echo "$host {"
+  if [ -n "$gate_address" ]; then
+    printf '\t# Owner gate: remove after the refusal checks pass (quickstart U3).\n'
+    printf '\t@not_owner not remote_ip %s\n' "$gate_address"
+    printf '\trespond @not_owner 403\n\n'
+  fi
+  printf '\treverse_proxy %s\n' "$upstream"
+  echo '}'
+}
+
+case "$command" in
+  deploy) cmd_deploy ;;
+  rollback) cmd_rollback ;;
+  status) cmd_status ;;
+  restart) cmd_restart ;;
+  backup) run_job 900 backup ;;
+  backup-verify-permissions) run_job 120 backup --verify-permissions ;;
+  provision-pilot-user)
+    issuer=$(value "$root/settings.env" AUTH0_ISSUER)
+    [ -n "$issuer" ] || usage_error 'AUTH0_ISSUER is not set in settings.env'
+    run_job 120 ops --provision-pilot-user --issuer "$issuer" --subject "$subject" --email "$email"
+    ;;
+  disable-pilot-user | enable-pilot-user) run_job 120 ops "--$command" --owner "$owner" ;;
+  db-connections) cmd_db_connections ;;
+  gate) cmd_gate ;;
+esac

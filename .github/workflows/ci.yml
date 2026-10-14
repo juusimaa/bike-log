@@ -138,3 +138,48 @@ jobs:
       # that the restore comparison passes and catches damage (quickstart A2).
       - name: Backup and restore round trip
         run: scripts/hosted/tests/run.sh
+
+  upcloud:
+    name: upcloud
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      SHELLCHECK_IMAGE: koalaman/shellcheck:v0.11.0@sha256:61862eba1fcf09a484ebcc6feea46f1782532571a34ed51fedf90dd25f925a8d
+      ACTIONLINT_IMAGE: rhysd/actionlint:1.7.8@sha256:96d4a8c87dbbfb3bdd324f8fdc285fc3df5261e2decc619a4dd7e8ee52bbfd46
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: shellcheck
+        run: >-
+          docker run --rm -v "$PWD:/mnt:ro" -w /mnt "$SHELLCHECK_IMAGE" -x
+          scripts/upcloud/bikelog-deploy scripts/upcloud/install.sh scripts/upcloud/tests/run.sh
+          scripts/upcloud/tests/lib.sh images/backup/backup.sh scripts/hosted/hosted.sh
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo:ro" -w /repo "$ACTIONLINT_IMAGE" -color=false
+      # quickstart L3: the example settings are enough for Compose to resolve the file.
+      - name: Compose file
+        run: |
+          set -u
+          tmp=$(mktemp -d)
+          mkdir "$tmp/secrets"
+          cp deploy/upcloud/compose.yaml "$tmp/"
+          cp deploy/upcloud/settings.env.example "$tmp/settings.env"
+          cp deploy/upcloud/secrets.example/*.env "$tmp/secrets/"
+          printf '%s\n' WEB_IMAGE=w API_IMAGE=a MIGRATIONS_IMAGE=m BACKUP_IMAGE=b > "$tmp/release.env"
+          docker compose --project-directory "$tmp" -f "$tmp/compose.yaml" --profile jobs \
+            --env-file "$tmp/settings.env" --env-file "$tmp/release.env" config --format json > "$tmp/config.json"
+          jq -e '
+            (.services | keys) == ["api", "backup", "migrate", "ops", "web"]
+            and all(.services[]; (.ports // []) == [])
+            and all(.services[]; .mem_limit != null and .cpus != null)
+            and all(.services[]; .logging.driver == "local" and .logging.options["max-size"] == "10m")
+            and .services.api.network_mode == "service:web"
+            and ([.services | to_entries[] | select(.value.networks.caddy != null) | .key] == ["web"])
+            and all(.services | (.migrate, .ops, .backup); .profiles == ["jobs"])
+          ' "$tmp/config.json" > /dev/null ||
+            { echo '::error::deploy/upcloud/compose.yaml breaks a rule of contracts/server-layout.md.'; exit 1; }
+          echo 'compose.yaml: no published ports; limits and bounded logs on every service; api in web namespace.'
+      # quickstart L2, against a private Docker daemon with stand-in images.
+      - name: Deploy script tests
+        run: scripts/upcloud/tests/run.sh

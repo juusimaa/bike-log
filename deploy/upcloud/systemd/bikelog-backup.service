@@ -1,0 +1,13 @@
+# Daily Bike Log backup to the Azure backup storage (spec 005, research D10).
+# Installed by scripts/upcloud/install.sh; started by bikelog-backup.timer.
+[Unit]
+Description=Bike Log daily backup
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+# Limits this caller to the backup command (contracts/deploy-command.md).
+Environment=BIKELOG_CALLER=timer
+ExecStart=/srv/bikelog/bin/bikelog-deploy backup
