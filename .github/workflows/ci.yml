@@ -102,10 +102,13 @@ jobs:
         run: |
           az bicep build --file infra/bootstrap.bicep --stdout > /dev/null
           az bicep build --file infra/main.bicep --stdout > /dev/null
+          az bicep build --file infra/backup.bicep --stdout > /dev/null
+          az bicep build-params --file infra/backup.example.bicepparam --stdout > /dev/null
       - name: Lint (errors fail)
         run: |
           az bicep lint --file infra/bootstrap.bicep --diagnostics-format sarif
           az bicep lint --file infra/main.bicep --diagnostics-format sarif
+          az bicep lint --file infra/backup.bicep --diagnostics-format sarif
       - name: Refuse role assignments in CI templates and excluded paid settings
         run: |
           set -u

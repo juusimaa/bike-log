@@ -102,6 +102,69 @@ echo "rides: $(sql -c 'SELECT count(*) FROM "Rides"'), usage rows: $(sql -c 'SEL
 step 'Backup image'
 docker build -q -f images/backup/Dockerfile -t "$backup_image" . > /dev/null
 
+step 'Certificate sign-in: the client assertion (spec 005, research D10)'
+# A throwaway key and self-signed certificate, as the server keeps them: one PEM file.
+mkdir -p "$work/cert"
+openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj '/CN=bikelog-backup-test' \
+  -keyout "$work/cert/key.pem" -out "$work/cert/cert.pem" 2> /dev/null
+cat "$work/cert/key.pem" "$work/cert/cert.pem" > "$work/cert/client.pem"
+chmod 0644 "$work/cert/client.pem"
+tenant=00000000-0000-0000-0000-00000000aaaa
+client=00000000-0000-0000-0000-00000000bbbb
+assertion() {
+  docker run --rm --user "$(id -u):$(id -g)" -v "$work/cert:/cert:ro" \
+    -e BACKUP_TEST_PRINT_ASSERTION=1 -e BACKUP_LOCAL_DIR=/tmp -e BIKELOG_DATABASE_URL=postgresql://unused \
+    -e AZURE_TENANT_ID="$tenant" -e AZURE_CLIENT_ID="$client" -e AZURE_CLIENT_CERTIFICATE_FILE=/cert/client.pem \
+    "$backup_image"
+}
+assertion > "$work/jwt-one"
+assertion > "$work/jwt-two"
+x5t=$(openssl x509 -in "$work/cert/cert.pem" -outform DER | openssl dgst -sha256 -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+openssl x509 -in "$work/cert/cert.pem" -pubkey -noout > "$work/cert/public.pem"
+python3 - "$work/jwt-one" "$work/jwt-two" "$x5t" "$tenant" "$client" "$work/cert" << 'EOF'
+import base64, json, sys, time
+one, two, x5t, tenant, client, out = sys.argv[1:]
+def part(s):
+    return base64.urlsafe_b64decode(s + "=" * (-len(s) % 4))
+def check(condition, message):
+    if not condition:
+        sys.exit(f"FAIL: client assertion: {message}")
+tokens = [open(one).read().strip(), open(two).read().strip()]
+for token in tokens:
+    check(token.count(".") == 2 and "=" not in token, "not three base64url parts without padding")
+header, claims = (json.loads(part(p)) for p in tokens[0].split(".")[:2])
+check(header == {"alg": "RS256", "typ": "JWT", "x5t#S256": x5t}, f"header {header}")
+now = time.time()
+check(claims["aud"] == f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token", "aud")
+check(claims["iss"] == client and claims["sub"] == client, "iss and sub must be the client ID")
+check(claims["nbf"] <= now + 5, "nbf is in the future")
+check(0 < claims["exp"] - claims["nbf"] <= 600 and claims["exp"] > now, "exp must be within 10 minutes")
+check(claims["jti"] != json.loads(part(tokens[1].split(".")[1]))["jti"], "jti repeats across runs")
+signed, signature = tokens[0].rsplit(".", 1)
+open(f"{out}/signed", "w").write(signed)
+open(f"{out}/signature", "wb").write(part(signature))
+EOF
+openssl dgst -sha256 -verify "$work/cert/public.pem" -signature "$work/cert/signature" "$work/cert/signed" > /dev/null ||
+  { echo 'FAIL: client assertion: the signature does not verify with the certificate.' >&2; exit 1; }
+echo 'ok: client assertion has the right header, claims and signature'
+if docker run --rm -e BACKUP_TEST_PRINT_ASSERTION=1 -e BIKELOG_DATABASE_URL=postgresql://unused \
+  -e BACKUP_ACCOUNT_URL=https://example.invalid -e BACKUP_CONTAINER=backups \
+  -e AZURE_TENANT_ID="$tenant" -e AZURE_CLIENT_ID="$client" -e AZURE_CLIENT_CERTIFICATE_FILE=/dev/null \
+  "$backup_image" > "$work/jwt-refused" 2>&1; then
+  cat "$work/jwt-refused"
+  echo 'FAIL: BACKUP_TEST_PRINT_ASSERTION worked outside a local test.' >&2
+  exit 1
+fi
+echo 'ok: the assertion test hook is refused outside local tests'
+if docker run --rm -e BIKELOG_DATABASE_URL=postgresql://unused -e BACKUP_ACCOUNT_URL=https://example.invalid \
+  -e BACKUP_CONTAINER=backups -e AZURE_CLIENT_ID="$client" "$backup_image" > "$work/no-signin" 2>&1 ||
+  ! grep -q 'no Azure sign-in is configured' "$work/no-signin"; then
+  cat "$work/no-signin"
+  echo 'FAIL: backup.sh did not fail closed without a sign-in method.' >&2
+  exit 1
+fi
+echo 'ok: no sign-in method configured fails closed'
+
 backup() { # output dir [extra docker args...]
   local out=$1 status
   shift
