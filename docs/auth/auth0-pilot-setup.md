@@ -81,7 +81,7 @@ stay apart from local development (research D15). In the same tenant, create **B
 - **Grant types**: Authorization Code and Refresh Token.
 - **Allowed Callback URLs**: `https://<fqdn>/auth/callback`.
 - **Allowed Logout URLs**: `https://<fqdn>/?signedOut=1`.
-- **API access**: the same custom Bike Log API audience, with only the `BikeLog.Access` permission.
+- **API access**: on the custom Bike Log API's **Application Access** tab, set **User Access** for this application to **Authorized** with only the `BikeLog.Access` permission, and leave Client Access off. Without it, Auth0 refuses the `audience` ("Client … is not authorized to access resource server") and the app shows `sign_in_failed`. Reload the page to confirm it was saved.
 
 Store the client secret only in Key Vault as `auth0-client-secret`
 ([docs/hosting/setup.md](../hosting/setup.md#7-key-vault-secrets)); the client ID is the GitHub variable

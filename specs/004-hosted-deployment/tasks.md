@@ -391,7 +391,7 @@ can be recreated from code.
   4. To remove a rider, run `hosted.sh disable-pilot-user` and then block the user in Auth0.
 
   Note that rider email and subject appear in the job execution's arguments, which only subscription owners can see. Commit as `feat(ops): manage hosted pilot riders`.
-- [ ] T051 👤 [US4] Run quickstart C6: the test rider's garage is empty and separate from the owner's. Disable the rider and confirm the next request is refused while their session is still valid, then re-enable them. Record the outcomes.
+- [X] T051 👤 [US4] Run quickstart C6: the test rider's garage is empty and separate from the owner's. Disable the rider and confirm the next request is refused while their session is still valid, then re-enable them. Record the outcomes.
 
 ---
 
