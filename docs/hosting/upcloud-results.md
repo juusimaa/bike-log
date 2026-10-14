@@ -46,13 +46,13 @@ Each step of the cutover contract with its UTC time and outcome. Pending.
 | A5 Caddy site block, certificate issuer | 2026-10-14 | `bikelog.caddy` added to the shared sites directory with the owner gate; `caddy validate` passed, reload kept the other sites running. Certificate issued on the first attempt by Let's Encrypt (YE2), valid to 2027-01-12, renewed by Caddy. From the owner's address: HTTPS 502 (app not running yet), HTTP 308 to HTTPS. From mobile data: empty 403 page |
 | A6 Auth0 URLs added | 2026-10-14 | Callback `/auth/callback`, logout `/?signedOut=1` and web origin for the new address added to the hosted application, beside the Azure entries |
 | A7 GitHub production environment | 2026-10-14 | Deploy key (Ed25519) installed with `restrict,command="sudo /srv/bikelog/bin/bikelog-deploy"`. Server host key scanned and matched against the server's own fingerprint. From the owner's machine: `status` works (exit 0); `bash` and `restart` refused (exit 64); port forwarding refused (`administratively prohibited`). GitHub `production`: secrets `UPCLOUD_DEPLOY_SSH_KEY`, `UPCLOUD_HOST` and variable `UPCLOUD_SSH_KNOWN_HOSTS` set; the private key deleted from the owner's machine |
-| B1 Azure deploy workflow disabled (downtime starts) | | |
-| B2 Azure revision deactivated; backup job schedule removed | | |
-| B3 Aiven client sessions before the server starts (must be 0) | | |
-| B4 Aiven allow-list set to the server | | |
-| B5 first deploy on the server (result line) | | |
-| B6 `db-connections` shows only the server | | |
-| C checks passed; first signed-in page on the new address (downtime ends) | | |
+| B1 Azure deploy workflow disabled (downtime starts) | 12:15:51 | PR #28 merged as `8a4144b`, then `gh workflow disable deploy.yml`. Containers built `sha-8a4144b` by 12:17 |
+| B2 Azure revision deactivated; backup job schedule removed | 12:17:32 | **Downtime starts.** `az containerapp revision deactivate` worked in single revision mode: inactive, 0 replicas, Stopped. Backup job cron changed from `30 2 * * *` to `0 0 31 2 *`; no execution running |
+| B3 Aiven client sessions before the server starts (must be 0) | ~12:20 | 0 client sessions in Current queries |
+| B4 Aiven allow-list set to the server | ~12:22 | Previous value: open to all IPv4 and IPv6 addresses. New: the server's IPv4 address `/32` only |
+| B5 first deploy on the server (result line) | ~12:25 | `result=ok tag=sha-8a4144b previous=none`; no migrations to apply; `web` and `api` healthy |
+| B6 `db-connections` shows only the server | ~12:26 | One session from the server's masked address and one with no client address (Aiven's own, local to its host); none from elsewhere |
+| C checks passed; first signed-in page on the new address (downtime ends) | 12:30 | **Downtime ends**: owner signed in at the new address. Unavailable about 13 minutes (target 30); B1 to C about 15 minutes (target 2 hours) |
 | D1 automatic deploy enabled | | |
 | D2 backup timer enabled | | |
 | D3 Azure resources deleted | | |
@@ -69,16 +69,16 @@ Quickstart U1–U14. Pending.
 | --- | --- | --- | --- |
 | U1 | | | |
 | U2 | | | |
-| U3 (gate on) | | | |
+| U3 (gate on) | 2026-10-14 | Passed | From the owner's address: `/api/bikes` and `/api/me` without a session 401; POST with a foreign Origin or none 403; `X-Forwarded-Host` ignored (401); `/openapi/v1.json` and `/health/ready` 404; `http://` 308 to HTTPS; ports 3000, 5080 and 3100 closed. An altered `Host` gets Caddy's empty 200 for an unknown site and never reaches the app (004: the platform's 404). From mobile data: 403 (A5) |
 | U3 (gate open) | | | |
-| U4 | | | |
+| U4 | 2026-10-14 | Passed | Gym Notebook and Subscription Tracker work. `bikelog-api` 108 MB and `bikelog-web` 135 MB (caps 512 MB); server memory available 867 MB of 1,855 MB, no swap |
 | U5 | | | |
 | U6 | | | |
 | U7 | | | |
 | U8 | | | |
 | U9 | | | |
 | U10 | | | |
-| U11 | | | |
+| U11 | 2026-10-14 | Passed | TCP to the Aiven host from the owner's machine refused or timed out; the server connects (B5, B6) |
 | U12 | | | |
 | U13 | | | |
 | U14 | | | |
