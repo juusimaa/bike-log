@@ -79,3 +79,12 @@ with `./scripts/dev.sh app-up` (see [container images](docs/containers.md)).
 `main` is protected: changes land only through pull requests, and both `dotnet`
 and `web` checks must pass on an up-to-date branch before merging. Direct pushes
 and force pushes are blocked, including for admins.
+
+## License
+
+Copyright (C) 2026 Jouni Uusimaa
+
+Bike Log is licensed under the [GNU Affero General Public License v3.0](LICENSE).
+If you run a modified version as a network service, you must make your modified
+source code available to its users. Versions committed before the license
+change were released under the MIT License.
