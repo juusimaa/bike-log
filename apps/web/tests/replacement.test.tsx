@@ -187,6 +187,37 @@ it('fitFailureRetainsCreatedPartForRetry', async () => {
         model: 'New',
     });
 });
+it('successfulFitShowsProgressNotTheRetainedPartFailure', async () => {
+    let finishFit: (value: unknown) => void = () => {};
+    api.createInstallation.mockImplementationOnce(
+        () =>
+            new Promise((resolve) => {
+                finishFit = resolve;
+            }),
+    );
+    const saved = vi.fn();
+    mount(
+        <FitComponentForm
+            bikeId="b1"
+            position="rear-tyre"
+            onSaved={saved}
+            onCancel={() => {}}
+        />,
+    );
+    fill();
+    fireEvent.click(screen.getByText('Fit part'));
+    // The part exists and the fitting request is still running.
+    expect(await screen.findByRole('status')).toHaveTextContent(
+        'Fitting part…',
+    );
+    expect(screen.queryByText(/fitting incomplete/)).toBeNull();
+    expect(screen.queryByText('Retry fitting retained component')).toBeNull();
+    expect(screen.getByText('Fit part')).toBeDisabled();
+    finishFit({ ...installation, id: 'new-i', componentId: 'new' });
+    await waitFor(() => expect(saved).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/fitting incomplete/)).toBeNull();
+    expect(api.createComponent).toHaveBeenCalledTimes(1);
+});
 it('reloadCanResumeFittingExistingUnusedPart', async () => {
     api.listComponents
         .mockResolvedValueOnce({ items: [], nextCursor: 'next' })

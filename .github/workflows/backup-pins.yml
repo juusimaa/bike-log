@@ -1,0 +1,56 @@
+name: Backup image pins
+
+# The backup image installs exact Debian versions from a fixed snapshot, so builds
+# never break when Debian replaces a package. This job looks for newer versions
+# (usually security fixes) in a snapshot at least 12 hours old. When there are
+# some, it pushes them to a branch and opens an issue with a link to create the
+# pull request. A pull request opened by the owner runs the full CI; one opened
+# with this workflow's token would not.
+on:
+  schedule:
+    - cron: '17 4 * * 1' # Mondays 04:17 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: backup-pins
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: update
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: scripts/hosted/update-backup-pins.sh
+      - name: Push the new pins and open an issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if git diff --quiet -- images/backup/Dockerfile; then
+            echo 'The pins are current.'
+            exit 0
+          fi
+          stamp=$(sed -n 's/^ARG DEBIAN_SNAPSHOT=//p' images/backup/Dockerfile)
+          branch="chore/backup-pins-$stamp"
+          if git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "$branch already exists."
+            exit 0
+          fi
+          # shellcheck disable=SC2016 # the backticks are Markdown, not shell
+          versions=$(git diff -U0 -- images/backup/Dockerfile | sed -n 's/^+ *\([a-z-]*=[^ ]*\) .*/- `\1`/p')
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          git commit -qam "chore(backup): move the Debian snapshot to $stamp"
+          git push -q origin "$branch"
+          gh issue create --title "Backup image: newer Debian packages in snapshot $stamp" --body "$(printf '%s\n' \
+            "Newer versions of the backup image's Debian packages are available, usually security fixes:" '' \
+            "$versions" '' \
+            "Branch \`$branch\` updates \`images/backup/Dockerfile\`. [Create the pull request](https://github.com/$REPO/compare/main...$branch?expand=1); its CI builds the image for both platforms and runs the backup round trip.")"
