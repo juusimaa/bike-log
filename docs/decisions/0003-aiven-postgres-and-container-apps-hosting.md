@@ -1,5 +1,7 @@
 # Aiven PostgreSQL and Azure Container Apps hosting
 
+> The Container Apps hosting part is superseded by [decision 0007](0007-upcloud-hosting.md) (2026-10-14). The Aiven choice stands.
+
 Approved hosting: the hosted database is a single Aiven for PostgreSQL service on Aiven's free plan in an EU region. Web, API and the later worker run on Azure Container Apps (Consumption plan) in a nearby European Azure region, within the monthly free grant. Local development keeps Docker PostgreSQL. This replaces the earlier Neon Free choice in [0001-local-backend.md](0001-local-backend.md) and the design specification. Decided by the owner on 2026-10-13.
 
 Context: a European provider was preferred for the hosted database. Aiven is headquartered in Finland. Its free PostgreSQL plan has no time limit and includes backups and monitoring. It runs a single node with 1 CPU, 1 GB RAM and 1 GB disk, and allows at most 20 connections without connection pooling. It also excludes VPCs, static IPs, integrations and forking, and support. Aiven may power off a new free service that has no usage in its first few hours. Unlike Neon Free, the service does not scale to zero, so there is no cold-start delay after inactivity ([free tier](https://aiven.io/docs/products/postgresql/concepts/pg-free-tier), [free plan](https://aiven.io/docs/platform/concepts/free-plan)). The Container Apps Consumption plan includes a monthly per-subscription free grant of vCPU-seconds, GiB-seconds and requests ([billing](https://learn.microsoft.com/en-us/azure/container-apps/billing)).
