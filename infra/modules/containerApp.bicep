@@ -5,6 +5,7 @@ param settings object
 param publicOrigin string
 param webImage string
 param apiImage string
+param imageTag string
 param auth0ClientId string
 param allowedIngressCidrs array
 
@@ -42,6 +43,9 @@ var secretMount = {
 resource app 'Microsoft.App/containerApps@2026-07-01' = {
   name: 'ca-bikelog'
   location: location
+  tags: {
+    imageTag: imageTag
+  }
   identity: {
     type: 'UserAssigned'
     userAssignedIdentities: {

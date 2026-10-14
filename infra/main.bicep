@@ -13,6 +13,9 @@ param apiImage string
 param migrationsImage string
 param backupImage string
 
+@description('The sha-<commit> tag the app images came from; kept as a resource tag for rollback.')
+param imageTag string
+
 param auth0Issuer string
 param auth0Audience string
 param auth0ClientId string
@@ -94,6 +97,7 @@ module app 'modules/containerApp.bicep' = {
     publicOrigin: 'https://ca-bikelog.${environment.properties.defaultDomain}'
     webImage: webImage
     apiImage: apiImage
+    imageTag: imageTag
     auth0ClientId: auth0ClientId
     allowedIngressCidrs: allowedIngressCidrs
   }

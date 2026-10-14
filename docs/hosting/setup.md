@@ -65,23 +65,22 @@ Save the client secret to `.local/secrets/auth0-client-secret` with no trailing 
 
 1. **Settings → Environments → New environment** `production`. Under **Deployment branches and tags**,
    choose **Selected branches** and add `main`.
-2. Set the variables (all non-secret; there are no GitHub secrets). `AZURE_CLIENT_ID` is set after step 6.
+2. Set the variables. None is a credential, and there are no credentials in GitHub. Three values are
+   personal or tenant-specific, so they are stored as **environment secrets**: GitHub then masks them in
+   the workflow logs, which are public for a public repository. `AZURE_CLIENT_ID` is set after step 6.
 
    ```sh
    env=production
    gh variable set AZURE_TENANT_ID       --env $env --body "$(az account show --query tenantId -o tsv)"
    gh variable set AZURE_SUBSCRIPTION_ID --env $env --body "$(az account show --query id -o tsv)"
    gh variable set AZURE_RESOURCE_GROUP  --env $env --body rg-bikelog-prod
-   gh variable set OWNER_ALERT_EMAIL     --env $env   # prompts for the value
-   gh variable set AIVEN_DATABASE_HOST   --env $env   # prompts
    gh variable set AUTH0_ISSUER          --env $env   # https://<tenant>/ with the trailing slash
    gh variable set AUTH0_AUDIENCE        --env $env   # the Bike Log API identifier
    gh variable set AUTH0_CLIENT_ID       --env $env   # the hosted application's client ID
-   gh variable set INGRESS_ALLOW_CIDRS   --env $env --body "$(curl -fsS https://api.ipify.org)/32"
+   gh secret set OWNER_ALERT_EMAIL       --env $env   # prompts for the value
+   gh secret set AIVEN_DATABASE_HOST     --env $env   # prompts
+   gh secret set INGRESS_ALLOW_CIDRS     --env $env --body "$(curl -fsS https://api.ipify.org)/32"
    ```
-
-   The deploy workflow masks `OWNER_ALERT_EMAIL` and `AIVEN_DATABASE_HOST` in its logs, which are public
-   for a public repository.
 
 ## 6. Resource group and bootstrap
 
@@ -175,7 +174,7 @@ and run the quickstart C3–C5 checks with test records only.
 Only after every quickstart C4 refusal passes from your allowed address:
 
 ```sh
-gh variable set INGRESS_ALLOW_CIDRS --env production --body ''
+gh secret delete INGRESS_ALLOW_CIDRS --env production   # a missing secret means no allow-list
 gh workflow run deploy.yml -f image_tag=<current sha- tag> -f skip_migrations=true
 ```
 
