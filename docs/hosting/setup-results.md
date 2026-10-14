@@ -52,7 +52,7 @@ the code or docs named.
 | Hosted Auth0 application created | | |
 | GitHub environment `production` and its variables and secrets | 2026-10-14 | Deployments limited to `main`. Seven variables (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`) and three environment secrets (`OWNER_ALERT_EMAIL`, `AIVEN_DATABASE_HOST`, `INGRESS_ALLOW_CIDRS`); nothing at repository level. `AUTH0_CLIENT_ID` is the hosted application's, not the local one's. |
 | Bootstrap: budget €10 with three notifications | 2026-10-14 | `bootstrap.bicep` validated, then deployed to `rg-bikelog-prod` (Sweden Central). `budget-bikelog`: 10, monthly from 2026-10-01, notifications `actual50`, `actual80`, `forecast100`. Key Vault: RBAC, purge protection, 7-day soft delete. Storage: TLS 1.2 minimum, no public blob access, shared keys disabled. Federated credential subject `repo:juusimaa/bike-log:environment:production`. App identity: Key Vault Secrets User on the vault and Bike Log Backup Writer on the `backups` container only. |
-| Key Vault lists six secret names | | |
+| Key Vault lists six secret names | 2026-10-14 | A `SELECT 1`-style check from Docker with `sslmode=verify-full` against the Aiven CA connected as `avnadmin` over TLS (PostgreSQL 18.6, `max_connections` 20, empty `public` schema). All six secrets set with `--file`; the vault lists six names, and each stored value's SHA-256 matches its local file. |
 | Deploy identity holds only Contributor on the resource group | 2026-10-14 | `az role assignment list --all`: one assignment, Contributor on `rg-bikelog-prod`. |
 
 ## Part C: hosted validation (test data only)
