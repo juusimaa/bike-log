@@ -54,7 +54,7 @@ Each step of the cutover contract with its UTC time and outcome. Pending.
 | B6 `db-connections` shows only the server | ~12:26 | One session from the server's masked address and one with no client address (Aiven's own, local to its host); none from elsewhere |
 | C checks passed; first signed-in page on the new address (downtime ends) | 12:30 | **Downtime ends**: owner signed in at the new address. Unavailable about 13 minutes (target 30); B1 to C about 15 minutes (target 2 hours) |
 | D1 automatic deploy enabled | | |
-| D2 backup timer enabled | | |
+| D2 backup timer enabled | 12:33 | First server backup 12:33:12–12:33:18: Entra accepted the certificate assertion; dump 54,352 bytes, 196 rows, manifest uploaded; database round trip median 30 ms. `backup-verify-permissions`: overwrite and delete both HTTP 403, blob unchanged. Both files listed by `hosted.sh backups`. Timer enabled by the owner |
 | D3 Azure resources deleted | | |
 | D4 Aiven password rotated | | |
 | D5 Azure URLs removed from Auth0 | | |
@@ -67,7 +67,7 @@ Quickstart U1–U14. Pending.
 
 | ID | Date | Result | Notes |
 | --- | --- | --- | --- |
-| U1 | | | |
+| U1 | 2026-10-14 | Passed | Owner signed in at the new address at 12:30 UTC and logged a test ride. The first server backup holds the test bike with its 27 components from Azure and 2 rides (one from Azure, one new), so the records came over and the new address writes to the same database. Second device: not yet checked |
 | U2 | | | |
 | U3 (gate on) | 2026-10-14 | Passed | From the owner's address: `/api/bikes` and `/api/me` without a session 401; POST with a foreign Origin or none 403; `X-Forwarded-Host` ignored (401); `/openapi/v1.json` and `/health/ready` 404; `http://` 308 to HTTPS; ports 3000, 5080 and 3100 closed. An altered `Host` gets Caddy's empty 200 for an unknown site and never reaches the app (004: the platform's 404). From mobile data: 403 (A5) |
 | U3 (gate open) | | | |
@@ -76,7 +76,7 @@ Quickstart U1–U14. Pending.
 | U6 | | | |
 | U7 | | | |
 | U8 | | | |
-| U9 | | | |
+| U9 | 2026-10-14 | Passed | Restore rehearsal of the first post-move backup; see "Restore rehearsals" |
 | U10 | | | |
 | U11 | 2026-10-14 | Passed | TCP to the Aiven host from the owner's machine refused or timed out; the server connects (B5, B6) |
 | U12 | | | |
@@ -87,6 +87,7 @@ Quickstart U1–U14. Pending.
 
 | Date | Blob | Duration | Checks | Outcome |
 | --- | --- | --- | --- | --- |
+| 2026-10-14 | `2026-10-14/bikelog-20261014T123312Z.dump` (first backup from the server) | 2 s | dump SHA-256, `pg_restore` exit, row counts of all 13 tables, 27 usage entries with 0 differing totals, latest migration `20261013073652_ComponentGroupsWeight` | Passed |
 
 ## Findings
 
