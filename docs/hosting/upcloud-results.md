@@ -73,8 +73,8 @@ Quickstart U1–U14. Pending.
 | U3 (gate open) | | | |
 | U4 | 2026-10-14 | Passed | Gym Notebook and Subscription Tracker work. `bikelog-api` 108 MB and `bikelog-web` 135 MB (caps 512 MB); server memory available 867 MB of 1,855 MB, no swap |
 | U5 | | | |
-| U6 | | | |
-| U7 | | | |
+| U6 | 2026-10-14 | Passed | Merge of PR #29 at 12:38:56 UTC; Containers built by 12:40:03; Deploy ran on the server through the deploy key, `result=ok tag=sha-421369a previous=sha-8a4144b`, live at 12:41:05: about 2 minutes (target 15). The public log masks the server address and shows no key |
+| U7 | 2026-10-14 | First attempt failed (see Findings); fixed, to be repeated | |
 | U8 | | | |
 | U9 | 2026-10-14 | Passed | Restore rehearsal of the first post-move backup; see "Restore rehearsals" |
 | U10 | | | |
@@ -104,3 +104,14 @@ Quickstart U1–U14. Pending.
   `postgres` user can read it. On this server, uid 999 is also the `bikelog-deploy` account (system accounts
   are numbered downwards from 999) and gid 999 is `systemd-journal`. Neither can open it: `secrets/` is root
   0700. No change made.
+- **2026-10-14, the health gate missed an API-only failure (U7, first attempt).** Redeploying the current
+  images with `--api-env api.unhealthy.env` (an unreachable database host) reported `result=ok`: only `api` was
+  recreated, and Compose accepted the untouched `web` container's earlier "healthy" status after 1.2 s. The
+  probe from the owner's address saw 503 for 56 s until the owner ran `restart`. The same would let a real
+  release that changes only the API through. Also, the redeploy of the same images made `previous` equal to
+  `current`, and pruning removed the real previous release's images. Fixed in `bikelog-deploy`: every deploy,
+  rollback and fallback recreates `web` and `api`, and redeploying the current images keeps `previous`. The web
+  health check now runs every 2 s while starting and every 5 s after (was 10 s), so a broken release is found
+  in about 35 s. The stand-in web now asks the stand-in API for readiness, as the real one does; the new test
+  case fails against the old script (`exit 0, expected 1`) and passes with the fix.
+
