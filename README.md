@@ -4,6 +4,10 @@
 
 # Bike Log
 
+[![ci](https://github.com/juusimaa/bike-log/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/juusimaa/bike-log/actions/workflows/ci.yml?query=branch%3Amain)
+[![containers](https://github.com/juusimaa/bike-log/actions/workflows/containers.yml/badge.svg?branch=main)](https://github.com/juusimaa/bike-log/actions/workflows/containers.yml?query=branch%3Amain)
+[![deploy](https://github.com/juusimaa/bike-log/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/juusimaa/bike-log/actions/workflows/deploy.yml?query=branch%3Amain)
+
 An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
 is available under `docs/ui-design`. Open it directly in your browser; see the
 [preview guide](docs/ui-design/README.md) for the supported demo flows.
