@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ApiError } from '@bikelog/api-client';
-import { SignIn } from '../src/components/SignIn';
+import { SignIn, randomBikeKind } from '../src/components/SignIn';
 import { SessionExpired } from '../src/components/SessionExpired';
 import { createQueryClient, clearPrivateQueries } from '../src/lib/query';
 
@@ -14,6 +14,23 @@ describe('authentication UI', () => {
         expect(screen.getByRole('link', { name: /sign in with email code/i })).toHaveAttribute('href', '/auth/start?returnTo=%2F');
         expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
         expect(screen.queryByText(/create an account/i)).not.toBeInTheDocument();
+    });
+
+    it('draws a randomly chosen kind of bike on each visit', () => {
+        const kinds = [0, 0.2, 0.4, 0.6, 0.99].map((random) => {
+            vi.spyOn(Math, 'random').mockReturnValue(random);
+            const kind = randomBikeKind();
+            vi.restoreAllMocks();
+            return kind;
+        });
+        expect(kinds).toEqual(['road', 'gravel', 'mountain', 'hybrid', 'other']);
+        const drawing = (kind: (typeof kinds)[number]) => {
+            const { container, unmount } = render(<SignIn kind={kind} />);
+            const markup = container.querySelector('.auth-bike .bike-art')?.innerHTML;
+            unmount();
+            return markup;
+        };
+        expect(new Set(kinds.map(drawing)).size).toBe(5);
     });
 
     it('explains expiry and pilot access without submitting a write', () => {

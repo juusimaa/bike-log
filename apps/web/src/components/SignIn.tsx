@@ -1,7 +1,16 @@
 import Link from 'next/link';
+import type { BikeResponse } from '@bikelog/api-client';
 import { BikeArt } from './BikeArt';
 
-export function SignIn({ state = 'default' }: { state?: 'default' | 'signed-out' | 'unavailable' }) {
+type Kind = NonNullable<BikeResponse['kind']>;
+const KINDS: Kind[] = ['road', 'gravel', 'mountain', 'hybrid', 'other'];
+
+/** The page picks one per request, so each visit can show a different kind of bike. */
+export function randomBikeKind(): Kind {
+    return KINDS[Math.floor(Math.random() * KINDS.length)];
+}
+
+export function SignIn({ state = 'default', kind = 'road' }: { state?: 'default' | 'signed-out' | 'unavailable'; kind?: Kind }) {
     const title = state === 'signed-out' ? 'You’re signed out.' : state === 'unavailable' ? 'A small detour.' : 'Welcome back.';
     const description = state === 'signed-out'
         ? 'Your bike history will be here when you get back.'
@@ -13,7 +22,7 @@ export function SignIn({ state = 'default' }: { state?: 'default' | 'signed-out'
             <section className="auth-story">
                 <Link className="brand" href="/" aria-label="Bike Log home"><span className="brand-mark">b<span>↗</span></span>bike log<span className="brand-dot">.</span></Link>
                 <div className="auth-story-copy"><p className="auth-eyebrow">KEEP THE HISTORY. ENJOY THE RIDE.</p><h1>A little care.<br />A lot more miles.</h1><p>A place for every bike.<br />A story behind every kilometre.</p></div>
-                <div className="auth-bike" aria-hidden="true"><span className="auth-orbit" /><BikeArt kind="road" color="#345b43" /><div className="auth-bike-caption"><span className="auth-caption-dot" />Ready for the miles ahead.</div></div>
+                <div className="auth-bike" aria-hidden="true"><span className="auth-orbit" /><BikeArt kind={kind} color="#345b43" /><div className="auth-bike-caption"><span className="auth-caption-dot" />Ready for the miles ahead.</div></div>
                 <div className="auth-story-foot"><span>YOUR BIKES. YOUR HISTORY.</span><span>Made to go the distance. ↗</span></div>
             </section>
             <section className="auth-form-side">
