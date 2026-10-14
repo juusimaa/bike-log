@@ -41,7 +41,7 @@ Each step of the cutover contract with its UTC time and outcome. Pending.
 | Step | UTC | Outcome |
 | --- | --- | --- |
 | A2 install.sh (dry run, then real) | 2026-10-14 | Passed. Dry run listed only Bike Log's paths, the `bikelog-deploy` account, its sudoers file and the two backup units; the real run created them, timer disabled. Missing afterwards, as expected: `settings.env` and the `secrets/` files |
-| A3 secrets and settings copied (file names only) | 2026-10-14 | `settings.env`; `secrets/app.env`, `api.env`, `backup.env` (root 0600) and `aiven-ca-certificate` (0644). `api.env` keeps `SSL Mode=VerifyFull` and `Maximum Pool Size=3`. `backup.env` gets its Azure lines in A4. Password manager copy: pending |
+| A3 secrets and settings copied (file names only) | 2026-10-14 | `settings.env`; `secrets/app.env`, `api.env`, `backup.env` (root 0600) and `aiven-ca-certificate` (0644). `api.env` keeps `SSL Mode=VerifyFull` and `Maximum Pool Size=3`. `backup.env` gets its Azure lines in A4. The six Key Vault values the server uses are also in the owner's password manager (2026-10-14) |
 | A4 backup app registration; certificate expiry; backup.bicep deployed | | |
 | A5 Caddy site block, certificate issuer | | |
 | A6 Auth0 URLs added | | |
