@@ -36,6 +36,7 @@ the code or docs named.
 | `openid-client` derives `redirect_uri` from the callback URL it is given; behind ingress `request.url` is `http:`. | The callback URL is rebuilt on the configured public origin. |
 | `pg` lets an `sslmode` in a connection string override an explicit `ssl` option. | The hosted session pool is built from the URL's parts; weakening `sslmode` values are refused. |
 | Public repository workflow logs are public, and GitHub prints step environments and expanded scripts. | `OWNER_ALERT_EMAIL`, `AIVEN_DATABASE_HOST` and `INGRESS_ALLOW_CIDRS` are environment **secrets**, only so they are masked; `az` runs with `-o none` or narrow queries. |
+| GitHub sent an immutable OIDC subject (`repo:<owner>@<owner id>/<repo>@<repo id>:environment:production`; the repository has `use_immutable_subject: true`), so the first deployment failed sign-in with AADSTS700213 (2026-10-14). | `bootstrap.bicep` takes `githubSubjectPrefix`, defaulting to this repository's immutable prefix; bootstrap was re-run and only the credential's subject changed. |
 | Restore rehearsals and `hosted.sh backups` need the owner to read blobs. | `bootstrap.bicep` assigns the owner Storage Blob Data Reader on `backups`. |
 | Custom role names are unique per tenant, so the recreate check (C9) would collide. | The role name includes the resource group name. |
 | The ops job's default `--help` would have started the API server until the job timeout. | `--help` prints the operator usage and exits. |

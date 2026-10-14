@@ -16,8 +16,8 @@ param ownerPrincipalId string
 @description('First day of the current or a later month, for example 2026-11-01.')
 param budgetStartDate string
 
-@description('GitHub repository allowed to deploy, as owner/name.')
-param githubRepository string = 'juusimaa/bike-log'
+@description('The repository part of GitHub OIDC subjects. This repository uses immutable subjects, which carry the owner and repository IDs; read it with: gh api repos/<owner>/<repo>/actions/oidc/customization/sub --jq .sub_claim_prefix')
+param githubSubjectPrefix string = 'repo:juusimaa@1575723/bike-log@1399786181'
 
 @description('Suffix for globally unique names. main.bicep derives the same default.')
 param suffix string = uniqueString(resourceGroup().id)
@@ -82,7 +82,7 @@ resource githubProduction 'Microsoft.ManagedIdentity/userAssignedIdentities/fede
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
     audiences: ['api://AzureADTokenExchange']
-    subject: 'repo:${githubRepository}:environment:production'
+    subject: '${githubSubjectPrefix}:environment:production'
   }
 }
 

@@ -11,7 +11,7 @@ backup artifacts and recorded proofs. Spec entities map to them as follows.
 | --- | --- | --- | --- |
 | Budget | `budget-bikelog` | bootstrap | €10 monthly; actual 50%, actual 80%, forecast 100%; owner email (parameter, not committed) |
 | App identity | `id-bikelog-app` | bootstrap | Key Vault Secrets User; Bike Log Backup Writer on `backups` container |
-| Deploy identity | `id-bikelog-deploy` | bootstrap | Contributor on the resource group; federated subject `repo:juusimaa/bike-log:environment:production` |
+| Deploy identity | `id-bikelog-deploy` | bootstrap | Contributor on the resource group; federated subject `repo:juusimaa@1575723/bike-log@1399786181:environment:production` (GitHub's immutable subject format) |
 | Key Vault | `kv-bikelog-<suffix>` | bootstrap | Standard, RBAC, purge protection on, soft delete 7 days |
 | Backup storage | `stbikelog<suffix>` | bootstrap | StorageV2 Standard LRS Hot; TLS 1.2 minimum; no public blob access; shared-key access disabled; container `backups`; lifecycle: delete 35 days after creation |
 | Custom role | `Bike Log Backup Writer` | bootstrap | Data actions `blobs/add/action`, `blobs/read`; assignable to this resource group |
