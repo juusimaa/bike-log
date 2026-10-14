@@ -50,7 +50,9 @@ by the EF migrations, so the web app and the API share one database.
   (bound to `http://127.0.0.1:5080`, no ingress). Settings:
   - Revision mode single, `minReplicas: 0`, `maxReplicas: 1`, HTTP scale rule.
   - Each container gets 0.25 vCPU and 0.5 GiB.
-  - Ingress has `allowInsecure: false`.
+  - Ingress has `allowInsecure: false`, plus an optional address allow-list (`allowedIngressCidrs`). The
+    first deployment allows only the owner's IP address until sign-in and ownership checks are verified
+    on the hosted address (constitution IV), then the list is cleared.
   - Readiness probes: `api` on `/health/ready`; `web` on a new `/healthz` that also checks the API over
     loopback. Startup probes allow 60 seconds.
 - **Rationale**:
@@ -302,8 +304,7 @@ by the EF migrations, so the web app and the API share one database.
   2. Starts a uniquely named `postgres:18.6` container on a random loopback port with its own volume.
   3. Runs `pg_restore`, then compares row counts and usage totals with the manifest.
   4. Times the run.
-  5. Removes the container and volume when the backup holds real records (`--keep` only for synthetic
-     data).
+  5. Always removes the container and volume. `--keep` exists only for `--local` test runs.
 
   Real recovery (documented, not rehearsed against Aiven):
   1. Recreate the Aiven service.

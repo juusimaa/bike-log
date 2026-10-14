@@ -34,7 +34,8 @@ secret values.
 
 **Required GitHub environment variables** (non-secret): `AZURE_CLIENT_ID` (deploy identity),
 `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `OWNER_ALERT_EMAIL`,
-`AIVEN_DATABASE_HOST`, `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`. There are no GitHub secrets.
+`AIVEN_DATABASE_HOST`, `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, `INGRESS_ALLOW_CIDRS` (empty once
+the app is opened). There are no GitHub secrets.
 
 ## Rollback
 
@@ -72,7 +73,8 @@ scripts/hosted/hosted.sh backup-verify-permissions   # job identity tries overwr
 ## Restore rehearsal
 
 ```sh
-scripts/hosted/restore-rehearsal.sh <blob name> [--keep]
+scripts/hosted/restore-rehearsal.sh <blob name>
+scripts/hosted/restore-rehearsal.sh --local <dir> [--keep]   # tests only
 ```
 
 The script:
@@ -81,9 +83,8 @@ The script:
 2. Starts its own uniquely named PostgreSQL 18.6 container on a random loopback port.
 3. Restores and runs the checks in [backup-format.md](backup-format.md).
 4. Prints the duration and result.
-5. Removes its container and volume unless `--keep` is given. `--keep` is refused when the manifest's
-   `tables.BikeLogUsers` shows records other than the synthetic and test identities listed in
-   `.local/hosted.env`.
+5. Removes its container and volume. `--keep` is accepted only with `--local`; a rehearsal from Azure
+   always removes its copy.
 
 ## Secret rotation
 

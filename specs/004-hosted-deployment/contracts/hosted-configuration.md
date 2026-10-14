@@ -101,6 +101,7 @@ Other secrets are passed as environment variables, never as files.
 
 | Item | Value |
 | --- | --- |
+| Ingress allow-list | `allowedIngressCidrs` parameter from GitHub variable `INGRESS_ALLOW_CIDRS` (comma-separated). Non-empty: one `Allow` rule per range in `ingress.ipSecurityRestrictions`, all other addresses refused. Empty: open. |
 | Replicas | min 0, max 1; HTTP scale rule |
 | Resources | `web` 0.25 vCPU / 0.5 GiB; `api` 0.25 vCPU / 0.5 GiB |
 | `api` probes | Startup `GET /health/ready` (every 5 s, failure threshold 12); readiness `GET /health/ready` |

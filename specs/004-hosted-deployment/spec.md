@@ -252,7 +252,8 @@ thresholds and recipient, and after a month compare actual spend with the estima
   managed as code with the rest of the environment. The scheduled backup job MUST be able to write backups
   but not delete or overwrite them.
 - **FR-019**: Backups MUST be kept for at least 30 days; older backups MUST be removed automatically by the
-  storage's own retention rules, not by the backup job.
+  storage's own retention rules, not by the backup job. (Implemented as deletion 35 days after creation, so
+  at least 30 days are always kept despite the rule's daily delay.)
 - **FR-020**: A failed or missed backup MUST alert the owner within one day.
 - **FR-021**: A documented restore procedure MUST restore a chosen backup into a separate database, and
   MUST include a check that compares record counts and usage totals with the source. Rehearsals restore
@@ -260,7 +261,9 @@ thresholds and recipient, and after a month compare actual spend with the estima
   after the check when it holds real records. A real recovery recreates the hosted database service and
   restores into it; the guide covers both paths.
 - **FR-022**: The restore procedure MUST be rehearsed, with the date, duration and outcome recorded, before
-  any real personal record is entered in the hosted app.
+  any real personal record is entered in the hosted app. Real records means bikes, components,
+  installations, rides, maintenance records and reminders entered for real use. Pilot user identities
+  (issuer, subject, email) may be provisioned once the hosted refusal checks pass.
 
 **Pilot riders**
 
@@ -344,7 +347,8 @@ thresholds and recipient, and after a month compare actual spend with the estima
 - Basic platform logs are enough for this slice; richer telemetry and tracing come with the asynchronous
   slice and are added only if they fit the budget.
 - The repository is public, so publishing its container images publicly reveals nothing beyond the source.
-- The first deployment holds only synthetic or test records until the restore rehearsal passes (FR-022).
+- The first deployment holds only test garage records until the restore rehearsal passes (FR-022), and is
+  reachable only from the owner's IP address until the hosted refusal checks pass (constitution IV).
 
 ### Out of scope
 

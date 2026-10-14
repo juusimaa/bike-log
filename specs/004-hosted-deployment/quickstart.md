@@ -78,7 +78,8 @@ names. The deploy identity has only Contributor on the resource group.
 
 Push to `main`, or run the deploy workflow with the current tag. Expected: the workflow passes in under
 20 minutes, the migration execution succeeds, `https://<fqdn>/healthz` returns 200, and the step summary
-lists the digests.
+lists the digests. The first deployment is reachable only from the owner's IP address
+(`INGRESS_ALLOW_CIDRS`); C3 and C4 run from that address.
 
 ### C2. Network latency (D16)
 
@@ -103,6 +104,10 @@ Expected: under 1 minute when warm, and both devices show the same data.
 | Request with `Host` altered, or with `Origin` foreign on a POST | 403 |
 | `https://<fqdn>/openapi/v1.json` | Not found |
 | Any route of the API port from outside | Unreachable (no ingress) |
+| Any request from another address (phone on mobile data) while the allow-list is set | 403 from the platform |
+
+After every row passes, clear `INGRESS_ALLOW_CIDRS`, redeploy without migrations and confirm `/healthz` from
+mobile data. Record the date the app was opened.
 
 ### C5. Cold start (SC-002)
 
@@ -139,10 +144,11 @@ Expected: under 5 minutes.
 
 **Gate**: only after C1–C8 pass and are recorded may real records be entered.
 
-### C9. Recreate check (SC-009, optional before real data)
+### C9. Recreate check (SC-009, required before the 30-day review)
 
 In a second, temporary resource group, run bootstrap and main from the repository and time it to a
-healthy `/healthz`, pointing at a test database. Then delete the temporary resource group. This needs
+healthy `/healthz`, pointing at a temporary second database inside the Aiven service, never production
+data. Then delete the temporary resource group and the temporary database. This needs
 the owner's approval, because it briefly doubles resources; the cost stays within free allowances.
 
 ## Part D: after real use begins
