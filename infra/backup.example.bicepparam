@@ -7,5 +7,7 @@ param ownerAlertEmail = 'owner@example.com'
 param ownerPrincipalId = '00000000-0000-0000-0000-000000000000'
 // az ad sp show --id <backup app registration client id> --query id -o tsv
 param backupPrincipalId = '00000000-0000-0000-0000-000000000000'
-// The start date the budget already has (see the parameter description).
-param budgetStartDate = '2026-11-01'
+// The budget's existing dates, exactly as Azure returns them:
+// az consumption budget show -g rg-bikelog-prod --budget-name budget-bikelog --query timePeriod
+param budgetStartDate = '2026-11-01T00:00:00Z'
+param budgetEndDate = '2036-11-01T00:00:00Z'

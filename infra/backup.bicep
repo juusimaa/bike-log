@@ -24,6 +24,9 @@ param backupPrincipalId string
 @description('The budget start date already in use (budgets keep their start date): az consumption budget show -g rg-bikelog-prod --budget-name budget-bikelog --query timePeriod.startDate')
 param budgetStartDate string
 
+@description('The budget end date already in use; Azure sets one 10 years after the start when none is given. Empty leaves it to Azure.')
+param budgetEndDate string = ''
+
 @description('Suffix for globally unique names; the same default bootstrap.bicep used.')
 param suffix string = uniqueString(resourceGroup().id)
 
@@ -35,9 +38,7 @@ resource budget 'Microsoft.Consumption/budgets@2026-06-01' = {
     category: 'Cost'
     amount: 10
     timeGrain: 'Monthly'
-    timePeriod: {
-      startDate: budgetStartDate
-    }
+    timePeriod: union({ startDate: budgetStartDate }, empty(budgetEndDate) ? {} : { endDate: budgetEndDate })
     notifications: {
       actual50: {
         enabled: true
@@ -80,9 +81,17 @@ resource storage 'Microsoft.Storage/storageAccounts@2025-01-01' = {
   }
 }
 
+// Soft delete and the encryption scope are stated as Azure already has them, so a
+// redeployment reports no change.
 resource blobService 'Microsoft.Storage/storageAccounts/blobServices@2025-01-01' = {
   parent: storage
   name: 'default'
+  properties: {
+    deleteRetentionPolicy: {
+      enabled: false
+      allowPermanentDelete: false
+    }
+  }
 }
 
 resource backups 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = {
@@ -90,6 +99,8 @@ resource backups 'Microsoft.Storage/storageAccounts/blobServices/containers@2025
   name: 'backups'
   properties: {
     publicAccess: 'None'
+    defaultEncryptionScope: '$account-encryption-key'
+    denyEncryptionScopeOverride: false
   }
 }
 
