@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-04T05:26:27.876286+00:00",
+  "generatedAt": "2026-10-14T07:11:28.793960+00:00",
   "title": "Design System: Bike Log",
   "extensions": {
     "colorMeta": {
@@ -241,6 +241,20 @@
           "oklch(83.57% 0.03593 136.32)",
           "oklch(95.00% 0.03593 136.32)"
         ]
+      },
+      "brand-dot": {
+        "role": "primary",
+        "displayName": "Brand olive",
+        "tonalRamp": [
+          "oklch(15.00% 0.12300 125.57)",
+          "oklch(26.43% 0.12300 125.57)",
+          "oklch(37.86% 0.12300 125.57)",
+          "oklch(49.29% 0.12300 125.57)",
+          "oklch(60.71% 0.12300 125.57)",
+          "oklch(72.14% 0.12300 125.57)",
+          "oklch(83.57% 0.12300 125.57)",
+          "oklch(95.00% 0.12300 125.57)"
+        ]
       }
     },
     "typographyMeta": {
@@ -285,6 +299,21 @@
         "name": "field-focus",
         "value": "0 0 0 3px #eaf0e4",
         "purpose": "Input focus ring."
+      },
+      {
+        "name": "popover",
+        "value": "0 12px 35px #24332d18",
+        "purpose": "Account menu popover."
+      },
+      {
+        "name": "interruption",
+        "value": "0 18px 60px #14201877",
+        "purpose": "Session-expired interruption card over a dimmed page."
+      },
+      {
+        "name": "segment-selected",
+        "value": "0 1px 3px #24332d1f",
+        "purpose": "Selected option in a segmented control."
       }
     ],
     "motion": [
@@ -313,12 +342,24 @@
         "value": "950px"
       },
       {
+        "name": "auth-stack",
+        "value": "700px"
+      },
+      {
         "name": "phone",
         "value": "650px"
       }
     ]
   },
   "components": [
+    {
+      "name": "Brand mark",
+      "kind": "custom",
+      "refersTo": "brand-mark",
+      "description": "Wheel-bowl b tile beside the bike log wordmark; the link carries the name.",
+      "html": "<a class=\"ds-brand\" href=\"#\" aria-label=\"Bike Log home\"><svg class=\"ds-brand-mark\" viewBox=\"0 0 32 32\" aria-hidden=\"true\"><rect width='32' height='32' rx='7' fill='#345b43'/><rect x='8.75' y='5' width='4.5' height='22' rx='2.25' fill='#fff'/><circle cx='16.75' cy='19' r='6' fill='none' stroke='#fff' stroke-width='4'/><circle cx='16.75' cy='19' r='2.25' fill='#e4efb0'/></svg><span class=\"ds-brand-word\" aria-hidden=\"true\">bike log<span class=\"ds-brand-dot\"></span></span></a>",
+      "css": ".ds-brand{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:inline-flex;align-items:center;gap:10px;font-size:26px;font-weight:750;letter-spacing:-1.2px;color:var(--ink,#24332d);text-decoration:none}.ds-brand-mark{flex:none;display:block;width:32px;height:32px}.ds-brand-dot{display:inline-block;width:.2em;height:.2em;margin-left:.07em;border-radius:50%;background:#6c8a2f}.ds-brand:focus-visible{outline:3px solid #7ba78a;outline-offset:4px;border-radius:4px}"
+    },
     {
       "name": "Log a ride button",
       "kind": "button",
@@ -368,6 +409,13 @@
       "css": ".ds-status{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border-radius:20px;white-space:nowrap;font-size:9px;font-weight:550;background:#edf4e7;color:#42612c}"
     },
     {
+      "name": "Missing part status",
+      "kind": "chip",
+      "description": "Amber attention pill for an incomplete bike or a missing position; it never blocks an action.",
+      "html": "<span class=\"ds-pill-missing\">2 parts missing</span>",
+      "css": ".ds-pill-missing{font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:20px;white-space:nowrap;font-size:11px;font-weight:600;line-height:1;background:#fff4da;color:#785313}"
+    },
+    {
       "name": "Information panel",
       "kind": "card",
       "refersTo": "panel",
@@ -386,7 +434,7 @@
   ],
   "narrative": {
     "northStar": "Bike Log",
-    "overview": "Bike Log keeps the established forest green identity, pale sage emphasis, white panels and compact controls. Its visual language supports inspecting a bicycle and recording its maintenance history with a calm, practical hierarchy.\n\nThis record describes the connected web implementation and the finished overview. It preserves the approved V1 identity; the care-column composition remains an overview-specific decision, not a template for every screen.",
+    "overview": "Bike Log keeps the established forest green identity, pale sage emphasis, white panels and compact controls. Its visual language supports inspecting a bicycle and recording its maintenance history with a calm, practical hierarchy.\n\nThis record describes the connected web implementation and the finished overview. It preserves the approved V1 identity, with one owner-approved change on 2026-10-14: the brand mark is redrawn as the wheel-bowl b (see Brand mark and app icons). The care-column composition remains an overview-specific decision, not a template for every screen.",
     "keyCharacteristics": [
       "Forest green actions and pale sage emphasis.",
       "Rounded, bordered surfaces with restrained elevation.",
@@ -408,12 +456,16 @@
       "Do preserve the established green identity and reuse the existing CSS custom properties.",
       "Do keep maintenance state, lifetime mileage, and estimates explicit in text.",
       "Do retain keyboard focus visibility and reduced-motion behavior.",
-      "Do keep overflowing tables within a labeled, keyboard-focusable region with a visible phone scroll cue."
+      "Do keep overflowing tables within a labeled, keyboard-focusable region with a visible phone scroll cue.",
+      "Do render groups, positions and labels from the API catalog; never list them in screen code.",
+      "Do use amber only for \"needs attention\" states that never block an action.",
+      "Do draw the brand mark and app icons from `brandGeometry.ts`; regenerate the icons after changing it."
     ],
     "donts": [
       "Don't use reminder colors or progress bars to imply measured physical wear or guaranteed safety.",
       "Don't promote the overview care-column composition into a requirement for every screen.",
-      "Don't copy inherited low-contrast text, glyph icons, or decorative eyebrows into new surfaces."
+      "Don't copy inherited low-contrast text, glyph icons, or decorative eyebrows into new surfaces.",
+      "Don't set the brand mark in type, or use ↗ as a brand element; it means Rides and \"go there\"."
     ]
   }
 }
