@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
 import type { View } from '@bikelog/api-client';
+import { Brand } from './Brand';
 export const viewTitles = {
     overview: 'Overview',
     components: 'Components',
@@ -34,6 +35,7 @@ export function AppShell({
             <aside className="sidebar">
                 <Link
                     className="brand"
+                    aria-label="Bike Log home"
                     aria-disabled={navigationLocked || undefined}
                     href="/"
                     onClick={(e) => {
@@ -41,10 +43,7 @@ export function AppShell({
                         onNavigate('overview');
                     }}
                 >
-                    <span className="brand-mark">
-                        b<span>↗</span>
-                    </span>
-                    bike log<span className="brand-dot">.</span>
+                    <Brand />
                 </Link>
                 <div className="workspace">
                     <span className="avatar" aria-hidden="true">

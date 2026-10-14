@@ -19,6 +19,7 @@ colors:
   status-green-text: "#42612c"
   status-gray-bg: "#f0f2ee"
   status-gray-text: "#52604c"
+  brand-dot: "#6c8a2f"
 typography:
   title:
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
@@ -91,6 +92,10 @@ components:
     textColor: "{colors.ink}"
     rounded: "{rounded.panel}"
     padding: "26px"
+  brand-mark:
+    backgroundColor: "{colors.green}"
+    textColor: "{colors.white}"
+    rounded: "7px"
 ---
 
 # Design System: Bike Log
@@ -101,7 +106,7 @@ components:
 
 Bike Log keeps the established forest green identity, pale sage emphasis, white panels and compact controls. Its visual language supports inspecting a bicycle and recording its maintenance history with a calm, practical hierarchy.
 
-This record describes the connected web implementation and the finished overview. It preserves the approved V1 identity; the care-column composition remains an overview-specific decision, not a template for every screen.
+This record describes the connected web implementation and the finished overview. It preserves the approved V1 identity, with one owner-approved change on 2026-10-14: the brand mark is redrawn as the wheel-bowl b (see Brand mark and app icons). The care-column composition remains an overview-specific decision, not a template for every screen.
 
 **Key Characteristics:**
 - Forest green actions and pale sage emphasis.
@@ -114,7 +119,8 @@ Forest green anchors actions while pale sage distinguishes maintenance context f
 
 ### Primary
 - **Forest green:** primary buttons and selected navigation; the deeper hover token reinforces action state.
-- **Pale lime:** text selection within the overview and existing brand detail.
+- **Pale lime:** text selection within the overview and the wheel hub in the brand mark.
+- **Brand olive:** the wordmark's drawn full stop only; 3.45:1 or better on every surface it sits on.
 
 ### Neutral
 - **Green ink:** ordinary content and values.
@@ -188,6 +194,12 @@ The Components screen groups catalog positions into white group panels with a we
 
 Each bike kind has its own side-view drawing, computed from the real size M frame geometry of a reference bike: Canyon Endurace (road), Grizl (gravel), Spectral 29 (mountain), Citylite (hybrid) and Roadlite (other or not set). One shared scale keeps proportions honest, so the type shows through wheelbase, head angle, tyre width and cockpit rather than decoration. Thin strokes, green-grey tyres and rims; the frame takes the bike's colour, or the kind's default. Sources are in `docs/ui-design/drafts/bike-art-geometry.html`.
 
+### Brand mark and app icons
+
+The mark is a b whose bowl is a wheel: a white stem and rim with a lime hub on a square forest green tile, drawn on a 32-unit grid with a 7-unit corner radius. It replaces V1's typed "b ↗", whose arrow ran into the bowl, read as ♂ at large sizes and repeated the app's Rides and link arrow. The geometry lives once, in `src/components/brandGeometry.ts`. `Brand` draws the mark beside the "bike log" wordmark on the sign-in page and in the shell (32px on desktop, 26px on phones), hidden from assistive technology while the link carries the name "Bike Log home". The wordmark's full stop is a drawn circle, so it sits the same in every font.
+
+`npm run icons` draws every app icon from the same geometry: `favicon.ico` (16, 32, 48), `icon.svg` with a lighter tile on dark tab strips, a full-bleed 180px `apple-icon.png`, and the manifest's 192 and 512 icons plus a maskable 512 whose figure stays inside the central safe circle. The outputs are committed; edit the geometry and regenerate rather than editing an icon file. The approved V1 preview in `docs/ui-design` keeps the old mark as a historical record.
+
 ### Bike switcher
 
 One row shows the current bike, whatever the size of the garage (V4): its drawing, name, make, model, kind and year, the amber missing-parts pill when it is incomplete, and "Change bike". The selected-bike outline and sage fill carry over from the V1 card row. A count line beside it reads "N bikes in your garage · K incomplete". "Change bike" opens a non-modal panel under the row with search focused: recently viewed bikes (this browser tab), then all bikes A–Z; ↑ ↓ move, Enter picks the first match, Esc closes and returns focus. Create bike and loading further pages live at the panel's foot. On phones the row fills the width, the pill drops under the name and the "Change bike" text is hidden visually only.
@@ -201,8 +213,10 @@ One row shows the current bike, whatever the size of the garage (V4): its drawin
 - Do keep overflowing tables within a labeled, keyboard-focusable region with a visible phone scroll cue.
 - Do render groups, positions and labels from the API catalog; never list them in screen code.
 - Do use amber only for "needs attention" states that never block an action.
+- Do draw the brand mark and app icons from `brandGeometry.ts`; regenerate the icons after changing it.
 
 ### Don't:
 - Don't use reminder colors or progress bars to imply measured physical wear or guaranteed safety.
 - Don't promote the overview care-column composition into a requirement for every screen.
 - Don't copy inherited low-contrast text, glyph icons, or decorative eyebrows into new surfaces.
+- Don't set the brand mark in type, or use ↗ as a brand element; it means Rides and "go there".

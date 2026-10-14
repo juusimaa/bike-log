@@ -84,28 +84,20 @@ svg {
     align-items: center;
     gap: 10px;
 }
+/* The wordmark's full stop is drawn, so it sits the same in every font. */
 .brand-dot {
-    color: #819e3a;
-    margin-left: -9px;
+    display: inline-block;
+    width: 0.2em;
+    height: 0.2em;
+    margin-left: 0.07em;
+    border-radius: 50%;
+    background: #6c8a2f;
 }
 .brand-mark {
-    background: var(--green);
-    color: #fff;
+    flex: none;
+    display: block;
     width: 32px;
-    height: 34px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 28px;
-    position: relative;
-}
-.brand-mark span {
-    font-size: 16px;
-    position: absolute;
-    right: 2px;
-    top: 0;
-    color: var(--lime);
+    height: 32px;
 }
 .workspace {
     display: flex;
@@ -1102,15 +1094,8 @@ dialog::backdrop {
         white-space: nowrap;
     }
     .brand-mark {
-        width: 25px;
-        height: 27px;
-        font-size: 23px;
-    }
-    .brand-mark span {
-        font-size: 12px;
-    }
-    .brand-dot {
-        margin-left: -7px;
+        width: 26px;
+        height: 26px;
     }
     .workspace,
     .nav-label,

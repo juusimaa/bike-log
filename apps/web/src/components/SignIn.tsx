@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { BikeResponse } from '@bikelog/api-client';
 import { BikeArt } from './BikeArt';
+import { Brand } from './Brand';
 
 type Kind = NonNullable<BikeResponse['kind']>;
 const KINDS: Kind[] = ['road', 'gravel', 'mountain', 'hybrid', 'other'];
@@ -20,13 +21,13 @@ export function SignIn({ state = 'default', kind = 'road' }: { state?: 'default'
     return (
         <main className="auth-shell">
             <section className="auth-story">
-                <Link className="brand" href="/" aria-label="Bike Log home"><span className="brand-mark">b<span>↗</span></span>bike log<span className="brand-dot">.</span></Link>
+                <Link className="brand" href="/" aria-label="Bike Log home"><Brand /></Link>
                 <div className="auth-story-copy"><p className="auth-eyebrow">KEEP THE HISTORY. ENJOY THE RIDE.</p><h1>A little care.<br />A lot more miles.</h1><p>A place for every bike.<br />A story behind every kilometre.</p></div>
                 <div className="auth-bike" aria-hidden="true"><span className="auth-orbit" /><BikeArt kind={kind} color="#345b43" /><div className="auth-bike-caption"><span className="auth-caption-dot" />Ready for the miles ahead.</div></div>
                 <div className="auth-story-foot"><span>YOUR BIKES. YOUR HISTORY.</span><span>Made to go the distance. ↗</span></div>
             </section>
             <section className="auth-form-side">
-                <div className="auth-mobile-brand"><Link className="brand" href="/" aria-label="Bike Log home"><span className="brand-mark">b<span>↗</span></span>bike log<span className="brand-dot">.</span></Link></div>
+                <div className="auth-mobile-brand"><Link className="brand" href="/" aria-label="Bike Log home"><Brand /></Link></div>
                 <div className="auth-form-card">
                     <p className="auth-eyebrow">{state === 'signed-out' ? 'UNTIL THE NEXT RIDE' : state === 'unavailable' ? 'LET’S TRY THAT AGAIN' : 'YOUR NEXT RIDE STARTS HERE'}</p>
                     <h2>{title}</h2><p className="auth-subtitle">{description}</p>
