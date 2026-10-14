@@ -2,7 +2,8 @@
 
 ## Blob names
 
-Container `backups`:
+Container `backups` (the names below are shown with the container; inside it, blob names start at the
+date):
 
 ```text
 backups/<yyyy-mm-dd>/bikelog-<yyyymmddThhmmssZ>.dump            # pg_dump --format=custom
