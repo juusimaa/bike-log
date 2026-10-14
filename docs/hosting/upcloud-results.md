@@ -12,8 +12,8 @@ passed (quickstart "Gate").
 
 | Item | Date | Notes |
 | --- | --- | --- |
-| Cost addendum in [cost-estimate.md](cost-estimate.md) (T005a) | pending | No Azure resource is created before this |
-| Constitution amendment 1.0.2 (T004) | pending | |
+| Cost addendum in [cost-estimate.md](cost-estimate.md) (T005a) | 2026-10-14 | Approved by the owner; Azure changes from step A4 may proceed |
+| Constitution amendment 1.0.2 (T004) | 2026-10-14 | Approved by the owner |
 
 ## Server prerequisites
 

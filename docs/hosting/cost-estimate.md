@@ -41,3 +41,23 @@ Any of these needs a new estimate and a new owner approval (FR-026).
 ## Approval
 
 Approved by owner: juusimaa (2026-10-14)
+
+## Addendum 2026-10-14: after the move to UpCloud (spec 005)
+
+Covers the Azure resources that [spec 005](../../specs/005-upcloud-hosting/data-model.md) creates or keeps.
+The UpCloud server is the owner's and already paid for; Bike Log adds no UpCloud charge. Aiven stays on the
+free plan.
+
+| Resource | Change | Unit price | Expected €/month |
+| --- | --- | --- | --- |
+| Metric alert `alert-backup-missing-blobs` | New | About €0.10 per rule a month | 0.10 |
+| App registration **Bike Log backup (UpCloud)** with a certificate credential | New | Free | 0.00 |
+| Storage `stbikelog<suffix>` (Hot LRS), `backups` container | Kept | €0.0162/GB-month; writes €0.044 per 10,000 | 0.01–0.05 |
+| Action group `ag-bikelog-owner` | Kept | Free at this volume | 0.00 |
+| Budget `budget-bikelog` (€10) | Kept | Free | 0.00 |
+| Container Apps, jobs, environment, Log Analytics, Key Vault, managed identities, `alert-app-restarts`, `alert-backup-missing` | Deleted at cutover step D3 | — | 0.00 after deletion |
+
+**Expected total after cutover**: under €0.50 a month. Between cutover steps A4 and D3 both backup alerts
+exist, about €0.10 more for those days.
+
+Approved by owner: juusimaa (2026-10-14)

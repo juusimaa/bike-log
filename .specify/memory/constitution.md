@@ -74,9 +74,11 @@ Rationale: scope and cost stay proportional to a personal tracker and a small pr
 ## Technology and Operational Constraints
 
 - Stack: ASP.NET Core and EF Core on .NET (SDK pinned in `global.json`), Next.js with React and
-  TypeScript, React Native with Expo, PostgreSQL (Docker locally, Aiven for hosted), and Azure
-  Container Apps for later cloud deployment. Changing a stack element requires a decision record.
-- SDKs, packages, tools and container images MUST be pinned to explicit versions.
+  TypeScript, React Native with Expo, PostgreSQL (Docker locally, Aiven for hosted), the owner's
+  UpCloud server running Docker Compose behind Caddy for hosting, and Azure Blob Storage for backups.
+  Changing a stack element requires a decision record.
+- SDKs, packages, tools and container images MUST be pinned to explicit versions. Tools on a host
+  shared with other projects are recorded at setup rather than pinned by this repository.
 - Database migrations MUST be explicit commands, never applied automatically at API startup, and
   hosted migrations MUST be additive and rollback-compatible.
 - Destructive local operations (such as deleting the database volume) MUST require an explicit
@@ -116,4 +118,10 @@ Azure Container Apps is named as the hosting platform, because a European databa
 preferred ([decision 0003](../../docs/decisions/0003-aiven-postgres-and-container-apps-hosting.md)).
 Affected: `PROJECT_PLAN.md` and the 2026-10-01 design specification.
 
-**Version**: 1.0.1 | **Ratified**: 2026-10-12 | **Last Amended**: 2026-10-13
+Amendment 1.0.2 (2026-10-14): hosting moved from Azure Container Apps to the owner's UpCloud server,
+which runs other projects with Docker Compose behind Caddy, and Azure is kept for backup storage only,
+to remove cold starts at no added cost ([decision 0007](../../docs/decisions/0007-upcloud-hosting.md)).
+Tools owned by that shared server (Caddy, Docker Engine and Compose, the operating system) are recorded
+at setup instead of pinned. Affected: `PROJECT_PLAN.md`.
+
+**Version**: 1.0.2 | **Ratified**: 2026-10-12 | **Last Amended**: 2026-10-14
