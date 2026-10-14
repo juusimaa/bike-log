@@ -8,13 +8,14 @@
 [![containers](https://github.com/juusimaa/bike-log/actions/workflows/containers.yml/badge.svg?branch=main)](https://github.com/juusimaa/bike-log/actions/workflows/containers.yml?query=branch%3Amain)
 [![deploy](https://github.com/juusimaa/bike-log/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/juusimaa/bike-log/actions/workflows/deploy.yml?query=branch%3Amain)
 
+Bike Log tracks bicycle component history, ride-based mileage and service
+records. It has a .NET API, a connected web UI, invite-only sign-in through Auth0
+and a minimal hosted deployment on Azure Container Apps with Aiven PostgreSQL
+(see [Hosted deployment](#hosted-deployment)). The React Native app comes later.
+
 An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
 is available under `docs/ui-design`. Open it directly in your browser; see the
 [preview guide](docs/ui-design/README.md) for the supported demo flows.
-
-Bike Log has a .NET API, a connected web UI, invite-only sign-in through Auth0
-and a minimal hosted deployment on Azure Container Apps with Aiven PostgreSQL
-(see [Hosted deployment](#hosted-deployment)). The React Native app comes later.
 
 The local development stack below runs in synthetic mode without sign-in. Do not
 enter personal records in it or expose the local API/web remotely.
