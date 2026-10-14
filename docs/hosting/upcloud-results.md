@@ -25,8 +25,8 @@ Cutover A1 (research D13), checked 2026-10-14.
 | Docker Compose version (v2 or later) | v5.6.0 |
 | Docker Buildx present | v0.38.0 |
 | Architecture | linux/amd64 |
-| Caddy version; in a container?; network name | 2.11.7, in a container owned by the Subscription Tracker Compose project; shared network `edge` (so `CADDY_NETWORK=edge`); site files mounted from a shared host directory at `/etc/caddy/sites`; publishes 80/tcp, 443/tcp and 443/udp |
-| Firewall allows 80, 443 and SSH | Host: ufw inactive; nftables holds only Docker's rules. UpCloud's firewall: pending. Bike Log publishes no port |
+| Caddy version; in a container?; network name | 2.11.7, in a container owned by the Subscription Tracker Compose project; shared network `edge` (so `CADDY_NETWORK=edge`); site files from a shared host directory, imported as `/etc/caddy/sites/*.caddy` (Bike Log's goes in as `bikelog.caddy`); publishes 80/tcp, 443/tcp and 443/udp |
+| Firewall allows 80, 443 and SSH | UpCloud firewall (IPv4 rules): inbound TCP 22, 80 and 443, DNS, NTP, ICMP, and return traffic on ports 32768–60999; nothing else, including 443/udp and any IPv6. Host: ufw inactive; nftables holds only Docker's rules. Bike Log publishes no port |
 | SSH key-only | Yes (`passwordauthentication no`, `kbdinteractiveauthentication no`) |
 | Memory total / free (at least 1 GB free) | 1,855 MB total, 1,067 MB available, no swap; the running apps use about 230 MB. Borderline: Bike Log's measured use is checked in U4 |
 | Disk total / free on Docker's data root | 20 GB, 13 GB free |
