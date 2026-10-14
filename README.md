@@ -4,7 +4,12 @@ An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
 is available under `docs/ui-design`. Open it directly in your browser; see the
 [preview guide](docs/ui-design/README.md) for the supported demo flows.
 
-Local synthetic-data API and connected web milestone. Authentication, React Native and cloud deployment follow later. Do not enter personal records or expose the API/web remotely.
+Bike Log has a .NET API, a connected web UI, invite-only sign-in through Auth0
+and a minimal hosted deployment on Azure Container Apps with Aiven PostgreSQL
+(see [Hosted deployment](#hosted-deployment)). The React Native app comes later.
+
+The local development stack below runs in synthetic mode without sign-in. Do not
+enter personal records in it or expose the local API/web remotely.
 
 The connected web UI runs at http://127.0.0.1:3000 with Node 24: run `npm ci` then `npm run web:dev` in a second terminal after starting the API below. See [web workflows](docs/web-workflows.md) for exact units/time handling, recovery, production-build smoke and Chromium/WebKit verification. `./scripts/web-e2e.sh` starts only its own API/web processes, refuses occupied ports and preserves every database record/volume.
 
@@ -19,7 +24,7 @@ cp .env.example .env
 ./scripts/dev.sh run
 ```
 
-API: http://127.0.0.1:5080; OpenAPI: `/openapi/v1.json`; readiness: `/health/ready`. PostgreSQL: 127.0.0.1:54329. The API only starts in explicit synthetic Development mode on loopback.
+API: http://127.0.0.1:5080; OpenAPI: `/openapi/v1.json`; readiness: `/health/ready`. PostgreSQL: 127.0.0.1:54329. `dev.sh run` starts the API in explicit synthetic Development mode on loopback.
 
 ```sh
 ./scripts/dev.sh test
@@ -76,9 +81,29 @@ local (see [web workflows](docs/web-workflows.md)).
 GitHub Container Registry from `main` and `v*` tags. Run the same images locally
 with `./scripts/dev.sh app-up` (see [container images](docs/containers.md)).
 
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deploys each
+commit that Containers publishes from `main` to the hosted environment, running
+migrations first. Run it by hand with a previous image tag to roll back.
+[`.github/workflows/backup-pins.yml`](.github/workflows/backup-pins.yml) checks
+weekly for newer Debian package versions for the backup image and opens an issue
+when there are some.
+
 `main` is protected: changes land only through pull requests, and both `dotnet`
 and `web` checks must pass on an up-to-date branch before merging. Direct pushes
 and force pushes are blocked, including for admins.
+
+## Hosted deployment
+
+The hosted environment runs the published images on Azure Container Apps with
+Aiven PostgreSQL. Riders sign in with an Auth0 email one-time code, and only
+invited riders can sign in.
+
+- [Setup](docs/hosting/setup.md) and [setup results](docs/hosting/setup-results.md)
+  cover creating the environment, gated on the [cost estimate](docs/hosting/cost-estimate.md).
+- [Operations](docs/hosting/operations.md) covers deploy, rollback, backups and
+  `scripts/hosted/hosted.sh`.
+- [Auth0 pilot setup](docs/auth/auth0-pilot-setup.md) covers adding and removing riders.
+- [Decision records](docs/decisions/) explain the identity, hosting and import choices.
 
 ## License
 
