@@ -8,6 +8,40 @@ namespace BikeLog.Integration.Tests;
 
 public class PilotUserCommandTests
 {
+    private static readonly OperatorTargetGuardTests.TestHostEnvironment Development = new(
+        "Development"
+    );
+    private static readonly OperatorTargetGuardTests.TestHostEnvironment Production = new(
+        "Production"
+    );
+
+    [Fact]
+    public async Task HostedProvisioningIsRefusedBeforeAnyDatabaseAccess()
+    {
+        // Unresolvable host: any connection attempt would surface as an NpgsqlException, not
+        // the guard's InvalidOperationException.
+        const string connection =
+            "Host=pg-bikelog.invalid;Port=12345;Database=defaultdb;Username=u;Password=p;SSL Mode=Require;Root Certificate=/mnt/secrets/aiven-ca-certificate";
+        await using var db = TestDatabase.Open(connection);
+        var settings = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?>
+                {
+                    ["AccessMode"] = "Authenticated",
+                    ["LocalSyntheticMode"] = "false",
+                    ["Auth:Issuer"] = TestIssuer.Issuer,
+                    ["ConnectionStrings:Postgres"] = connection,
+                    ["Operator:HostedDatabaseHost"] = "pg-bikelog.invalid",
+                }
+            )
+            .Build();
+        var error = Assert.Throws<InvalidOperationException>(() =>
+            PilotUserCommands.ValidateTarget(db, settings, Production, TestIssuer.Issuer)
+        );
+        Assert.Contains("VerifyFull", error.Message, StringComparison.Ordinal);
+        Assert.Equal(System.Data.ConnectionState.Closed, db.Database.GetDbConnection().State);
+    }
+
     [Fact]
     public void UsageRebuildRejectsAuthenticatedModeAndExtraArguments()
     {
@@ -43,15 +77,15 @@ public class PilotUserCommandTests
                     }
                 )
                 .Build();
-            PilotUserCommands.ValidateTarget(db, settings, "Development", TestIssuer.Issuer);
+            PilotUserCommands.ValidateTarget(db, settings, Development, TestIssuer.Issuer);
             Assert.Throws<InvalidOperationException>(() =>
-                PilotUserCommands.ValidateTarget(db, settings, "Production", TestIssuer.Issuer)
+                PilotUserCommands.ValidateTarget(db, settings, Production, TestIssuer.Issuer)
             );
             Assert.Throws<InvalidOperationException>(() =>
                 PilotUserCommands.ValidateTarget(
                     db,
                     settings,
-                    "Development",
+                    Development,
                     "https://other.example.test/"
                 )
             );

@@ -63,6 +63,37 @@ public class HostTests : IClassFixture<PostgresFixture>
     }
 
     [Fact]
+    public void SyntheticModeNeverStartsInProduction()
+    {
+        // FR-003: the hosted environment runs as Production, so Synthetic mode must refuse it
+        // even with every other local setting present.
+        using var app = new ApiFactory(connection, "Production", enabled: true);
+        var error = Assert.Throws<InvalidOperationException>(() => app.CreateClient());
+        Assert.Contains("Development", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task OpenApiIsHiddenOutsideDevelopment()
+    {
+        await using var app = new ApiFactory(
+            connection,
+            "Production",
+            enabled: false,
+            settings: new Dictionary<string, string?>
+            {
+                ["AccessMode"] = "Authenticated",
+                ["Auth:Issuer"] = TestIssuer.Issuer,
+                ["Auth:Audience"] = TestIssuer.Audience,
+                ["Auth:Scope"] = "BikeLog.Access",
+            }
+        );
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            (await app.CreateClient().GetAsync("/openapi/v1.json")).StatusCode
+        );
+    }
+
+    [Fact]
     public async Task OpenApiDescribesCreatedRecordsAndConflicts()
     {
         await using var app = new ApiFactory(connection);

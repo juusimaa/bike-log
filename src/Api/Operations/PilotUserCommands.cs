@@ -6,25 +6,29 @@ namespace BikeLog.Api.Operations;
 
 public static class PilotUserCommands
 {
-    public static void ValidateTarget(
+    public static OperatorTarget ValidateTarget(
         BikeLogDbContext db,
         IConfiguration configuration,
-        string environmentName,
+        IHostEnvironment environment,
         string issuer
     )
     {
         if (
-            environmentName != Environments.Development
-            || configuration["AccessMode"] != "Authenticated"
+            configuration["AccessMode"] != "Authenticated"
             || configuration.GetValue<bool>("LocalSyntheticMode")
             || issuer != configuration["Auth:Issuer"]
         )
         {
             throw new InvalidOperationException(
-                "Pilot user commands require the configured authenticated development issuer."
+                "Pilot user commands require Authenticated mode and the configured issuer."
             );
         }
-        LocalDatabaseGuard.Validate(db, configuration);
+        // Development allows only the local database; Production only the guarded hosted one.
+        return OperatorTargetGuard.Validate(
+            configuration,
+            environment,
+            db.Database.GetConnectionString() ?? ""
+        );
     }
 
     public static async Task<Guid> ProvisionAsync(
