@@ -133,6 +133,11 @@ sudo openssl x509 -in /srv/bikelog/secrets/backup-client.crt -noout -enddate   #
 sudo cat /srv/bikelog/secrets/backup-client.crt                                # public part only
 ```
 
+`ls -l` shows uid 999 under whatever name the host gives it (on the first server, `bikelog-deploy` and the
+group `systemd-journal`). Only the number matters: inside the container it is `postgres`. No account but
+root can reach the file, because `secrets/` is 0700; `sudo -u bikelog-deploy cat
+/srv/bikelog/secrets/backup-client.pem` must say "Permission denied".
+
 Copy the certificate text to `.local/upcloud/backup-client.crt` and upload it:
 
 ```sh

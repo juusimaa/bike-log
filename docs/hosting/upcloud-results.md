@@ -99,3 +99,7 @@ Quickstart U1–U14. Pending.
   without migrations, disk check, pruning scope, caller limits and `db-connections` against PostgreSQL
   18.6. `scripts/hosted/tests/run.sh` passed with the new client-assertion case. The assertion is checked
   for structure and signature only; Entra accepting it is proven by the first server backup (U8).
+- **2026-10-14, owner of `backup-client.pem` (A4).** The file is owned by uid 999 so the backup image's
+  `postgres` user can read it. On this server, uid 999 is also the `bikelog-deploy` account (system accounts
+  are numbered downwards from 999) and gid 999 is `systemd-journal`. Neither can open it: `secrets/` is root
+  0700. No change made.
