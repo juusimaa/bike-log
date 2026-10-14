@@ -36,6 +36,7 @@ the code or docs named.
 | `openid-client` derives `redirect_uri` from the callback URL it is given; behind ingress `request.url` is `http:`. | The callback URL is rebuilt on the configured public origin. |
 | `pg` lets an `sslmode` in a connection string override an explicit `ssl` option. | The hosted session pool is built from the URL's parts; weakening `sslmode` values are refused. |
 | Public repository workflow logs are public, and GitHub prints step environments and expanded scripts. | `OWNER_ALERT_EMAIL`, `AIVEN_DATABASE_HOST` and `INGRESS_ALLOW_CIDRS` are environment **secrets**, only so they are masked; `az` runs with `-o none` or narrow queries. |
+| GitHub sent an immutable OIDC subject (`repo:<owner>@<owner id>/<repo>@<repo id>:environment:production`; the repository has `use_immutable_subject: true`), so the first deployment failed sign-in with AADSTS700213 (2026-10-14). | `bootstrap.bicep` takes `githubSubjectPrefix`, defaulting to this repository's immutable prefix; bootstrap was re-run and only the credential's subject changed. |
 | Restore rehearsals and `hosted.sh backups` need the owner to read blobs. | `bootstrap.bicep` assigns the owner Storage Blob Data Reader on `backups`. |
 | Custom role names are unique per tenant, so the recreate check (C9) would collide. | The role name includes the resource group name. |
 | The ops job's default `--help` would have started the API server until the job timeout. | `--help` prints the operator usage and exits. |
@@ -46,20 +47,20 @@ the code or docs named.
 
 | Item | Date | Result |
 | --- | --- | --- |
-| Cost estimate approved | | |
-| GHCR packages public; anonymous `docker pull` of `web` | | |
-| Aiven service: cloud, region, PostgreSQL major version, `max_connections` | | |
+| Cost estimate approved | 2026-10-14 | Approved by the owner: €10 monthly budget, expected €0.50–€2 ([cost-estimate.md](cost-estimate.md)). |
+| GHCR packages public; anonymous `docker pull` of `web` | 2026-10-14 | All four packages (`web`, `api`, `migrations`, `backup`) return their `main` manifest with an anonymous registry token (HTTP 200), and `docker pull ghcr.io/juusimaa/bike-log/web:main` works with no credentials. |
+| Aiven service: cloud, region, PostgreSQL major version, `max_connections` | 2026-10-14 | Free plan. Region `ams` (Amsterdam, Netherlands): in the EU, so research D16 passes. PostgreSQL 18.6, so the backup image's `pg_dump` 18.6 matches. `max_connections` 20, as the connection budget in research D11 assumes. |
 | Hosted Auth0 application created | | |
-| GitHub environment `production` and its variables and secrets | | |
-| Bootstrap: budget €10 with three notifications | | |
-| Key Vault lists six secret names | | |
-| Deploy identity holds only Contributor on the resource group | | |
+| GitHub environment `production` and its variables and secrets | 2026-10-14 | Deployments limited to `main`. Seven variables (`AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`) and three environment secrets (`OWNER_ALERT_EMAIL`, `AIVEN_DATABASE_HOST`, `INGRESS_ALLOW_CIDRS`); nothing at repository level. `AUTH0_CLIENT_ID` is the hosted application's, not the local one's. |
+| Bootstrap: budget €10 with three notifications | 2026-10-14 | `bootstrap.bicep` validated, then deployed to `rg-bikelog-prod` (Sweden Central). `budget-bikelog`: 10, monthly from 2026-10-01, notifications `actual50`, `actual80`, `forecast100`. Key Vault: RBAC, purge protection, 7-day soft delete. Storage: TLS 1.2 minimum, no public blob access, shared keys disabled. Federated credential subject `repo:juusimaa/bike-log:environment:production`. App identity: Key Vault Secrets User on the vault and Bike Log Backup Writer on the `backups` container only. |
+| Key Vault lists six secret names | 2026-10-14 | A `SELECT 1`-style check from Docker with `sslmode=verify-full` against the Aiven CA connected as `avnadmin` over TLS (PostgreSQL 18.6, `max_connections` 20, empty `public` schema). All six secrets set with `--file`; the vault lists six names, and each stored value's SHA-256 matches its local file. |
+| Deploy identity holds only Contributor on the resource group | 2026-10-14 | `az role assignment list --all`: one assignment, Contributor on `rg-bikelog-prod`. |
 
 ## Part C: hosted validation (test data only)
 
 | Scenario | Date | Result |
 | --- | --- | --- |
-| C1 first deployment: duration, migration execution, `/healthz` | | |
+| C1 first deployment: duration, migration execution, `/healthz` | 2026-10-14 | Dispatched for `sha-e15d0b7` (run 38514727538). First attempt failed sign-in (immutable OIDC subject; see findings). The re-run created the environment, app and jobs in 3 min 43 s; migration execution `job-bikelog-migrate-g3g8t6y` succeeded in 35 s; the app update took 1 min 37 s; total 6 min 25 s. The run then failed in "Wait for the new revision" on its first poll: a `read` at end of input under `bash -e` (fixed in `deploy.yml`). The revision itself was Provisioned, Healthy and `RunningAtMaxScale`. From the allowed address: `/healthz` 200 `ok` in 0.15 s; `/openapi/v1.json` 404; `http://` 301 to `https://`; HSTS, `nosniff`, `same-origin` and `DENY` headers present. |
 | C2 database round trip median (backup log) | | |
 | C3 sign-in from a phone on mobile data and a laptop, timed | | |
 | C4 refusals: uninvited address; `http://`; altered Host; foreign Origin; `/openapi/v1.json`; no API ingress; other address while the allow-list is set | | |

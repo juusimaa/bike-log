@@ -40,4 +40,4 @@ Any of these needs a new estimate and a new owner approval (FR-026).
 
 ## Approval
 
-Approved by owner: ____ (date)
+Approved by owner: juusimaa (2026-10-14)

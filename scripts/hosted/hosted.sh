@@ -24,8 +24,8 @@ die() {
 
 env_file=.local/hosted.env
 [ -f "$env_file" ] || die "missing $env_file; copy scripts/hosted/hosted.env.example and fill it in"
-if grep -Eq '^[A-Z_]+=.*<' "$env_file"; then
-  die "$env_file still has placeholder values: $(grep -E '^[A-Z_]+=.*<' "$env_file" | cut -d= -f1 | tr '\n' ' ')"
+if grep -Eq '^[A-Z0-9_]+=.*<' "$env_file"; then
+  die "$env_file still has placeholder values: $(grep -E '^[A-Z0-9_]+=.*<' "$env_file" | cut -d= -f1 | tr '\n' ' ')"
 fi
 # shellcheck source=/dev/null
 . "$env_file"
