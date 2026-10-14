@@ -72,7 +72,7 @@ Quickstart U1–U14. Pending.
 | U3 (gate on) | 2026-10-14 | Passed | From the owner's address: `/api/bikes` and `/api/me` without a session 401; POST with a foreign Origin or none 403; `X-Forwarded-Host` ignored (401); `/openapi/v1.json` and `/health/ready` 404; `http://` 308 to HTTPS; ports 3000, 5080 and 3100 closed. An altered `Host` gets Caddy's empty 200 for an unknown site and never reaches the app (004: the platform's 404). From mobile data: 403 (A5) |
 | U3 (gate open) | | | |
 | U4 | 2026-10-14 | Passed | Gym Notebook and Subscription Tracker work. `bikelog-api` 108 MB and `bikelog-web` 135 MB (caps 512 MB); server memory available 867 MB of 1,855 MB, no swap |
-| U5 | | | |
+| U5 | 2026-10-14 | Passed | `sudo reboot` at about 13:04 UTC. Probe from the owner's address: unavailable 13:03:47–13:05:23, about 1.5 minutes, for all three apps; Bike Log came back without manual steps (`status`: current `sha-1b3d51b`, web healthy; every container of the three apps up; backup timer still scheduled) |
 | U6 | 2026-10-14 | Passed | Merge of PR #29 at 12:38:56 UTC; Containers built by 12:40:03; Deploy ran on the server through the deploy key, `result=ok tag=sha-421369a previous=sha-8a4144b`, live at 12:41:05: about 2 minutes (target 15). The public log masks the server address and shows no key |
 | U7 | 2026-10-14 | Passed (second attempt) | After the fix (PR #30) and `install.sh`: redeploy with an unreachable database host gave `container bikelog-web-1 is unhealthy`, the previous release restored by itself, `result=failed`, exit 1, rollback target kept. Probe from the owner's address: unavailable 13:00:37–13:01:15, **38 s** (target 60). `gh workflow run deploy.yml -f rollback=true`: `result=ok tag=sha-421369a previous=sha-1b3d51b` in 28 s, about 6 s unavailable; rolled forward the same way in 24 s. First attempt: see Findings |
 | U8 | | | |
@@ -114,4 +114,10 @@ Quickstart U1–U14. Pending.
   health check now runs every 2 s while starting and every 5 s after (was 10 s), so a broken release is found
   in about 35 s. The stand-in web now asks the stand-in API for readiness, as the real one does; the new test
   case fails against the old script (`exit 0, expected 1`) and passes with the fix.
+- **2026-10-14, the backup timer's first "LAST" time (D2).** Right after `systemctl enable --now`,
+  `list-timers` showed a LAST time although the service had never run: with `Persistent=true`, systemd records
+  the first activation as the last trigger instead of running a missed job. The systemd path was then proven
+  by hand: `systemctl start bikelog-backup.service` at 13:11:51 UTC ran `bikelog-deploy backup` as the timer
+  caller and wrote `2026-10-14/bikelog-20261014T131152Z.dump` (54,352 bytes, 196 rows). The first scheduled
+  run is 2026-10-15 at about 02:33 UTC.
 
