@@ -1,0 +1,21 @@
+# Bike Log (spec 005). Address: the server's default UpCloud hostname.
+# Import or paste this into the owner's Caddyfile, then reload Caddy.
+# `sudo /srv/bikelog/bin/bikelog-deploy gate owner-only <address>` (or `gate open`)
+# prints this block with the real hostname filled in.
+#
+# Rules (contracts/server-layout.md, research D3):
+#   - No `tls` issuer line: Caddy falls back from Let's Encrypt to ZeroSSL, which
+#     matters because upcloud.host shares Let's Encrypt's per-domain limits.
+#   - No `header_up` for Host or X-Forwarded-*: Caddy's defaults are what the web
+#     app's origin checks expect.
+<server hostname> {
+	# Owner gate: remove these two lines after the refusal checks pass (quickstart U3).
+	@not_owner not remote_ip <owner address>
+	respond @not_owner 403
+
+	reverse_proxy bikelog-web:3000
+}
+
+# When Caddy runs on the host instead of in a container (install.sh --caddy-on-host),
+# use this upstream instead:
+#	reverse_proxy 127.0.0.1:3100

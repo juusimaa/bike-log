@@ -4,9 +4,13 @@
 #   backup.sh                       dump + manifest, uploaded as create-only blobs
 #   backup.sh --verify-permissions  prove this identity cannot overwrite or delete
 #
-# Settings: BIKELOG_DATABASE_URL (libpq URI), and either BACKUP_ACCOUNT_URL,
-# BACKUP_CONTAINER and AZURE_CLIENT_ID (Container Apps managed identity), or
-# BACKUP_LOCAL_DIR for local tests. Never logs the database password or a token.
+# Settings: BIKELOG_DATABASE_URL (libpq URI), and either BACKUP_LOCAL_DIR for local
+# tests, or BACKUP_ACCOUNT_URL, BACKUP_CONTAINER and AZURE_CLIENT_ID with one way to
+# sign in to Azure Storage:
+#   - AZURE_TENANT_ID and AZURE_CLIENT_CERTIFICATE_FILE (a PEM file with the app
+#     registration's private key and certificate), on the UpCloud server (spec 005);
+#   - IDENTITY_ENDPOINT and IDENTITY_HEADER, a Container Apps managed identity.
+# Never logs the database password, the client assertion or a token.
 set -euo pipefail
 umask 077
 
@@ -28,13 +32,27 @@ esac
 manifest_sql=${BACKUP_MANIFEST_SQL:-/usr/local/share/bikelog/manifest.sql}
 local_dir=${BACKUP_LOCAL_DIR:-}
 [ -n "${BIKELOG_DATABASE_URL:-}" ] || fail 'BIKELOG_DATABASE_URL is not set'
+require() {
+  local name
+  for name; do [ -n "${!name:-}" ] || fail "$name is not set"; done
+}
+certificate_file=${AZURE_CLIENT_CERTIFICATE_FILE:-}
 if [ -z "$local_dir" ]; then
-  for name in BACKUP_ACCOUNT_URL BACKUP_CONTAINER AZURE_CLIENT_ID IDENTITY_ENDPOINT IDENTITY_HEADER; do
-    [ -n "${!name:-}" ] || fail "$name is not set"
-  done
+  require BACKUP_ACCOUNT_URL BACKUP_CONTAINER AZURE_CLIENT_ID
+  if [ -n "$certificate_file" ]; then
+    require AZURE_TENANT_ID
+  elif [ -n "${IDENTITY_ENDPOINT:-}" ]; then
+    require IDENTITY_HEADER
+  else
+    fail 'no Azure sign-in is configured: set AZURE_CLIENT_CERTIFICATE_FILE and AZURE_TENANT_ID, or run with a managed identity'
+  fi
 fi
-if [ -n "${BACKUP_TEST_PAUSE_AFTER_MANIFEST:-}" ] && [ -z "$local_dir" ]; then
-  fail 'BACKUP_TEST_PAUSE_AFTER_MANIFEST is for local tests only'
+for hook in BACKUP_TEST_PAUSE_AFTER_MANIFEST BACKUP_TEST_PRINT_ASSERTION; do
+  if [ -n "${!hook:-}" ] && [ -z "$local_dir" ]; then fail "$hook is for local tests only"; fi
+done
+if [ -n "$certificate_file" ]; then
+  [[ "${AZURE_TENANT_ID:-}" =~ ^[0-9a-fA-F-]{36}$ ]] || fail 'AZURE_TENANT_ID must be the tenant ID (a GUID)'
+  [ -r "$certificate_file" ] || fail 'AZURE_CLIENT_CERTIFICATE_FILE cannot be read'
 fi
 # Pinned Blob service REST version.
 blob_api_version=2025-05-05
@@ -42,16 +60,61 @@ blob_api_version=2025-05-05
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
-# --- Azure Blob Storage, as the job's user-assigned managed identity ----------
+# --- Azure Blob Storage sign-in ---------------------------------------------------
+
+b64url() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
+
+# Client assertion for the certificate credential (research D10): an RS256 JWT
+# signed with the private key, identifying the certificate by its SHA-256
+# thumbprint. Valid for at most 10 minutes; jti makes each one unique.
+client_assertion() {
+  local thumbprint header claims now signature
+  thumbprint=$(openssl x509 -in "$certificate_file" -outform DER | openssl dgst -sha256 -binary | b64url) ||
+    fail 'AZURE_CLIENT_CERTIFICATE_FILE holds no readable certificate'
+  now=$(date -u +%s)
+  header=$(jq -cn --arg x5t "$thumbprint" '{alg: "RS256", typ: "JWT", "x5t#S256": $x5t}' | b64url)
+  claims=$(jq -cn --arg aud "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
+    --arg client "$AZURE_CLIENT_ID" --arg jti "$(openssl rand -hex 16)" --argjson now "$now" \
+    '{aud: $aud, iss: $client, sub: $client, jti: $jti, iat: $now, nbf: $now, exp: ($now + 600)}' | b64url)
+  signature=$(printf '%s.%s' "$header" "$claims" | openssl dgst -sha256 -sign "$certificate_file" -binary | b64url) ||
+    fail 'could not sign the client assertion with AZURE_CLIENT_CERTIFICATE_FILE'
+  printf '%s.%s.%s' "$header" "$claims" "$signature"
+}
 
 blob_auth() {
   # The token goes to a header file, so it never appears in a process list or log.
-  local token
-  token=$(curl -fsS --max-time 30 -H "X-IDENTITY-HEADER: $IDENTITY_HEADER" \
-    "$IDENTITY_ENDPOINT?resource=https://storage.azure.com/&api-version=2019-08-01&client_id=$AZURE_CLIENT_ID" |
-    jq -er .access_token) || fail 'could not get a storage token from the managed identity endpoint'
+  local token status
+  if [ -n "$certificate_file" ]; then
+    client_assertion > "$work/assertion"
+    status=$(curl -sS --max-time 30 -o "$work/token" -w '%{http_code}' \
+      --data-urlencode grant_type=client_credentials \
+      --data-urlencode "client_id=$AZURE_CLIENT_ID" \
+      --data-urlencode client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer \
+      --data-urlencode "client_assertion@$work/assertion" \
+      --data-urlencode scope=https://storage.azure.com/.default \
+      "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token") ||
+      fail 'could not reach the Entra token endpoint'
+    rm -f "$work/assertion"
+    if [ "$status" != 200 ]; then
+      # Entra's error code and the first line of its description; no token or assertion.
+      fail "the token request with the certificate returned HTTP $status: $(jq -r '"\(.error // "?"): \(.error_description // "" | split("\r\n")[0])"' "$work/token" 2> /dev/null)"
+    fi
+    token=$(jq -er .access_token "$work/token") || fail 'the token response had no access token'
+    rm -f "$work/token"
+  else
+    token=$(curl -fsS --max-time 30 -H "X-IDENTITY-HEADER: $IDENTITY_HEADER" \
+      "$IDENTITY_ENDPOINT?resource=https://storage.azure.com/&api-version=2019-08-01&client_id=$AZURE_CLIENT_ID" |
+      jq -er .access_token) || fail 'could not get a storage token from the managed identity endpoint'
+  fi
   printf 'Authorization: Bearer %s\nx-ms-version: %s\n' "$token" "$blob_api_version" > "$work/auth"
 }
+
+if [ -n "${BACKUP_TEST_PRINT_ASSERTION:-}" ]; then
+  # Test hook (local tests only, checked above): print one assertion and stop.
+  require AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_CERTIFICATE_FILE
+  client_assertion
+  exit 0
+fi
 
 # blob_request METHOD BLOB [curl args...] -> prints the HTTP status
 blob_request() {

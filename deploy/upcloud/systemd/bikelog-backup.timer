@@ -1,0 +1,11 @@
+# Daily at 02:30 UTC; a run missed while the server was off runs at boot.
+[Unit]
+Description=Bike Log daily backup
+
+[Timer]
+OnCalendar=*-*-* 02:30:00 UTC
+Persistent=true
+RandomizedDelaySec=10m
+
+[Install]
+WantedBy=timers.target

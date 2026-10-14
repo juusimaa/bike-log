@@ -1,5 +1,7 @@
 # Hosted deployment architecture
 
+> Superseded for hosting by [decision 0007](0007-upcloud-hosting.md) (2026-10-14): Bike Log moves to the owner's UpCloud server. The backup format, storage and restore rehearsal described here still apply.
+
 Approved design for the first hosted slice ([spec 004](../../specs/004-hosted-deployment/spec.md)): one Azure Container App in Sweden Central runs the existing web app and API as two containers that share `localhost`, scales to zero, and uses the Aiven free PostgreSQL service ([decision 0003](0003-aiven-postgres-and-container-apps-hosting.md)) over verified TLS. Recorded on 2026-10-14 from the plan's decisions D1–D18 ([research](../../specs/004-hosted-deployment/research.md)) and what implementation found.
 
 Context: the web app and API were tested only on loopback. Hosting must keep the invite-only sign-in and per-owner checks of [decision 0002](0002-auth0-invite-only-identity.md), stay within a €10 monthly budget, keep secrets and personal values out of a public repository, and prove that records can be recovered before any real record is entered.

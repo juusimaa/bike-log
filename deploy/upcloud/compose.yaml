@@ -1,0 +1,120 @@
+# Bike Log on the UpCloud server (spec 005, contracts/server-layout.md).
+# Copied to /srv/bikelog by scripts/upcloud/install.sh and run only through
+# /srv/bikelog/bin/bikelog-deploy, which passes two --env-file files for
+# interpolation: settings.env (non-secret settings) and release.env (image digests).
+# Secrets reach containers only through env_file entries in secrets/.
+#
+# web serves port 3000 to Caddy over the shared `caddy` network. api shares web's
+# network namespace and binds 127.0.0.1:5080, so only the web proxy reaches it, as
+# in Azure and compose.app.yaml. migrate, ops and backup are one-off services in the
+# `jobs` profile, so `up` never starts them. Nothing publishes a port; when Caddy
+# runs on the host, compose.host-caddy.yaml publishes web on loopback instead.
+name: bikelog
+
+x-limits: &limits
+  mem_limit: 512m
+  cpus: 0.5
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: "3"
+
+x-api-environment: &api-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_URLS: http://127.0.0.1:5080
+  AccessMode: Authenticated
+  LocalSyntheticMode: "false"
+  Auth__Issuer: ${AUTH0_ISSUER:?set in settings.env}
+  Auth__Audience: ${AUTH0_AUDIENCE:?set in settings.env}
+  Auth__Scope: BikeLog.Access
+
+# The Aiven CA is public; it is the one file the database clients read from disk.
+x-ca: &ca ./secrets/aiven-ca-certificate:/mnt/secrets/aiven-ca-certificate:ro
+
+services:
+  web:
+    <<: *limits
+    image: ${WEB_IMAGE:?set in release.env}
+    restart: unless-stopped
+    env_file: ./secrets/app.env
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+      BIKELOG_WEB_ACCESS_MODE: Authenticated
+      WEB_PUBLIC_ORIGIN: ${WEB_PUBLIC_ORIGIN:?set in settings.env}
+      BIKELOG_API_ORIGIN: http://127.0.0.1:5080
+      AUTH0_ISSUER: ${AUTH0_ISSUER:?set in settings.env}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:?set in settings.env}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:?set in settings.env}
+      BIKELOG_DATABASE_CA_FILE: /mnt/secrets/aiven-ca-certificate
+    volumes:
+      - *ca
+    # /healthz succeeds only when the API answers /health/ready over loopback, so this
+    # also covers api. The image has Node and nothing else that can fetch.
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/healthz').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    # default gives egress to Aiven and Auth0 even if the caddy network is internal.
+    networks:
+      default: {}
+      caddy:
+        aliases: [bikelog-web]
+
+  api:
+    <<: *limits
+    image: ${API_IMAGE:?set in release.env}
+    restart: unless-stopped
+    network_mode: service:web
+    # API_ENV_FILE is set only by `bikelog-deploy deploy --api-env` for the failed-deploy
+    # rehearsal (quickstart U7); it is never written to release.env.
+    env_file: ./secrets/${API_ENV_FILE:-api.env}
+    environment: *api-environment
+    volumes:
+      - *ca
+
+  migrate:
+    <<: *limits
+    image: ${MIGRATIONS_IMAGE:?set in release.env}
+    profiles: [jobs]
+    restart: "no"
+    env_file: ./secrets/api.env
+    volumes:
+      - *ca
+
+  ops:
+    <<: *limits
+    image: ${API_IMAGE:?set in release.env}
+    profiles: [jobs]
+    restart: "no"
+    env_file: ./secrets/api.env
+    environment:
+      <<: *api-environment
+      Operator__HostedDatabaseHost: ${Operator__HostedDatabaseHost:?set in settings.env}
+    volumes:
+      - *ca
+
+  backup:
+    <<: *limits
+    image: ${BACKUP_IMAGE:?set in release.env}
+    profiles: [jobs]
+    restart: "no"
+    env_file: ./secrets/backup.env
+    volumes:
+      - *ca
+      # Private key and certificate of the backup app registration, readable by the
+      # image's postgres user only (docs/hosting/upcloud.md, "Backups").
+      - ./secrets/backup-client.pem:/mnt/secrets/backup-client.pem:ro
+
+networks:
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:-caddy}
