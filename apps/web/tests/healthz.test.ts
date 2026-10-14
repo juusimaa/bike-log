@@ -43,9 +43,7 @@ it('gives up after 3 seconds', async () => {
         (_input: RequestInfo | URL, init?: RequestInit) =>
             new Promise<Response>((_resolve, reject) => {
                 signal = init?.signal ?? undefined;
-                signal?.addEventListener('abort', () =>
-                    reject(signal?.reason),
-                );
+                signal?.addEventListener('abort', () => reject(signal?.reason));
             }),
     );
     const started = Date.now();

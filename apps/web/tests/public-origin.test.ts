@@ -25,9 +25,7 @@ it('returns the configured origin when the Host matches, whatever request.url sa
 it('throws ForeignOriginError for a different Host', () => {
     vi.stubEnv('WEB_PUBLIC_ORIGIN', hosted);
     expect(() =>
-        publicRequestOrigin(
-            request(`${hosted}/`, { host: 'evil.example' }),
-        ),
+        publicRequestOrigin(request(`${hosted}/`, { host: 'evil.example' })),
     ).toThrow(ForeignOriginError);
 });
 

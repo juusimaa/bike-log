@@ -18,9 +18,10 @@ const hosted =
 
 it('keeps the loopback session database without TLS', () => {
     const local = 'postgresql://bikelog:pw@127.0.0.1:54329/bikelog_dev';
-    expect(
-        sessionPoolConfig({ BIKELOG_WEB_DATABASE_URL: local }),
-    ).toEqual({ connectionString: local, max: 2 });
+    expect(sessionPoolConfig({ BIKELOG_WEB_DATABASE_URL: local })).toEqual({
+        connectionString: local,
+        max: 2,
+    });
 });
 
 it('accepts a non-loopback database only with a verified CA file', () => {
@@ -71,7 +72,8 @@ it('refuses Synthetic mode in production behind a non-loopback origin', () => {
         assertSafeAccessMode({
             NODE_ENV: 'production',
             BIKELOG_WEB_ACCESS_MODE: 'Synthetic',
-            WEB_PUBLIC_ORIGIN: 'https://ca-bikelog.example.azurecontainerapps.io',
+            WEB_PUBLIC_ORIGIN:
+                'https://ca-bikelog.example.azurecontainerapps.io',
         }),
     ).toThrow(/Synthetic/);
     // The local container stack runs Synthetic production builds on loopback.
@@ -85,7 +87,8 @@ it('refuses Synthetic mode in production behind a non-loopback origin', () => {
         assertSafeAccessMode({
             NODE_ENV: 'production',
             BIKELOG_WEB_ACCESS_MODE: 'Authenticated',
-            WEB_PUBLIC_ORIGIN: 'https://ca-bikelog.example.azurecontainerapps.io',
+            WEB_PUBLIC_ORIGIN:
+                'https://ca-bikelog.example.azurecontainerapps.io',
         }),
     ).not.toThrow();
 });

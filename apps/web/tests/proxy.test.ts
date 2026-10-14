@@ -322,7 +322,10 @@ it('authenticated proxy accepts an https public origin behind TLS-terminating in
 it('authenticated proxy refuses plain http origins and any other upstream', async () => {
     const calls = okFetch();
     for (const [origin, upstream] of [
-        ['http://ca-bikelog.example.azurecontainerapps.io', 'http://127.0.0.1:5080'],
+        [
+            'http://ca-bikelog.example.azurecontainerapps.io',
+            'http://127.0.0.1:5080',
+        ],
         [hostedOrigin, 'http://127.0.0.1:5081'],
         [hostedOrigin, 'http://localhost:5080'],
         [hostedOrigin, 'https://api.example.test'],
