@@ -46,9 +46,9 @@ the code or docs named.
 
 | Item | Date | Result |
 | --- | --- | --- |
-| Cost estimate approved | | |
+| Cost estimate approved | 2026-10-14 | Approved by the owner: €10 monthly budget, expected €0.50–€2 ([cost-estimate.md](cost-estimate.md)). |
 | GHCR packages public; anonymous `docker pull` of `web` | | |
-| Aiven service: cloud, region, PostgreSQL major version, `max_connections` | | |
+| Aiven service: cloud, region, PostgreSQL major version, `max_connections` | 2026-10-14 | Free plan. Region `ams` (Amsterdam, Netherlands): in the EU, so research D16 passes. PostgreSQL 18.6, so the backup image's `pg_dump` 18.6 matches. `max_connections` 20, as the connection budget in research D11 assumes. |
 | Hosted Auth0 application created | | |
 | GitHub environment `production` and its variables and secrets | | |
 | Bootstrap: budget €10 with three notifications | | |
