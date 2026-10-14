@@ -1,6 +1,7 @@
 import * as client from 'openid-client';
 import { getSessionStore, readAuthConfig, type AuthConfig } from './config';
 import { sessionCookie } from './cookies';
+import { publicRequestOrigin } from '../public-origin';
 import type { SessionStore, TokenEnvelope } from './session-store';
 
 type ProviderTokens = TokenEnvelope & { issuer: string; subject: string };
@@ -144,13 +145,19 @@ export async function completeLogin(
     request: Request,
     deps: AuthDependencies = dependencies(),
 ): Promise<Response> {
-    const url = new URL(request.url);
-    if (
-        url.origin !== deps.config.publicOrigin ||
-        url.pathname !== '/auth/callback'
-    ) {
+    let url: URL;
+    try {
+        // Rebuilt on the configured origin: openid-client derives redirect_uri
+        // from this URL, and behind ingress request.url carries http:.
+        const received = new URL(request.url);
+        url = new URL(
+            received.pathname + received.search,
+            publicRequestOrigin(request, deps.config.publicOrigin),
+        );
+    } catch {
         return callbackError();
     }
+    if (url.pathname !== '/auth/callback') return callbackError();
     const state = url.searchParams.get('state');
     const code = url.searchParams.get('code');
     if (!state || !code) return callbackError();

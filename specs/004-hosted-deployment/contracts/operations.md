@@ -32,10 +32,11 @@ secret values.
 - `environment: production`
 - `permissions: { id-token: write, contents: read }`
 
-**Required GitHub environment variables** (non-secret): `AZURE_CLIENT_ID` (deploy identity),
-`AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `OWNER_ALERT_EMAIL`,
-`AIVEN_DATABASE_HOST`, `AUTH0_ISSUER`, `AUTH0_AUDIENCE`, `AUTH0_CLIENT_ID`, `INGRESS_ALLOW_CIDRS` (empty once
-the app is opened). There are no GitHub secrets.
+**Required GitHub environment settings** (none is a credential): variables `AZURE_CLIENT_ID` (deploy
+identity), `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AUTH0_ISSUER`,
+`AUTH0_AUDIENCE` and `AUTH0_CLIENT_ID`; and `OWNER_ALERT_EMAIL`, `AIVEN_DATABASE_HOST` and
+`INGRESS_ALLOW_CIDRS` (absent once the app is opened), stored as environment secrets only so GitHub masks
+them in the public workflow logs.
 
 ## Rollback
 
@@ -56,8 +57,9 @@ scripts/hosted/hosted.sh enable-pilot-user --owner <uuid>
 The script:
 
 - reads the resource group from `.local/hosted.env`, which is ignored;
-- starts `job-bikelog-ops` with the matching operator arguments, adding `--issuer` from the job's own
-  `Auth__Issuer`;
+- sets the matching operator arguments on `job-bikelog-ops` (adding `--issuer` from the job's own
+  `Auth__Issuer`), starts it without overrides, and restores the default `--help` afterwards. A
+  per-execution `--args` override would replace the container and drop its secrets and CA mount;
 - waits for the execution and prints its status and the command's own sanitized output.
 
 It exits non-zero if the execution fails.

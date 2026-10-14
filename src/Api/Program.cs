@@ -102,7 +102,12 @@ if (accessMode == AccessMode.Authenticated)
     app.UseAuthentication();
     app.UseAuthorization();
 }
-app.MapOpenApi();
+
+// The contract is for local client generation; hosted environments do not publish it.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+}
 var api = app.MapGroup("/api").AddEndpointFilter<ApiProblemMapping>();
 if (accessMode == AccessMode.Authenticated)
 {

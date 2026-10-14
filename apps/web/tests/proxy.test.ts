@@ -290,3 +290,84 @@ it('forwards every operation the generated client can call', async () => {
     expect(blocked).toEqual([]);
     expect(forwarded.length).toBeGreaterThan(0);
 });
+
+const hostedOrigin = 'https://ca-bikelog.example.azurecontainerapps.io';
+const hostedHost = 'ca-bikelog.example.azurecontainerapps.io';
+function hostedEnv(origin = hostedOrigin, upstream = 'http://127.0.0.1:5080') {
+    vi.stubEnv('BIKELOG_WEB_ACCESS_MODE', 'Authenticated');
+    vi.stubEnv('WEB_PUBLIC_ORIGIN', origin);
+    vi.stubEnv('BIKELOG_API_ORIGIN', upstream);
+}
+function okFetch() {
+    let calls = 0;
+    vi.stubGlobal('fetch', async () => {
+        calls++;
+        return Response.json({ items: [], nextCursor: null });
+    });
+    return () => calls;
+}
+
+it('authenticated proxy accepts an https public origin behind TLS-terminating ingress', async () => {
+    hostedEnv();
+    const calls = okFetch();
+    const behindIngress = new Request(`http://${hostedHost}/api/bikes`, {
+        headers: { host: hostedHost, 'x-forwarded-proto': 'https' },
+    });
+    expect((await forwardApi(behindIngress, ['bikes'], 'token')).status).toBe(
+        200,
+    );
+    expect(calls()).toBe(1);
+});
+
+it('authenticated proxy refuses plain http origins and any other upstream', async () => {
+    const calls = okFetch();
+    for (const [origin, upstream] of [
+        [
+            'http://ca-bikelog.example.azurecontainerapps.io',
+            'http://127.0.0.1:5080',
+        ],
+        [hostedOrigin, 'http://127.0.0.1:5081'],
+        [hostedOrigin, 'http://localhost:5080'],
+        [hostedOrigin, 'https://api.example.test'],
+    ]) {
+        hostedEnv(origin, upstream);
+        await expect(
+            forwardApi(
+                new Request(`${origin}/api/bikes`, {
+                    headers: { host: new URL(origin).host },
+                }),
+                ['bikes'],
+                'token',
+            ),
+        ).rejects.toThrow();
+    }
+    expect(calls()).toBe(0);
+});
+
+it('authenticated proxy refuses a mismatched Host, forwarded http and a foreign Origin', async () => {
+    hostedEnv();
+    const calls = okFetch();
+    const attempts = [
+        new Request(`${hostedOrigin}/api/bikes`, {
+            headers: { host: 'evil.example', 'x-forwarded-host': hostedHost },
+        }),
+        new Request(`http://${hostedHost}/api/bikes`, {
+            headers: { host: hostedHost, 'x-forwarded-proto': 'http' },
+        }),
+        new Request(`${hostedOrigin}/api/bikes`, {
+            method: 'POST',
+            headers: {
+                host: hostedHost,
+                origin: 'https://evil.example',
+                'content-type': 'application/json',
+            },
+            body: '{}',
+        }),
+    ];
+    for (const request of attempts) {
+        const response = await forwardApi(request, ['bikes'], 'token');
+        expect(response.status).toBe(403);
+        expect(await response.json()).toMatchObject({ code: 'foreign_origin' });
+    }
+    expect(calls()).toBe(0);
+});

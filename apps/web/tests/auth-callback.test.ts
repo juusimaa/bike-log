@@ -176,3 +176,63 @@ it('creates no session after nonce, PKCE, unsafe return path, or provider failur
         expect(sessions).toHaveLength(0);
     }
 });
+
+it('completes sign-in behind TLS-terminating ingress using the configured origin', async () => {
+    const { deps, sessions } = setup();
+    const hosted = 'https://ca-bikelog.example.azurecontainerapps.io';
+    const host = 'ca-bikelog.example.azurecontainerapps.io';
+    deps.config.publicOrigin = hosted;
+    let exchanged: URL | undefined;
+    const exchange = deps.provider.exchange;
+    deps.provider.exchange = async (url, checks) => {
+        exchanged = url;
+        return exchange(url, checks);
+    };
+    const started = await startLogin('/garage', deps);
+    const redirect = new URL(started.headers.get('location')!);
+    expect(redirect.searchParams.get('redirect_uri')).toBe(
+        `${hosted}/auth/callback`,
+    );
+    const state = redirect.searchParams.get('state')!;
+    const response = await completeLogin(
+        new Request(`http://${host}/auth/callback?code=abc&state=${state}`, {
+            headers: { host, 'x-forwarded-proto': 'https' },
+        }),
+        deps,
+    );
+    expect(response.status).toBe(303);
+    expect(response.headers.get('location')).toBe(`${hosted}/garage`);
+    // openid-client derives redirect_uri from this URL, so it must be https.
+    expect(exchanged?.href).toBe(
+        `${hosted}/auth/callback?code=abc&state=${state}`,
+    );
+    expect(sessions).toHaveLength(1);
+});
+
+it('refuses a hosted callback forwarded over plain http or for another Host', async () => {
+    const attempts: Record<string, string>[] = [
+        {
+            host: 'ca-bikelog.example.azurecontainerapps.io',
+            'x-forwarded-proto': 'http',
+        },
+        { host: 'evil.example' },
+    ];
+    for (const headers of attempts) {
+        const { deps, sessions } = setup();
+        deps.config.publicOrigin =
+            'https://ca-bikelog.example.azurecontainerapps.io';
+        const started = await startLogin('/', deps);
+        const state = new URL(
+            started.headers.get('location')!,
+        ).searchParams.get('state')!;
+        const response = await completeLogin(
+            new Request(
+                `http://ca-bikelog.example.azurecontainerapps.io/auth/callback?code=abc&state=${state}`,
+                { headers },
+            ),
+            deps,
+        );
+        expect(response.status).toBe(400);
+        expect(sessions).toHaveLength(0);
+    }
+});

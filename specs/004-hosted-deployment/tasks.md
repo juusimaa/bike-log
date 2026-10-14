@@ -45,9 +45,9 @@ then US5 (P3). Decision IDs D1–D18 refer to [research.md](research.md).
 
 **Purpose**: Directories, tool pins and the cost estimate that gates provisioning.
 
-- [ ] T001 Create the directories `infra/modules/`, `images/backup/`, `scripts/hosted/tests/` and `docs/hosting/`. Add `scripts/hosted/hosted.env.example` with placeholder-only keys: `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP=rg-bikelog-prod`, `AUTH0_ISSUER`, `INGRESS_ALLOW_CIDRS` (documentation only; the live value is a GitHub environment variable). Add a header comment saying "copy to `.local/hosted.env`; never commit real values".
-- [ ] T002 [P] Add `infra/bicepconfig.json`. Enable the core linter with these rules at `error`: `no-hardcoded-env-urls`, `secure-secrets-in-params`, `outputs-should-not-contain-secrets`, `no-unused-params` and `use-recent-api-versions` (warning). Add `scripts/hosted/install-bicep.sh`, which runs `az bicep install --version v0.48.1` and checks the reported version.
-- [ ] T003 [P] Write `docs/hosting/cost-estimate.md` (D18, FR-024). Content:
+- [X] T001 Create the directories `infra/modules/`, `images/backup/`, `scripts/hosted/tests/` and `docs/hosting/`. Add `scripts/hosted/hosted.env.example` with placeholder-only keys: `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP=rg-bikelog-prod`, `AUTH0_ISSUER`, `INGRESS_ALLOW_CIDRS` (documentation only; the live value is a GitHub environment variable). Add a header comment saying "copy to `.local/hosted.env`; never commit real values".
+- [X] T002 [P] Add `infra/bicepconfig.json`. Enable the core linter with these rules at `error`: `no-hardcoded-env-urls`, `secure-secrets-in-params`, `outputs-should-not-contain-secrets`, `no-unused-params` and `use-recent-api-versions` (warning). Add `scripts/hosted/install-bicep.sh`, which runs `az bicep install --version v0.48.1` and checks the reported version.
+- [X] T003 [P] Write `docs/hosting/cost-estimate.md` (D18, FR-024). Content:
   - The date and region (Sweden Central).
   - One row per resource from data-model.md, with retail unit prices from 2026-10-13:
     - Container Apps: free grant 180,000 vCPU-s, 360,000 GiB-s and 2M requests; 0.5 vCPU / 1 GiB per replica, so about 100 active hours are free.
@@ -70,7 +70,7 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
 
 ### API changes (tests first)
 
-- [ ] T004 [P] Write failing tests in `tests/Integration.Tests/OperatorTargetGuardTests.cs` for a new `OperatorTargetGuard.Validate(IConfiguration, IHostEnvironment, string connectionString)`:
+- [X] T004 [P] Write failing tests in `tests/Integration.Tests/OperatorTargetGuardTests.cs` for a new `OperatorTargetGuard.Validate(IConfiguration, IHostEnvironment, string connectionString)`:
   - **Allowed (local)**: the existing local rule, unchanged: Development, host `127.0.0.1`, port 54329, database `bikelog_dev` or `bikelog_test_*`, connection string equal to the configured one.
   - **Allowed (hosted)**: all of the following hold:
     - Production environment;
@@ -86,35 +86,35 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
     - Production with Synthetic mode;
     - Development pointing at a non-loopback host.
   - Extend `tests/Integration.Tests/PilotUserCommandTests.cs` with one case: provisioning in Production with a hosted-shaped connection string that fails the guard is refused before any database access.
-- [ ] T005 [P] Add failing cases to `tests/Integration.Tests/HostTests.cs`:
+- [X] T005 [P] Add failing cases to `tests/Integration.Tests/HostTests.cs`:
   - Regression guard, expected to pass from the start: with `ASPNETCORE_ENVIRONMENT=Production` and `AccessMode=Synthetic`, startup throws, so Synthetic mode can never run hosted (FR-003).
   - In Authenticated mode with the Production environment, `GET /openapi/v1.json` returns 404.
   - In Development it still returns 200.
-- [ ] T006 Replace `src/Api/Operations/LocalDatabaseGuard.cs` with `src/Api/Operations/OperatorTargetGuard.cs`, implementing the local and hosted rules exactly as T004 describes (contracts/hosted-configuration.md, "Operator target rules"). Use `NpgsqlConnectionStringBuilder` (`SslMode == SslMode.VerifyFull`, `RootCertificate`). Update `src/Api/Operations/PilotUserCommands.cs` `ValidateTarget`:
+- [X] T006 Replace `src/Api/Operations/LocalDatabaseGuard.cs` with `src/Api/Operations/OperatorTargetGuard.cs`, implementing the local and hosted rules exactly as T004 describes (contracts/hosted-configuration.md, "Operator target rules"). Use `NpgsqlConnectionStringBuilder` (`SslMode == SslMode.VerifyFull`, `RootCertificate`). Update `src/Api/Operations/PilotUserCommands.cs` `ValidateTarget`:
   - Accept `Development` for the local target and `Production` for the hosted target.
   - Keep the `--issuer == Auth:Issuer` check.
   - Leave `SyntheticOwnerPurge` on the local rule only.
   - Keep `--rebuild-usage` Synthetic-only.
 
   Make T004 green.
-- [ ] T007 In `src/Api/Program.cs`, map OpenAPI (`app.MapOpenApi()`) only when `app.Environment.IsDevelopment()`. Make T005 green. Then run `npm run check --workspace @bikelog/api-client` to confirm OpenAPI drift checks still work: they run in Development. Commit as `feat(api): allow guarded hosted operator target; hide OpenAPI outside Development`.
+- [X] T007 In `src/Api/Program.cs`, map OpenAPI (`app.MapOpenApi()`) only when `app.Environment.IsDevelopment()`. Make T005 green. Then run `npm run check --workspace @bikelog/api-client` to confirm OpenAPI drift checks still work: they run in Development. Commit as `feat(api): allow guarded hosted operator target; hide OpenAPI outside Development`.
 
 ### Web changes (tests first)
 
-- [ ] T008 [P] Write failing tests in `apps/web/tests/public-origin.test.ts` for `publicRequestOrigin(request: Request): string` in `apps/web/src/lib/public-origin.ts`. It reads `WEB_PUBLIC_ORIGIN`:
+- [X] T008 [P] Write failing tests in `apps/web/tests/public-origin.test.ts` for `publicRequestOrigin(request: Request): string` in `apps/web/src/lib/public-origin.ts`. It reads `WEB_PUBLIC_ORIGIN`:
   - Returns the configured origin when the `Host` header equals its host.
   - Throws `ForeignOriginError` when the Host differs.
   - For an https origin, accepts `X-Forwarded-Proto: https` or no forwarded protocol, and throws on `X-Forwarded-Proto: http`.
   - Ignores `X-Forwarded-Host` entirely.
   - Never reads `request.url`'s scheme.
-- [ ] T009 [P] Extend `apps/web/tests/proxy.test.ts`:
+- [X] T009 [P] Extend `apps/web/tests/proxy.test.ts`:
   - In Authenticated mode, `WEB_PUBLIC_ORIGIN=https://ca-bikelog.example.azurecontainerapps.io` with upstream `http://127.0.0.1:5080` is accepted.
   - An `http://` non-localhost origin is rejected.
   - Any upstream other than `http://127.0.0.1:5080` is rejected.
   - A request whose Host does not match gets 403 `foreign_origin`.
   - A POST with a foreign Origin gets 403.
   - Synthetic mode behaviour is unchanged.
-- [ ] T010 [P] Add `apps/web/tests/auth-config.test.ts` for `apps/web/src/lib/auth/config.ts`:
+- [X] T010 [P] Add `apps/web/tests/auth-config.test.ts` for `apps/web/src/lib/auth/config.ts`:
   - **Unchanged**: the loopback `127.0.0.1:54329` database is accepted without TLS.
   - **Hosted**: a non-loopback `BIKELOG_WEB_DATABASE_URL` is accepted only when `BIKELOG_DATABASE_CA_FILE` points to a readable file, and the resulting pool options are `ssl: { ca: <file contents>, rejectUnauthorized: true }` and `max: 2`.
   - **Rejected**:
@@ -123,7 +123,7 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
     - `NODE_ENV=production` with `BIKELOG_WEB_ACCESS_MODE=Synthetic` and a non-loopback `WEB_PUBLIC_ORIGIN`.
 
   Extend `apps/web/tests/auth-callback.test.ts` and `apps/web/tests/auth-logout.test.ts`: behind an https public origin, with `request.url` starting `http://` and `X-Forwarded-Proto: https`, the callback succeeds and logout redirects to `https://…/?signedOut=1`.
-- [ ] T011 [P] Add `apps/web/tests/healthz.test.ts` for `apps/web/src/app/healthz/route.ts`, per contracts/health.md:
+- [X] T011 [P] Add `apps/web/tests/healthz.test.ts` for `apps/web/src/app/healthz/route.ts`, per contracts/health.md:
   - The upstream `/health/ready` returns 200 → 200 `ok`.
   - It returns 503, times out after 3 s or the fetch throws → 503 `unavailable`.
   - Both responses carry `Cache-Control: no-store`.
@@ -131,19 +131,19 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
   - The body never contains error text.
 
   Add `apps/web/tests/security-headers.test.ts`, which imports `apps/web/next.config.ts` `headers()` and asserts `X-Content-Type-Options: nosniff`, `Referrer-Policy: same-origin` and `X-Frame-Options: DENY` on `/:path*`. It also asserts that `Strict-Transport-Security: max-age=31536000` is present only when `WEB_PUBLIC_ORIGIN` starts with `https://`.
-- [ ] T012 Implement `apps/web/src/lib/public-origin.ts` (make T008 green). Use it in `apps/web/src/lib/proxy.ts`, which then:
+- [X] T012 Implement `apps/web/src/lib/public-origin.ts` (make T008 green). Use it in `apps/web/src/lib/proxy.ts`, which then:
   - accepts a public origin that is exactly `http://localhost:3000` or any exact `https:` origin;
   - requires the upstream to equal `http://127.0.0.1:5080`;
   - keeps the route allowlist, the Origin rule for non-GET requests and the 502 mapping.
 
   Make T009 green.
-- [ ] T013 Update `apps/web/src/lib/auth/config.ts` per T010: CA file, `ssl` options, `max: 2`, the sslmode rejections and the Synthetic-in-production check. Update `apps/web/src/lib/auth/oidc.ts`, whose callback origin check at lines 147–153 must use `publicRequestOrigin(request)` instead of `new URL(request.url).origin`. Update `apps/web/src/app/auth/logout/route.ts` to use the same helper. Make T010 green.
-- [ ] T014 [P] Implement `apps/web/src/app/healthz/route.ts`, which fetches `${BIKELOG_API_ORIGIN}/health/ready` with a 3 s `AbortSignal.timeout` (make T011's health cases green). Add the `headers()` export to `apps/web/next.config.ts` (make T011's header cases green). Confirm `/healthz` is not blocked by the proxy allowlist; it is a separate route, not under `/api`.
-- [ ] T015 Run the full local checks (quickstart A1) and commit as `feat(web): accept an https public origin, TLS session database and health route`.
+- [X] T013 Update `apps/web/src/lib/auth/config.ts` per T010: CA file, `ssl` options, `max: 2`, the sslmode rejections and the Synthetic-in-production check. Update `apps/web/src/lib/auth/oidc.ts`, whose callback origin check at lines 147–153 must use `publicRequestOrigin(request)` instead of `new URL(request.url).origin`. Update `apps/web/src/app/auth/logout/route.ts` to use the same helper. Make T010 green.
+- [X] T014 [P] Implement `apps/web/src/app/healthz/route.ts`, which fetches `${BIKELOG_API_ORIGIN}/health/ready` with a 3 s `AbortSignal.timeout` (make T011's health cases green). Add the `headers()` export to `apps/web/next.config.ts` (make T011's header cases green). Confirm `/healthz` is not blocked by the proxy allowlist; it is a separate route, not under `/api`.
+- [X] T015 Run the full local checks (quickstart A1) and commit as `feat(web): accept an https public origin, TLS session database and health route`.
 
 ### Infrastructure code
 
-- [ ] T016 Write `infra/bootstrap.bicep`, scoped to the resource group, per data-model.md "Hosted environment" bootstrap rows and D3/D4/D9/D18:
+- [X] T016 Write `infra/bootstrap.bicep`, scoped to the resource group, per data-model.md "Hosted environment" bootstrap rows and D3/D4/D9/D18:
   - **Parameters**: `location` (default `swedencentral`), `ownerAlertEmail` (`@secure()` not needed, but never defaulted), `ownerPrincipalId`, `budgetStartDate` (first of a month), `githubRepository` (default `juusimaa/bike-log`), `suffix` (default `uniqueString(resourceGroup().id)`).
   - **Budget**: `Microsoft.Consumption/budgets@2026-06-01`, `budget-bikelog`: amount 10, Monthly, Cost; notifications at Actual 50, Actual 80 and Forecasted 100 to `ownerAlertEmail`.
   - **Identities**:
@@ -162,7 +162,7 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
     - deploy identity → Contributor on the resource group;
     - owner → Key Vault Secrets Officer on the vault.
   - **Outputs**: names, client IDs and the storage account URL; no secrets.
-- [ ] T017 Write `infra/main.bicep` and `infra/modules/containerApp.bicep`, per data-model.md, contracts/hosted-configuration.md, D1, D2, D10 and D11.
+- [X] T017 Write `infra/main.bicep` and `infra/modules/containerApp.bicep`, per data-model.md, contracts/hosted-configuration.md, D1, D2, D10 and D11.
   - **Inputs**: existing-resource references to the bootstrap identity, vault and storage by name parameters.
   - **Log Analytics** `log-bikelog`: PerGB2018, `retentionInDays: 30`, `workspaceCapping.dailyQuotaGb: json('0.15')`.
   - **Environment** `cae-bikelog`:
@@ -179,18 +179,18 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
   - **Output**: `fqdn`.
   - `WEB_PUBLIC_ORIGIN` is computed as `'https://${app name}.${environment.properties.defaultDomain}'`.
   - Declare **no** role assignments or role definitions.
-- [ ] T018 Write `infra/modules/jobs.bicep`, called from `main.bicep`, with two jobs, both using `id-bikelog-app`, the `secrets` volume at `/mnt/secrets` and Key Vault secret references:
+- [X] T018 Write `infra/modules/jobs.bicep`, called from `main.bicep`, with two jobs, both using `id-bikelog-app`, the `secrets` volume at `/mnt/secrets` and Key Vault secret references:
   - `job-bikelog-migrate`: Manual; image `migrationsImage`; env `ConnectionStrings__Postgres` (secret); `replicaTimeout: 600`, `replicaRetryLimit: 0`.
   - `job-bikelog-ops`: Manual; image `apiImage`; env as the `api` container plus `Operator__HostedDatabaseHost=aivenDatabaseHost`; `replicaTimeout: 120`, `replicaRetryLimit: 0`; default args `["--help"]`.
 
   The backup job is added in T040.
-- [ ] T019 [P] Write `infra/bootstrap.example.bicepparam` (placeholders only) and `infra/main.bicepparam`, which reads every environment-specific value with `readEnvironmentVariable('AUTH0_ISSUER')` and similar. Image parameters come from the workflow command line. Document in a header comment which GitHub environment variables feed it (contracts/operations.md list).
-- [ ] T020 [P] Add an `infra` job to `.github/workflows/ci.yml` (ubuntu-24.04, 10 min, `contents: read`). It runs `scripts/hosted/install-bicep.sh`, then `az bicep build` for both templates and `az bicep lint --file infra/main.bicep --diagnostics-format sarif` (fail on errors). It then fails if a grep finds any of the following:
+- [X] T019 [P] Write `infra/bootstrap.example.bicepparam` (placeholders only) and `infra/main.bicepparam`, which reads every environment-specific value with `readEnvironmentVariable('AUTH0_ISSUER')` and similar. Image parameters come from the workflow command line. Document in a header comment which GitHub environment variables feed it (contracts/operations.md list).
+- [X] T020 [P] Add an `infra` job to `.github/workflows/ci.yml` (ubuntu-24.04, 10 min, `contents: read`). It runs `scripts/hosted/install-bicep.sh`, then `az bicep build` for both templates and `az bicep lint --file infra/main.bicep --diagnostics-format sarif` (fail on errors). It then fails if a grep finds any of the following:
   - `Microsoft.Authorization/roleAssignments` or `roleDefinitions` in `infra/main.bicep` or `infra/modules/`;
   - `privateEndpoint` anywhere under `infra/`;
   - `workloadProfileType: 'D` anywhere under `infra/`;
   - `maintenanceConfigurations` anywhere under `infra/`.
-- [ ] T021 Write `docs/hosting/setup.md`, the owner's setup guide in the order of quickstart Part B. It covers:
+- [X] T021 Write `docs/hosting/setup.md`, the owner's setup guide in the order of quickstart Part B. It covers:
   - prerequisites: `az` and `gh` CLIs, Docker, `.local/hosted.env` from T001;
   - making the GHCR packages public;
   - creating the Aiven service, including how to read its cloud, region and PostgreSQL version, the EU stop rule, downloading the CA certificate, and creating a long random password;
@@ -202,7 +202,7 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
   - the steps to repeat after recreating the environment: Auth0 URLs and `WEB_PUBLIC_ORIGIN` follow the new default domain;
   - **Aiven service powered off**: symptoms are `/healthz` returning 503, `hosted.sh backup-now` failing to connect, or an Aiven notification email. Fix: power the service on in the Aiven console, wait until it shows Running, then run `hosted.sh status`. The daily backup keeps the service active, so this should only happen if backups stop;
   - opening the app after verification: clear `INGRESS_ALLOW_CIDRS` and redeploy (see T034).
-- [ ] T022 [P] Add a "Hosted application" section to `docs/auth/auth0-pilot-setup.md` (D15). It describes a second Regular Web Application "Bike Log (hosted)" with:
+- [X] T022 [P] Add a "Hosted application" section to `docs/auth/auth0-pilot-setup.md` (D15). It describes a second Regular Web Application "Bike Log (hosted)" with:
   - the `email` connection only;
   - Authorization Code and Refresh Token grants;
   - callback `https://<fqdn>/auth/callback`;
@@ -211,7 +211,7 @@ owner gate. User story work that touches Azure cannot begin until T027 is done. 
   - its secret stored only in Key Vault.
 
   It also says the local application keeps only localhost URLs, and that users in the passwordless connection work with both applications.
-- [ ] T023 Commit the infrastructure code and docs as `feat(infra): add bootstrap and main Bicep templates and setup guide`.
+- [X] T023 Commit the infrastructure code and docs as `feat(infra): add bootstrap and main Bicep templates and setup guide`.
 
 ### Owner gate (no Azure resource before this)
 
@@ -234,7 +234,7 @@ same data. Only test records are used until US2's rehearsal passes.
 
 **Independent Test**: quickstart C1–C5.
 
-- [ ] T028 [US1] Write `.github/workflows/deploy.yml` (D12, contracts/operations.md "Deploy"):
+- [X] T028 [US1] Write `.github/workflows/deploy.yml` (D12, contracts/operations.md "Deploy"):
   - **Trigger and settings**:
     - `on: workflow_run` (workflows `["Containers"]`, i.e. the `name:` of `containers.yml`; check it), types `completed`, branches `main`;
     - a job-level `if` on `github.event.workflow_run.conclusion == 'success'`;
@@ -255,10 +255,11 @@ same data. Only test records are used until US2's rehearsal passes.
     10. Write `$GITHUB_STEP_SUMMARY` with the tag, four digests, revision name and migration execution name.
 
   No secret values are referenced anywhere.
-- [ ] T029 [US1] Write `scripts/hosted/hosted.sh` with `set -euo pipefail`. It sources `.local/hosted.env` and refuses to run if the file is missing or keeps placeholder values. Subcommands:
+- [X] T029 [US1] Write `scripts/hosted/hosted.sh` with `set -euo pipefail`. It sources `.local/hosted.env` and refuses to run if the file is missing or keeps placeholder values. Subcommands:
   - `status`: app FQDN, latest revision, running and health state, last three job executions per job.
   - `provision-pilot-user --subject <sub> --email <addr>`: reads `Auth__Issuer` from the ops job definition with `az containerapp job show`, starts `job-bikelog-ops` with args `--provision-pilot-user --issuer <issuer> --subject <sub> --email <addr>` (**verify** the `az containerapp job start` argument override syntax first and note it in the script), waits for completion, then prints the execution status and the job's own console output from `az containerapp job logs show` (**verify** command availability, otherwise use Log Analytics) without echoing environment variables. Exits non-zero on failure.
 - [ ] T030 [US1] Commit as `feat(deploy): add deploy workflow and hosted operator script`, push the branch and open a PR. After merge, `containers.yml` publishes the images and `deploy.yml` runs.
+  - *Status 2026-10-14*: committed on `feat/004-hosted-deployment`; not pushed and no PR opened yet (needs the owner's go-ahead).
 - [ ] T031 👤 [US1] Quickstart C1: the first deployment runs. Record the run duration, migration execution and `/healthz` result in `docs/hosting/setup-results.md`. Then set the hosted Auth0 application's callback and logout URLs from the app's FQDN.
 - [ ] T032 👤 [US1] Run `hosted.sh provision-pilot-user` for the owner's Auth0 subject and for one test rider. Run quickstart C3 with **test records only**: phone on mobile data, then laptop, timed. Record the result.
 - [ ] T033 👤 [US1] Run quickstart C4, the refusal table: uninvited address, `curl -I http://<fqdn>/`, altered Host, foreign Origin on POST, `/openapi/v1.json`, no API ingress. Also confirm that a phone on mobile data, which has a different IP address, gets 403 from the platform while the allow-list is set. Then run C5, the cold start after more than 30 minutes idle, timed. Record each outcome. If a refusal fails, stop and fix before continuing.
@@ -275,7 +276,7 @@ passes before any real record is entered.
 
 **Independent Test**: quickstart A2 locally, then C8 against the hosted backup.
 
-- [ ] T035 [P] [US2] Write the failing shell test harness `scripts/hosted/tests/run.sh`. It:
+- [X] T035 [P] [US2] Write the failing shell test harness `scripts/hosted/tests/run.sh`. It:
   1. Starts its own uniquely named `postgres:18.6@<digest from compose.yaml>` container on a random loopback port, with a trap that removes the container and its volume.
   2. Applies EF migrations with the `migrations` image built locally (`docker build --target migrations -f src/Api/Dockerfile .`), or with `dotnet ef database update` against that port.
   3. Seeds synthetic rows: one user, two bikes, five components, installations, ten rides. Run the API's `--rebuild-usage` against it (Synthetic mode, Development, `ASPNETCORE_URLS=http://127.0.0.1:<free port>`; the Synthetic guard checks only that the database host is `127.0.0.1`, so the random port works).
@@ -283,11 +284,11 @@ passes before any real record is entered.
   5. Runs `scripts/hosted/restore-rehearsal.sh --local <dir>` and expects exit 0.
   6. Deletes one ride from the source between snapshot export and dump, using the script's test hook `BACKUP_TEST_PAUSE_AFTER_MANIFEST=1`. Expects the manifest to still match the dump, which proves snapshot consistency.
   7. Corrupts the restored database (deletes one row) and expects the comparison to fail with a non-zero exit.
-- [ ] T036 [P] [US2] Add `images/backup/Dockerfile`:
+- [X] T036 [P] [US2] Add `images/backup/Dockerfile`:
   - Base `postgres:18.6@<same digest as compose.yaml>`.
   - Install exact Debian package versions (`curl=<ver>`, `jq=<ver>`, `ca-certificates=<ver>`), read from the base image's Debian release with `apt-cache policy`. `apt-get install` fails if a version disappears, and updating it is a deliberate change (constitution: pinned versions).
   - Copy `backup.sh`, run as user `postgres` (non-root), `ENTRYPOINT ["/usr/local/bin/backup.sh"]`.
-- [ ] T037 [US2] Implement `images/backup/backup.sh` per contracts/backup-format.md and D9:
+- [X] T037 [US2] Implement `images/backup/backup.sh` per contracts/backup-format.md and D9:
   - **Setup**: `set -euo pipefail`. Read `BIKELOG_DATABASE_URL`, `BACKUP_ACCOUNT_URL`, `BACKUP_CONTAINER` and `AZURE_CLIENT_ID`, or `BACKUP_LOCAL_DIR` for tests.
   - **Latency**: log the median of ten `SELECT 1` round trips in ms (quickstart C2).
   - **Snapshot**: open a `psql` coprocess with `BEGIN ISOLATION LEVEL REPEATABLE READ; SELECT pg_export_snapshot();`. Inside it, read the exact row count of every table in the `public` schema, the latest `__EFMigrationsHistory` row and the per-component usage totals (column names from the current `UsageProjection` EF mapping; read `src/Infrastructure/Persistence/Configurations/`), ordered by component ID.
@@ -301,7 +302,7 @@ passes before any real record is entered.
   - **Logging and exit**: never log the URL's password or the token. Exit non-zero on any failure.
 
   Make T035 green for the backup half.
-- [ ] T038 [US2] Implement `scripts/hosted/restore-rehearsal.sh <blob name>` and `--local <dir> [--keep]` (D14, contracts/operations.md, backup-format.md "Restore comparison"):
+- [X] T038 [US2] Implement `scripts/hosted/restore-rehearsal.sh <blob name>` and `--local <dir> [--keep]` (D14, contracts/operations.md, backup-format.md "Restore comparison"):
   1. Download the dump and manifest with `az storage blob download --auth-mode login`, using the account from `.local/hosted.env`.
   2. Verify SHA-256.
   3. Start a uniquely named `postgres:18.6` container and volume on a random loopback port.
@@ -311,8 +312,8 @@ passes before any real record is entered.
   7. Remove the container and volume. `--keep` is accepted only with `--local` (test runs); a rehearsal from Azure always removes its copy.
 
   Touch nothing it did not create. Make T035 fully green and commit as `feat(backup): add backup image and restore rehearsal with snapshot manifest`.
-- [ ] T039 [P] [US2] Add the `backup` image to the matrix in `.github/workflows/containers.yml` (context `.`, file `images/backup/Dockerfile`, same platforms, tags, SBOM and provenance). Add a step to the `infra` job in `.github/workflows/ci.yml`, or a new `backup-scripts` job with the pinned postgres service, that runs `scripts/hosted/tests/run.sh`.
-- [ ] T040 [US2] Extend `infra/modules/jobs.bicep` with `job-bikelog-backup`, per contracts/hosted-configuration.md:
+- [X] T039 [P] [US2] Add the `backup` image to the matrix in `.github/workflows/containers.yml` (context `.`, file `images/backup/Dockerfile`, same platforms, tags, SBOM and provenance). Add a step to the `infra` job in `.github/workflows/ci.yml`, or a new `backup-scripts` job with the pinned postgres service, that runs `scripts/hosted/tests/run.sh`.
+- [X] T040 [US2] Extend `infra/modules/jobs.bicep` with `job-bikelog-backup`, per contracts/hosted-configuration.md:
   - Schedule `cronExpression: '30 2 * * *'`; image `backupImage`.
   - Env `BIKELOG_DATABASE_URL` (secret `backup-database-url`), `BACKUP_ACCOUNT_URL`, `BACKUP_CONTAINER=backups`, `AZURE_CLIENT_ID` (app identity client ID).
   - The `secrets` volume; `replicaTimeout: 900`, `replicaRetryLimit: 1`.
@@ -323,11 +324,11 @@ passes before any real record is entered.
   - metric alert `alert-app-restarts` on the container app's `RestartCount` > 3 in 1 hour.
 
   Wire both into `infra/main.bicep`.
-- [ ] T041 [US2] Extend `scripts/hosted/hosted.sh`:
+- [X] T041 [US2] Extend `scripts/hosted/hosted.sh`:
   - `backup-now`: start `job-bikelog-backup` and wait, then print the status and the logged round-trip median.
   - `backups`: run `az storage blob list --auth-mode login --prefix backups/` for the last 35 days, showing name, size and creation time.
   - `backup-verify-permissions`: start the backup job once with args `--verify-permissions`, wait and print the result.
-- [ ] T042 [US2] Write the backup, restore rehearsal and real recovery sections of `docs/hosting/operations.md`. Real recovery means: recreate the Aiven service, restore with `pg_restore` from a downloaded dump, update `api-postgres-connection`, `backup-database-url` and the GitHub variable `AIVEN_DATABASE_HOST`, redeploy, and check sign-in. Commit as `feat(infra): add daily backup job and backup alerts`.
+- [X] T042 [US2] Write the backup, restore rehearsal and real recovery sections of `docs/hosting/operations.md`. Real recovery means: recreate the Aiven service, restore with `pg_restore` from a downloaded dump, update `api-postgres-connection`, `backup-database-url` and the GitHub variable `AIVEN_DATABASE_HOST`, redeploy, and check sign-in. Commit as `feat(infra): add daily backup job and backup alerts`.
 - [ ] T043 👤 [US2] After merge and deployment, run quickstart C8:
   1. `hosted.sh backup-now` and `hosted.sh backups`.
   2. `restore-rehearsal.sh <blob>`, timed.
@@ -348,12 +349,12 @@ can be recreated from code.
 
 **Independent Test**: quickstart C7, plus C9 optionally.
 
-- [ ] T045 [US3] Extend `.github/workflows/deploy.yml`:
+- [X] T045 [US3] Extend `.github/workflows/deploy.yml`:
   - Add `workflow_dispatch` inputs `image_tag` (required string matching `^sha-[0-9a-f]{7}$`, validated in the first step) and `skip_migrations` (boolean, default `false`).
   - When dispatched, use `image_tag` instead of the `workflow_run` SHA, and skip the migration step if `skip_migrations` is true.
   - Add `timeout-minutes: 30` to the job.
   - Add the previous revision's image tag to the step summary, so the rollback target is always visible.
-- [ ] T046 [US3] Write the deploy, rollback and secret-rotation sections of `docs/hosting/operations.md`, per contracts/operations.md:
+- [X] T046 [US3] Write the deploy, rollback and secret-rotation sections of `docs/hosting/operations.md`, per contracts/operations.md:
   - **Rollback**: the exact `gh workflow run` command, how to find the previous tag, and why additive migrations make it safe.
   - **Rotation**: for each of the six secrets, the order of steps, including the database password change in Aiven that updates two secrets.
   - **Concurrent deploys**: they queue.
@@ -380,8 +381,8 @@ can be recreated from code.
 
 **Independent Test**: quickstart C6.
 
-- [ ] T049 [US4] Extend `scripts/hosted/hosted.sh` with `disable-pilot-user --owner <uuid>` and `enable-pilot-user --owner <uuid>`. Validate the UUID in D format before starting the job, start `job-bikelog-ops` with the matching args, and wait and report as `provision-pilot-user` does. Add a `--dry-run` flag to every operator subcommand that prints the `az` command without running it, with arguments shown but no secrets.
-- [ ] T050 [P] [US4] Add a "Hosted riders" section to `docs/auth/auth0-pilot-setup.md`:
+- [X] T049 [US4] Extend `scripts/hosted/hosted.sh` with `disable-pilot-user --owner <uuid>` and `enable-pilot-user --owner <uuid>`. Validate the UUID in D format before starting the job, start `job-bikelog-ops` with the matching args, and wait and report as `provision-pilot-user` does. Add a `--dry-run` flag to every operator subcommand that prints the `az` command without running it, with arguments shown but no secrets.
+- [X] T050 [P] [US4] Add a "Hosted riders" section to `docs/auth/auth0-pilot-setup.md`:
   1. Create the user in the Auth0 `email` connection (as before).
   2. Read their `sub`.
   3. Run `hosted.sh provision-pilot-user`.
@@ -398,14 +399,14 @@ can be recreated from code.
 
 **Independent Test**: verify the budget and notifications; compare cost with the estimate after a month.
 
-- [ ] T052 [US5] Add `hosted.sh cost`, which shows month-to-date actual cost for `rg-bikelog-prod` and the budget's current spend with `az consumption budget show`. If the CLI cannot show actual cost, print the portal link instead. Add a "Cost" section to `docs/hosting/operations.md`: how to read the cost, what the free grant covers, which settings would break the budget (`minReplicas` > 0, Dedicated profile, private endpoints, maintenance window, NAT gateway, Aiven paid plan), and that each needs a new estimate and the owner's approval (FR-026).
+- [X] T052 [US5] Add `hosted.sh cost`, which shows month-to-date actual cost for `rg-bikelog-prod` and the budget's current spend with `az consumption budget show`. If the CLI cannot show actual cost, print the portal link instead. Add a "Cost" section to `docs/hosting/operations.md`: how to read the cost, what the free grant covers, which settings would break the budget (`minReplicas` > 0, Dedicated profile, private endpoints, maintenance window, NAT gateway, Aiven paid plan), and that each needs a new estimate and the owner's approval (FR-026).
 - [ ] T053 👤 [US5] Confirm with `az consumption budget show` that the budget has the €10 amount and the Actual 50, Actual 80 and Forecasted 100 notifications to the owner's address. Record the result. After the first full month, record actual cost against the estimate (SC-010).
 
 ---
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T054 [P] Write `docs/decisions/0006-hosted-deployment-architecture.md` in the style of 0003 and 0004. Record:
+- [X] T054 [P] Write `docs/decisions/0006-hosted-deployment-architecture.md` in the style of 0003 and 0004. Record:
   - the single app with two containers;
   - the bootstrap/main split and its least-privilege reason;
   - Key Vault references with a secret volume for the CA;
@@ -414,10 +415,12 @@ can be recreated from code.
   - no IP allow-list;
   - the Aiven region finding;
   - rejected alternatives (two apps; CI with RBAC Administrator; immutability policies; ACR; minReplicas 1).
-- [ ] T055 [P] Update `docs/containers.md`: replace "Before deploying to Azure" with a short pointer to `docs/hosting/setup.md`, add the `backup` image to the image table, and note that the packages are public.
+- [X] T055 [P] Update `docs/containers.md`: replace "Before deploying to Azure" with a short pointer to `docs/hosting/setup.md`, add the `backup` image to the image table, and note that the packages are public.
 - [ ] T056 [P] Update `PROJECT_PLAN.md` Phase 3 with a status line naming what this slice delivered and what remains (Service Bus, outbox, worker, telemetry). Update the spec 004 Status line to Implemented when T044 is done.
+  - *Status 2026-10-14*: the `PROJECT_PLAN.md` status line is written; the spec Status changes to Implemented after T044.
 - [ ] T057 Run `gitleaks detect --redact` (pinned version via Docker) over the repository. Grep the last five deploy workflow logs (`gh run view --log`) for the strings `Password=`, `eyJ` and `sig=` (SC-008). Run a Log Analytics query over `ContainerAppConsoleLogs_CL` and `ContainerAppSystemLogs_CL` for the last 7 days, searching for `Password=`, `eyJ`, `sig=`, `Bearer ` and `@`, which catches emails. Run `gitleaks` over the filesystems of the published `web`, `api`, `migrations` and `backup` images (`docker export` of a created container into a temporary directory) to show they carry no secrets (FR-007a). Record zero findings, or each finding with its fix, in `docs/hosting/setup-results.md`.
-- [ ] T058 Run quickstart A1–A3 once more on the final branch, update the checklist in `specs/004-hosted-deployment/checklists/requirements.md` if anything changed, and commit as `docs: close hosted deployment slice`.
+  - *Status 2026-10-14*: repository history and locally built images scanned (see setup-results.md); the workflow-log, Log Analytics and published-image scans need the hosted environment.
+- [X] T058 Run quickstart A1–A3 once more on the final branch, update the checklist in `specs/004-hosted-deployment/checklists/requirements.md` if anything changed, and commit as `docs: close hosted deployment slice`.
 - [ ] T059 👤 After 30 days of real use, check that there are at least 28 backups and that every missed one alerted (SC-007), that cost is within budget, that the peak `numbackends` in Aiven's metrics stayed under 15, and that the T057 log query still finds nothing. Record all four in `docs/hosting/setup-results.md`.
 
 ---

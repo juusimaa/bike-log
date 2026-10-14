@@ -88,3 +88,53 @@ jobs:
       - name: Test (web, api-client, identity probe)
         run: npm test
       - run: npm run web:build
+
+  infra:
+    name: infra
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: scripts/hosted/install-bicep.sh
+      - name: Build
+        run: |
+          az bicep build --file infra/bootstrap.bicep --stdout > /dev/null
+          az bicep build --file infra/main.bicep --stdout > /dev/null
+      - name: Lint (errors fail)
+        run: |
+          az bicep lint --file infra/bootstrap.bicep --diagnostics-format sarif
+          az bicep lint --file infra/main.bicep --diagnostics-format sarif
+      - name: Refuse role assignments in CI templates and excluded paid settings
+        run: |
+          set -u
+          fail=0
+          if grep -rnE 'Microsoft\.Authorization/(roleAssignments|roleDefinitions)' infra/main.bicep infra/modules/; then
+            echo '::error::main.bicep and its modules must not create role assignments or definitions (research D3).'; fail=1
+          fi
+          for pattern in privateEndpoint "workloadProfileType: 'D" maintenanceConfigurations; do
+            if grep -rn "$pattern" infra/; then
+              echo "::error::'$pattern' adds Dedicated Plan Management charges (research D1)."; fail=1
+            fi
+          done
+          exit $fail
+
+  backup-scripts:
+    name: backup-scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet restore BikeLog.slnx --locked-mode
+      # Builds the backup image, backs up a synthetic database it creates, and checks
+      # that the restore comparison passes and catches damage (quickstart A2).
+      - name: Backup and restore round trip
+        run: scripts/hosted/tests/run.sh

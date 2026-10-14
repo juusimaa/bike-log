@@ -25,6 +25,14 @@ public static class OperatorCommandLine
 
     public static async Task<bool> TryExecuteAsync(WebApplication app, string[] args)
     {
+        // The hosted operator job's default arguments; never start the server from it.
+        if (args is ["--help"])
+        {
+            Console.WriteLine(
+                "Operator commands: --provision-pilot-user --issuer <url> --subject <sub> --email <address> | --disable-pilot-user --owner <uuid> | --enable-pilot-user --owner <uuid>"
+            );
+            return true;
+        }
         if (args.Length == 0 || !Commands.Contains(args[0]))
         {
             return false;
@@ -69,19 +77,14 @@ public static class OperatorCommandLine
         PilotUserCommands.ValidateTarget(
             db,
             app.Configuration,
-            app.Environment.EnvironmentName,
+            app.Environment,
             app.Configuration["Auth:Issuer"] ?? ""
         );
         if (command == "--provision-pilot-user")
         {
             var options = ReadOptions(args, "--issuer", "--subject", "--email");
             var issuer = options["--issuer"];
-            PilotUserCommands.ValidateTarget(
-                db,
-                app.Configuration,
-                app.Environment.EnvironmentName,
-                issuer
-            );
+            PilotUserCommands.ValidateTarget(db, app.Configuration, app.Environment, issuer);
             var owner = await PilotUserCommands.ProvisionAsync(
                 db,
                 issuer,

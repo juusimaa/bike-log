@@ -18,6 +18,6 @@ API binds to `127.0.0.1` and has no ingress.
 - No sign-in required.
 - The body never includes error details, host names or timings.
 - Only `GET` is allowed; other methods get `405`.
-- The `Host` check applies, as for every route.
+- No `Host` check: platform probes send the replica IP as `Host`. The route returns no data.
 - Used by the Container Apps startup and readiness probes and by the deploy workflow's final check.
   Probe requests are not billed.

@@ -1,6 +1,6 @@
 name: Containers
 
-# Builds the api, migrations and web images for linux/amd64 (Azure Container
+# Builds the api, migrations, web and backup images for linux/amd64 (Azure Container
 # Apps) and linux/arm64 (Apple silicon). Pull requests only build; pushes to
 # main and v* tags publish to GitHub Container Registry.
 on:
@@ -38,6 +38,9 @@ jobs:
             target: migrations
           - image: web
             file: apps/web/Dockerfile
+            target: ''
+          - image: backup
+            file: images/backup/Dockerfile
             target: ''
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

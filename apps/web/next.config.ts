@@ -9,5 +9,23 @@ const config: NextConfig = {
         output: 'standalone',
         outputFileTracingRoot: path.join(import.meta.dirname, '../..'),
     }),
+    // Resolved at build time, so one image serves every origin. HSTS is always
+    // sent: browsers ignore it over plain http (RFC 6797 section 8.1).
+    async headers() {
+        return [
+            {
+                source: '/:path*',
+                headers: [
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    { key: 'Referrer-Policy', value: 'same-origin' },
+                    { key: 'X-Frame-Options', value: 'DENY' },
+                    {
+                        key: 'Strict-Transport-Security',
+                        value: 'max-age=31536000',
+                    },
+                ],
+            },
+        ];
+    },
 };
 export default config;

@@ -39,7 +39,7 @@ public static class SyntheticOwnerPurge
                 "Synthetic purge requires exact owner, confirmation, and local synthetic development mode."
             );
         }
-        LocalDatabaseGuard.Validate(db, configuration);
+        OperatorTargetGuard.ValidateLocal(configuration, db.Database.GetConnectionString() ?? "");
         if (await db.BikeLogUsers.AnyAsync(x => x.OwnerId == OwnerId, ct))
         {
             throw new InvalidOperationException(

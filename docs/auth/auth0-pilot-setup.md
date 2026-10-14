@@ -69,3 +69,45 @@ The synthetic purge command is separate: under **synthetic** Development mode wi
 On 2026-10-12, the purge ran against local `bikelog_dev` after an ignored `pg_dump` backup under `.local/backups/`. Without `--confirm-delete-synthetic`, with a different owner, and in authenticated mode, it was refused and no row changed. The confirmed run deleted 7 bikes, 15 components, 15 installations, 3 maintenance records, 15 component usages and 15 installation usages (0 rides, 0 reminder rules). A repeat deleted 0 rows. Afterwards the synthetic owner had no rows, while each pilot owner still had its one bike, `BikeLogUsers` still held two enabled users, and `__EFMigrationsHistory` still held seven migrations.
 
 For a provider signing-key rotation, the API obtains current keys from the configured issuer's OIDC metadata; verify a freshly issued token before retiring the old key. Rotating the confidential web client secret requires updating only ignored server configuration and restarting the web server. A web session protection-key rotation invalidates sessions encrypted with the old key unless a controlled key ring is retained; clear affected session rows and sign in again. During an Auth0 outage, new login and refresh can fail; do not bypass local-user authorization or accept ID tokens as API credentials. Restore provider access or let the existing bounded session expire and retry sign-in.
+
+## Hosted application
+
+The hosted app at `https://<fqdn>` uses its own Regular Web Application, so its client secret and URLs
+stay apart from local development (research D15). In the same tenant, create **Bike Log (hosted)**:
+
+- **Type**: Regular Web Application (confidential).
+- **Connections**: only the passwordless `email` connection. Disable the database and social connections
+  on the application's Connections tab and read the setting back after a reload.
+- **Grant types**: Authorization Code and Refresh Token.
+- **Allowed Callback URLs**: `https://<fqdn>/auth/callback`.
+- **Allowed Logout URLs**: `https://<fqdn>/?signedOut=1`.
+- **API access**: the same custom Bike Log API audience, with only the `BikeLog.Access` permission.
+
+Store the client secret only in Key Vault as `auth0-client-secret`
+([docs/hosting/setup.md](../hosting/setup.md#7-key-vault-secrets)); the client ID is the GitHub variable
+`AUTH0_CLIENT_ID`. The `<fqdn>` exists only after the first deployment, so set the two URLs then.
+
+The local application keeps only its `localhost:3000` URLs. Users belong to the `email` connection, not
+to an application, so an invited rider can sign in to both.
+
+## Hosted riders
+
+Riders on the hosted app are provisioned through the operator job, never from a laptop connection to
+the hosted database:
+
+1. Create the user in the Auth0 `email` connection, as for the local pilot.
+2. Read their `user_id` (the `sub`), for example `email|65f…`, from the Auth0 dashboard.
+3. Provision them:
+
+   ```sh
+   scripts/hosted/hosted.sh provision-pilot-user --subject '<sub>' --email '<address>'
+   ```
+
+   The script reads `--issuer` from the operator job's own `Auth__Issuer`. Add `--dry-run` to print the
+   `az` commands without running them.
+4. To remove a rider: `scripts/hosted/hosted.sh disable-pilot-user --owner <uuid>`, then block the user in
+   Auth0. `enable-pilot-user` reverses the first step.
+
+The rider's email and subject appear in the operator job's arguments while it runs (the script restores
+the default `--help` afterwards) and in the job's execution history, which only subscription owners can
+see. The command output contains only the internal owner UUID or a status.
