@@ -17,7 +17,7 @@ import { getApi } from '../../lib/api';
 import { formatLocal, formatDate, toUtc } from '../../lib/dates';
 import { formatGrams } from '../../lib/format';
 import { parseGrams, parseKilometres } from '../../lib/units';
-import { invalidateBike, queryKeys } from '../../lib/query';
+import { invalidateBikes, queryKeys } from '../../lib/query';
 import {
     PartFields,
     PartsLoadState,
@@ -139,6 +139,8 @@ export function FitComponentForm({
     const label = positionLabel(catalog.data, destination.position);
     const kind = typeLabel(catalog.data, type ?? '');
     const busy = phase === 'creating' || phase === 'fitting' || reading;
+    /** A part was created but fitting it failed; saving is not still under way. */
+    const retained = !!createdComponentId && phase === 'incomplete';
     const bikeName = (id: string) =>
         bikes.data?.pages.flatMap((p) => p.items).find((b) => b.id === id)
             ?.displayName ?? 'another bike';
@@ -205,8 +207,11 @@ export function FitComponentForm({
         };
     }
     async function invalidateParts(componentIds: string[], bikeIds: string[]) {
-        for (const affected of new Set([destination.bikeId, ...bikeIds]))
-            await invalidateBike(client, affected, componentIds);
+        await invalidateBikes(
+            client,
+            [...new Set([destination.bikeId, ...bikeIds])],
+            componentIds,
+        );
     }
     /** Fitting into a "none fitted" position first ends that period at the fitting date. */
     async function endExemption(startUtc: string) {
@@ -307,8 +312,11 @@ export function FitComponentForm({
                     queryKeys.componentUsage(part.id),
                     queryKeys.componentMaintenance(part.id),
                 ];
-                for (const queryKey of createdKeys)
-                    await client.cancelQueries({ queryKey });
+                await Promise.all(
+                    createdKeys.map((queryKey) =>
+                        client.cancelQueries({ queryKey }),
+                    ),
+                );
                 await Promise.all(
                     createdKeys.map((queryKey) =>
                         client.resetQueries({ queryKey }),
@@ -689,6 +697,13 @@ export function FitComponentForm({
                         ends that period on the date above.
                     </p>
                 )}
+                <p className="dialog-progress" role="status">
+                    {phase === 'creating'
+                        ? 'Creating part…'
+                        : phase === 'fitting'
+                          ? 'Fitting part…'
+                          : ''}
+                </p>
                 <div className="dialog-actions">
                     <button
                         className="button secondary"
@@ -698,7 +713,7 @@ export function FitComponentForm({
                     >
                         Cancel
                     </button>
-                    {!createdComponentId && !uncertain && next && (
+                    {!retained && !uncertain && next && (
                         <button
                             className="button secondary fit-next"
                             type="button"
@@ -711,7 +726,7 @@ export function FitComponentForm({
                             Fit, then {next.label.toLowerCase()}
                         </button>
                     )}
-                    {!createdComponentId && (
+                    {!retained && (
                         <button
                             className="button primary"
                             type="submit"
@@ -722,13 +737,13 @@ export function FitComponentForm({
                     )}
                 </div>
             </form>
-            {createdComponentId && (
+            {retained && (
                 <p>
                     Part created; fitting incomplete. Retained component{' '}
                     {createdComponentId}
                 </p>
             )}
-            {createdComponentId && !uncertain && (
+            {retained && !uncertain && (
                 <button disabled={busy} onClick={() => void submit()}>
                     Retry fitting retained component
                 </button>

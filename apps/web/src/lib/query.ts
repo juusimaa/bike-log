@@ -59,26 +59,42 @@ export async function invalidateBike(
     bikeId: Uuid,
     componentIds: Uuid[] = [],
 ): Promise<void> {
-    const keys = [
+    await invalidateBikes(client, [bikeId], componentIds);
+}
+/**
+ * One refresh round for several bikes: shared keys (the bike and component lists) are
+ * reset once, and every active query refetches in parallel rather than bike by bike.
+ */
+export async function invalidateBikes(
+    client: QueryClient,
+    bikeIds: Uuid[],
+    componentIds: Uuid[] = [],
+): Promise<void> {
+    const all = [
         queryKeys.bikes(),
-        queryKeys.bike(bikeId),
-        queryKeys.overview(bikeId),
-        queryKeys.rides(bikeId),
-        queryKeys.installations(bikeId, 'current'),
-        queryKeys.installations(bikeId, 'all'),
         queryKeys.components(),
-        queryKeys.maintenance(bikeId),
-        queryKeys.reminder(bikeId),
-        queryKeys.exemptions(bikeId),
+        ...bikeIds.flatMap((bikeId) => [
+            queryKeys.bike(bikeId),
+            queryKeys.overview(bikeId),
+            queryKeys.rides(bikeId),
+            queryKeys.installations(bikeId, 'current'),
+            queryKeys.installations(bikeId, 'all'),
+            queryKeys.maintenance(bikeId),
+            queryKeys.reminder(bikeId),
+            queryKeys.exemptions(bikeId),
+        ]),
         ...componentIds.flatMap((id) => [
             queryKeys.component(id),
             queryKeys.componentUsage(id),
             queryKeys.componentMaintenance(id),
         ]),
     ];
-    for (const queryKey of keys) {
-        await client.cancelQueries({ queryKey });
-    }
+    const keys = [
+        ...new Map(all.map((key) => [JSON.stringify(key), key])).values(),
+    ];
+    await Promise.all(
+        keys.map((queryKey) => client.cancelQueries({ queryKey })),
+    );
     // Reset drops the entire infinite snapshot, including opaque page cursors,
     // then refetches active observers.
     await Promise.all(

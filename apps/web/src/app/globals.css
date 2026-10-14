@@ -933,6 +933,12 @@ dialog::backdrop {
     font-size: 11px;
     line-height: 1.6;
 }
+/* Save progress inside a dialog; the element stays mounted so changes are announced. */
+.dialog-progress { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: #4f5f52; font-size: 12px; font-weight: 550; }
+.dialog-progress:empty { margin: 0; }
+.dialog-progress:not(:empty)::before { content: ''; flex: none; width: 12px; height: 12px; border: 2px solid #d4decc; border-top-color: #345b43; border-radius: 50%; animation: dialog-progress-spin 0.8s linear infinite; }
+@keyframes dialog-progress-spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .dialog-progress:not(:empty)::before { animation: none; border-color: #345b43; } }
 .dialog-description {
     font-size: 12px;
     color: var(--v3-muted);
@@ -1372,7 +1378,8 @@ dialog::backdrop {
 .auth-story h1 { font-size: clamp(38px, 4.2vw, 65px); font-weight: 550; letter-spacing: -2.8px; line-height: 1.08; }
 .auth-story-copy > p:last-child { color: #647164; font-size: 14px; line-height: 1.8; margin-top: 23px; }
 .auth-bike { position: relative; margin: 24px -12px 30px; flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 210px; }
-.auth-bike svg { position: relative; width: 100%; max-height: 290px; z-index: 1; fill: none; stroke: #345b43; stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+/* The shared geometry drawing (BikeArt) in brand green; its own strokes and fills apply. */
+.auth-bike .bike-art { position: relative; display: block; width: 100%; max-height: 290px; z-index: 1; }
 .auth-orbit { position: absolute; width: 270px; height: 270px; border-radius: 50%; background: #e1e9d6; left: 50%; top: 45%; transform: translate(-50%, -50%); }
 .auth-bike-caption { align-self: center; position: relative; display: flex; align-items: center; gap: 8px; font-size: 10px; color: #5e7054; padding: 8px 13px; border: 1px solid #d6dfca; border-radius: 24px; background: #f4f6ed; }
 .auth-caption-dot { width: 5px; height: 5px; background: #789652; border-radius: 50%; }
