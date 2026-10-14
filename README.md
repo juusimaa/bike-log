@@ -1,4 +1,4 @@
-# Bike Log
+<h1><img src="apps/web/src/app/icon.svg" width="40" height="40" alt="" align="top"> Bike Log</h1>
 
 An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
 is available under `docs/ui-design`. Open it directly in your browser; see the
