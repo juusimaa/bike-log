@@ -115,6 +115,7 @@ printf '%s\n' 'AUTH0_CLIENT_SECRET=test-client-secret-value' 'BIKELOG_WEB_DATABA
   'BIKELOG_SESSION_KEY=test-session-key-value' > "$root/secrets/app.env"
 printf '%s\n' 'ConnectionStrings__Postgres=Host=db.example.test;Password=test-db-password' 'STANDIN_MARKER=default' > "$root/secrets/api.env"
 printf '%s\n' 'ConnectionStrings__Postgres=Host=db.example.test;Password=test-db-password' 'STANDIN_MARKER=alt' > "$root/secrets/api.alt.env"
+printf '%s\n' 'ConnectionStrings__Postgres=Host=unreachable.invalid;Password=test-db-password' 'STANDIN_MARKER=broken' > "$root/secrets/api.broken.env"
 printf '%s\n' "BIKELOG_DATABASE_URL=postgresql://postgres:$pg_password@testdb:5432/postgres" > "$root/secrets/backup.env"
 echo 'not a real certificate' > "$root/secrets/aiven-ca-certificate"
 echo 'not a real key' > "$root/secrets/backup-client.pem"
@@ -264,9 +265,21 @@ api_env() { docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' 
   "$(docker ps -q --filter "label=com.docker.compose.project=$project" --filter label=com.docker.compose.service=api)"; }
 api_env | grep -qx STANDIN_MARKER=alt || fail 'api did not get the --api-env file'
 ! grep -q API_ENV_FILE "$root/release.env" || fail 'release.env records the --api-env option'
+[ ! -e "$root/release.previous.env" ] || fail 'redeploying the current images replaced the rollback target'
 expect 0 'restart after the rehearsal' -- restart
 api_env | grep -qx STANDIN_MARKER=default || fail 'restart did not go back to api.env'
 pass 'the option applies to that deploy only'
+# Quickstart U7: only api changes and cannot reach its database. web is recreated
+# too, so its health check sees the new api and the gate brings the release back.
+before=$(cat "$root/release.env")
+expect 1 'redeploy with an API that cannot reach the database' -- \
+  deploy "$tag1" "$web1" "$api" "$migrate_ok" "$backup" --api-env api.broken.env
+output_has "result=failed tag=$tag1 previous=$tag1"
+[ "$(cat "$root/release.env")" = "$before" ] || fail 'release.env was not restored'
+[ ! -e "$root/release.previous.env" ] || fail 'the failed redeploy left a release.previous.env'
+api_env | grep -qx STANDIN_MARKER=default || fail 'the restored api does not use api.env'
+[ "$(web_health)" = healthy ] || fail 'the restored release is not healthy'
+pass 'an API-only failure is caught and the release restored'
 
 step 'Rollback (T033)'
 expect 0 'deploy of a second version' -- deploy "$tag2" "$web2" "$api" "$migrate_ok" "$backup"

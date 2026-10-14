@@ -282,10 +282,20 @@ prune_images() {
   done
 }
 
+# Both containers are always recreated: api shares web's network namespace, and if
+# only api changed, an untouched web would still report its old "healthy" and pass
+# the gate before its health check had seen the new api.
 up_healthy() { # release-file [VAR=value...]
   local file=$1
   shift
-  compose "$file" "$@" -- up -d --wait --wait-timeout "$health_timeout" web api
+  compose "$file" "$@" -- up -d --wait --wait-timeout "$health_timeout" --force-recreate web api
+}
+
+same_images() { # file file
+  local name
+  for name in WEB_IMAGE API_IMAGE MIGRATIONS_IMAGE BACKUP_IMAGE; do
+    [ "$(value "$1" "$name")" = "$(value "$2" "$name")" ] || return 1
+  done
 }
 
 # After a failed start: put the saved release files back and start that release.
@@ -349,7 +359,11 @@ cmd_deploy() {
   fi
 
   save_release_files
-  [ ! -f "$release" ] || mv "$release" "$previous"
+  # Redeploying the current images keeps the rollback target instead of replacing it
+  # with a copy of the current release.
+  if [ -f "$release" ] && ! same_images "$release" "$work/candidate.env"; then
+    mv "$release" "$previous"
+  fi
   cp "$work/candidate.env" "$release"
 
   say "starting $new_tag"
