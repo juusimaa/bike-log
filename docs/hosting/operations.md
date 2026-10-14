@@ -73,6 +73,16 @@ When a day passes without a successful run, `alert-backup-missing` emails the ow
 executions with `hosted.sh status`, then its logs in the portal. A common cause is the Aiven service
 being powered off (see [setup.md](setup.md#aiven-service-powered-off)).
 
+### Backup image packages
+
+The backup image installs exact Debian versions of `ca-certificates`, `curl` and `jq` from a fixed
+`snapshot.debian.org` timestamp, so builds do not break when Debian replaces a package. Every Monday the
+**Backup image pins** workflow looks for newer versions (usually security fixes) in a snapshot at least
+12 hours old. When it finds some, it pushes a `chore/backup-pins-<timestamp>` branch and opens an issue with
+a link to create the pull request; merging it rebuilds and redeploys the image. To check by hand, or to
+take a fix sooner, run the workflow from the Actions tab or `scripts/hosted/update-backup-pins.sh`
+locally.
+
 ## Restore rehearsal
 
 Run it on your Mac with Docker. It downloads one backup, restores it into a fresh, uniquely named
