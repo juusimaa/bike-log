@@ -119,3 +119,22 @@ jobs:
             fi
           done
           exit $fail
+
+  backup-scripts:
+    name: backup-scripts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - run: dotnet restore BikeLog.slnx --locked-mode
+      # Builds the backup image, backs up a synthetic database it creates, and checks
+      # that the restore comparison passes and catches damage (quickstart A2).
+      - name: Backup and restore round trip
+        run: scripts/hosted/tests/run.sh
