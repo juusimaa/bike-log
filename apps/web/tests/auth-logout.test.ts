@@ -35,3 +35,18 @@ it('rejects forged origins and hosts without deleting the session', async () => 
     expect((await POST(request(null))).status).toBe(403);
     expect(store.delete).not.toHaveBeenCalled();
 });
+
+it('signs out behind TLS-terminating ingress and returns to the https origin', async () => {
+    const hosted = 'https://ca-bikelog.example.azurecontainerapps.io';
+    const host = 'ca-bikelog.example.azurecontainerapps.io';
+    process.env.WEB_PUBLIC_ORIGIN = hosted;
+    const headers = new Headers({ host, origin: hosted, 'x-forwarded-proto': 'https', cookie: `${SESSION_COOKIE}=${'a'.repeat(43)}` });
+    const response = await POST(new Request(`http://${host}/auth/logout`, { method: 'POST', headers }));
+    expect(response.status).toBe(200);
+    const destination = new URL((await response.json()).logoutUrl);
+    expect(destination.searchParams.get('returnTo')).toBe(`${hosted}/?signedOut=1`);
+    headers.set('x-forwarded-proto', 'http');
+    store.delete.mockClear();
+    expect((await POST(new Request(`http://${host}/auth/logout`, { method: 'POST', headers }))).status).toBe(403);
+    expect(store.delete).not.toHaveBeenCalled();
+});

@@ -1,14 +1,20 @@
 import { clearSessionCookie, sessionIdFromCookie } from '@/lib/auth/cookies';
 import { getSessionStore, readAuthConfig } from '@/lib/auth/config';
+import { publicRequestOrigin } from '@/lib/public-origin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request): Promise<Response> {
-    const origin = process.env.WEB_PUBLIC_ORIGIN;
+    let origin: string;
+    try {
+        origin = publicRequestOrigin(request);
+    } catch {
+        return Response.json({ code: 'foreign_origin' }, { status: 403, headers: { 'cache-control': 'no-store' } });
+    }
     const suppliedOrigin = request.headers.get('origin');
     const sameSite = request.headers.get('sec-fetch-site') === 'same-origin';
-    if (!origin || request.headers.get('host') !== new URL(origin).host || (suppliedOrigin ? suppliedOrigin !== origin : !sameSite)) {
+    if (suppliedOrigin ? suppliedOrigin !== origin : !sameSite) {
         return Response.json({ code: 'foreign_origin' }, { status: 403, headers: { 'cache-control': 'no-store' } });
     }
     let logoutUrl: URL;

@@ -1,6 +1,10 @@
+import { assertSafeAccessMode } from './auth/config';
+import { ForeignOriginError, publicRequestOrigin } from './public-origin';
+
 const localOrigin = 'http://127.0.0.1:3000';
 const authenticatedLocalOrigin = 'http://localhost:3000';
-const localUpstream = 'http://127.0.0.1:5080';
+// The API container shares the replica's loopback; it is never reached any other way.
+export const localUpstream = 'http://127.0.0.1:5080';
 const uuid = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}';
 const routes: [RegExp, string[]][] = [
     [/^me$/, ['GET']],
@@ -47,6 +51,7 @@ function problem(status: number, code: string): Response {
     );
 }
 export function authenticatedWebMode(): boolean {
+    assertSafeAccessMode();
     const mode = process.env.BIKELOG_WEB_ACCESS_MODE;
     if (mode === 'Authenticated') return true;
     if (
@@ -74,9 +79,13 @@ function destinations(authenticated: boolean): {
     ) {
         throw new Error('Exact public and API origins are required.');
     }
-    if (origin !== authenticatedLocalOrigin || upstream !== localUpstream) {
+    if (
+        (origin !== authenticatedLocalOrigin &&
+            new URL(origin).protocol !== 'https:') ||
+        upstream !== localUpstream
+    ) {
         throw new Error(
-            'The pilot proxy is limited to the approved loopback origins.',
+            'The proxy needs an https public origin (or the local pilot origin) and the loopback API.',
         );
     }
     return { origin, upstream };
@@ -94,9 +103,14 @@ export async function forwardApi(
     if (!route[1].includes(request.method))
         return problem(405, 'method_not_allowed');
     const mutation = request.method !== 'GET';
+    try {
+        publicRequestOrigin(request, origin);
+    } catch (error) {
+        if (error instanceof ForeignOriginError)
+            return problem(403, 'foreign_origin');
+        throw error;
+    }
     if (
-        (request.headers.get('host') ?? new URL(request.url).host) !==
-            new URL(origin).host ||
         (request.headers.has('origin') &&
             request.headers.get('origin') !== origin) ||
         (mutation && request.headers.get('origin') !== origin)
