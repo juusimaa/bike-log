@@ -162,7 +162,8 @@ resource serverBackupWriter 'Microsoft.Authorization/roleAssignments@2022-04-01'
   scope: backups
   name: guid(backups.id, backupPrincipalId, backupWriter.id)
   properties: {
-    roleDefinitionId: backupWriter.id
+    // Azure stores custom role IDs at subscription scope; the same form keeps what-if clean.
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', backupWriter.name)
     principalId: backupPrincipalId
     principalType: 'ServicePrincipal'
   }
