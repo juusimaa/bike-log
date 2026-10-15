@@ -22,6 +22,8 @@ import styles from './Overview.module.css';
 export function Overview({
     bikeId,
     onEditBike,
+    onSetStatus,
+    onDeleteBike,
     onViewComponents,
     reminder,
     onReplace,
@@ -29,6 +31,9 @@ export function Overview({
 }: {
     bikeId: Uuid;
     onEditBike?: () => void;
+    /** Retire an active bike or reactivate a retired one. */
+    onSetStatus?: () => void;
+    onDeleteBike?: () => void;
     onViewComponents?: () => void;
     reminder?: ReactNode;
     onReplace?: (i: Validated<InstallationResponse>) => void;
@@ -85,7 +90,14 @@ export function Overview({
                     <section className="card hero">
                         <div className="hero-top">
                             <div>
-                                <h2>{s.bike.displayName}</h2>
+                                <h2>
+                                    {s.bike.displayName}
+                                    {s.bike.status === 'retired' && (
+                                        <span className="pill quiet title-tag">
+                                            Retired
+                                        </span>
+                                    )}
+                                </h2>
                                 <p>
                                     {[
                                         s.bike.make,
@@ -112,6 +124,22 @@ export function Overview({
                                     onClick={onEditBike}
                                 >
                                     Edit bike
+                                </button>
+                                <button
+                                    className="text-button"
+                                    disabled={!onSetStatus}
+                                    onClick={onSetStatus}
+                                >
+                                    {s.bike.status === 'retired'
+                                        ? 'Reactivate…'
+                                        : 'Retire…'}
+                                </button>
+                                <button
+                                    className="text-button danger"
+                                    disabled={!onDeleteBike}
+                                    onClick={onDeleteBike}
+                                >
+                                    Delete bike…
                                 </button>
                             </div>
                         </div>

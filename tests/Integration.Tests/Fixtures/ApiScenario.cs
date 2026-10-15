@@ -166,6 +166,24 @@ public sealed class ApiScenario : IAsyncDisposable
 
     public static Guid Id(JsonElement element) => element.GetProperty("id").GetGuid();
 
+    /// <summary>Turns a bike into a tombstone directly, bypassing the deletion endpoint.</summary>
+    public async Task MarkDeleted(Guid bike)
+    {
+        await using var db = TestDatabase.Open(ConnectionString);
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""UPDATE "Bikes" SET "DeletedUtc" = {DateTimeOffset.UtcNow} WHERE "Id" = {bike}"""
+        );
+    }
+
+    /// <summary>Asserts a problem response and returns its body.</summary>
+    public static async Task<JsonElement> Expect(HttpResponseMessage r, int status, string code)
+    {
+        Assert.Equal(status, (int)r.StatusCode);
+        var body = (await r.Content.ReadFromJsonAsync<JsonElement>()).Clone();
+        Assert.Equal(code, body.GetProperty("code").GetString());
+        return body;
+    }
+
     public async ValueTask DisposeAsync()
     {
         Client?.Dispose();

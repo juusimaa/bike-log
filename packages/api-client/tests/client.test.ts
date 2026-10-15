@@ -14,6 +14,7 @@ const bike = {
     displayName: 'Unnamed bike',
     frameWeightGrams: null,
     missingPositions: [],
+    status: 'active',
 } satisfies BikeResponse;
 const reminder = {
     ruleVersion: 1,
@@ -236,6 +237,7 @@ it('preserves all four replacement result members and rejects each absent member
         initialUsageEstimateMetres: 0,
         group: 'groupset',
         weightGrams: null,
+        bikes: [{ id, displayName: 'Synthetic', state: 'active' }],
     };
     const installation = {
         id,
@@ -385,6 +387,46 @@ it('uses documented methods, resource paths and pagination for every remaining w
             () => api.listRides(id, { pageSize: 50, cursor: 'next' }),
             'GET',
             `/api/bikes/${id}/rides?pageSize=50&cursor=next`,
+        ],
+        [
+            () => api.listAllRides({ pageSize: 50, cursor: 'next' }),
+            'GET',
+            '/api/rides?pageSize=50&cursor=next',
+        ],
+        [
+            () =>
+                api.setBikeStatus(id, {
+                    status: 'retired',
+                    expectedVersion: 2,
+                }),
+            'PUT',
+            `/api/bikes/${id}/status`,
+            { status: 'retired', expectedVersion: 2 },
+        ],
+        [
+            () => api.getBikeDeletionPreview(id),
+            'GET',
+            `/api/bikes/${id}/deletion-preview`,
+        ],
+        [
+            () =>
+                api.deleteBike(id, {
+                    expectedVersion: 3,
+                    fittedInstallationIds: [id],
+                    keepComponentIds: [],
+                }),
+            'POST',
+            `/api/bikes/${id}/delete`,
+            {
+                expectedVersion: 3,
+                fittedInstallationIds: [id],
+                keepComponentIds: [],
+            },
+        ],
+        [
+            () => api.deleteComponent(id, 4),
+            'DELETE',
+            `/api/components/${id}?expectedVersion=4`,
         ],
         [() => api.getRide(id), 'GET', `/api/rides/${id}`],
         [() => api.createRide(rideInput), 'POST', '/api/rides', rideInput],
@@ -696,3 +738,42 @@ it.each([
         expect(result.baselineUtc).toBeNull();
     },
 );
+it('validates bike states in all rides and rejects unknown statuses', async () => {
+    const ride = {
+        id,
+        bikeId: id,
+        startUtc: '2026-10-02T12:00:00Z',
+        distanceMetres: 42000,
+        durationSeconds: null,
+        version: 1,
+        name: null,
+        bike: { id, displayName: 'Canyon Grail', state: 'deleted' },
+    };
+    let body: unknown = { items: [ride], nextCursor: null };
+    const api = createApiClient('http://native.example', async () =>
+        json(body),
+    );
+    const page = await api.listAllRides();
+    expect(page.items[0].bike).toEqual({
+        id,
+        displayName: 'Canyon Grail',
+        state: 'deleted',
+    });
+    body = {
+        items: [{ ...ride, bike: { ...ride.bike, state: 'gone' } }],
+        nextCursor: null,
+    };
+    await expect(api.listAllRides()).rejects.toMatchObject({
+        code: 'invalid_response',
+    });
+    body = { ...bike, status: 'paused' };
+    await expect(api.getBike(id)).rejects.toMatchObject({
+        code: 'invalid_response',
+    });
+    await expect(
+        api.setBikeStatus(id, {
+            status: 'deleted' as 'retired',
+            expectedVersion: 1,
+        }),
+    ).rejects.toMatchObject({ code: 'invalid_input' });
+});

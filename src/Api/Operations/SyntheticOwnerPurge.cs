@@ -56,7 +56,11 @@ public static class SyntheticOwnerPurge
             await db.Rides.Where(x => x.OwnerId == OwnerId).ExecuteDeleteAsync(ct),
             await db.ChainLubricationRules.Where(x => x.OwnerId == OwnerId).ExecuteDeleteAsync(ct),
             await db.Components.Where(x => x.OwnerId == OwnerId).ExecuteDeleteAsync(ct),
-            await db.Bikes.Where(x => x.OwnerId == OwnerId).ExecuteDeleteAsync(ct)
+            // Include deleted bikes' tombstones (research D3).
+            await db
+                .Bikes.IgnoreQueryFilters()
+                .Where(x => x.OwnerId == OwnerId)
+                .ExecuteDeleteAsync(ct)
         );
         await transaction.CommitAsync(ct);
         return result;

@@ -1,4 +1,5 @@
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Rides;
 using BikeLog.Infrastructure.Persistence;
@@ -25,15 +26,12 @@ public static class RideEndpoints
                         async token =>
                         {
                             Validate(request.DistanceMetres, request.DurationSeconds);
-                            if (
-                                !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == request.BikeId,
-                                    token
-                                )
-                            )
-                            {
-                                throw ApiInput.Missing();
-                            }
+                            await BikeGuards.RequireActiveAsync(
+                                db,
+                                owner.OwnerId,
+                                request.BikeId,
+                                token
+                            );
 
                             var r = new Ride
                             {
@@ -89,14 +87,16 @@ public static class RideEndpoints
                                 ) ?? throw ApiInput.Missing();
                             ApiInput.Version(request.ExpectedVersion, r.Version);
                             Validate(request.DistanceMetres, request.DurationSeconds);
-                            if (
-                                !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == request.BikeId,
-                                    token
-                                )
-                            )
+                            // Keeping the ride's bike needs no lookup, so rides of retired and
+                            // deleted bikes stay correctable; a move needs an active bike (research D1, D3).
+                            if (request.BikeId != r.BikeId)
                             {
-                                throw ApiInput.Missing();
+                                await BikeGuards.RequireActiveAsync(
+                                    db,
+                                    owner.OwnerId,
+                                    request.BikeId,
+                                    token
+                                );
                             }
 
                             r.Name = ApiInput.OptionalName(request.Name);

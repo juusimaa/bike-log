@@ -25,6 +25,7 @@ const bike = {
     version: 9,
     frameWeightGrams: null,
     missingPositions: [] as string[],
+    status: 'active' as const,
 };
 /** Opens the V4 bike switcher and picks a bike from its panel. */
 function chooseBike(name: RegExp) {
@@ -51,6 +52,7 @@ const api = vi.hoisted(() => ({
     getOverview: vi.fn(),
     getReminder: vi.fn(),
     listInstallations: vi.fn(),
+    setBikeStatus: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 beforeEach(() => {
@@ -469,5 +471,57 @@ it('required make error is associated with the real input', () => {
     );
     expect(screen.getByLabelText('Make')).toHaveAccessibleDescription(
         'Make is required.',
+    );
+});
+it('retiringTheViewedBikeConfirmsSendsTheVersionAndMovesToAnActiveBike', async () => {
+    garageFixture();
+    let retired = false;
+    api.listBikes.mockImplementation(async () => ({
+        items: [
+            { ...bike, status: retired ? 'retired' : 'active' },
+            { ...bike, id: b, displayName: 'Other' },
+        ],
+        nextCursor: null,
+    }));
+    api.setBikeStatus.mockImplementation(async () => {
+        retired = true;
+        return { ...bike, status: 'retired', version: 10 };
+    });
+    window.history.replaceState(null, '', `/?bike=${a}`);
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retire…' }));
+    const dialog = screen.getByRole('dialog', { name: 'Retire Old?' });
+    expect(dialog).toHaveTextContent(/reactivate it at any time/);
+    expect(api.setBikeStatus).not.toHaveBeenCalled();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Retire bike' }));
+    await waitFor(() =>
+        expect(api.setBikeStatus).toHaveBeenCalledWith(a, {
+            status: 'retired',
+            expectedVersion: 9,
+        }),
+    );
+    await waitFor(() => expect(window.location.search).toContain(b));
+    expect(await screen.findByText('Old retired.')).toBeInTheDocument();
+});
+it('staleRetireShowsTheConflictPanel', async () => {
+    garageFixture();
+    api.setBikeStatus.mockRejectedValue(
+        new ApiError(409, 'stale_version', 'Stale', 10),
+    );
+    window.history.replaceState(null, '', `/?bike=${a}`);
+    render(<Home />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Retire…' }));
+    api.getBike.mockResolvedValue({ ...bike, version: 10 });
+    fireEvent.click(screen.getByRole('button', { name: 'Retire bike' }));
+    const panel = await screen.findByRole('region', { name: 'Save conflict' });
+    expect(panel).toHaveTextContent('Old is active (version 10).');
+    fireEvent.click(
+        within(panel).getByRole('button', { name: 'Reapply my changes' }),
+    );
+    await waitFor(() =>
+        expect(api.setBikeStatus).toHaveBeenLastCalledWith(a, {
+            status: 'retired',
+            expectedVersion: 10,
+        }),
     );
 });

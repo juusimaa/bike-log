@@ -1,4 +1,5 @@
 using BikeLog.Api.Features.Errors;
+using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Installations;
 using BikeLog.Domain.Reminders;
 using BikeLog.Infrastructure.Persistence;
@@ -15,10 +16,11 @@ public sealed class ReminderReader(BikeLogDbContext db, IReminderCalculator calc
         CancellationToken ct
     )
     {
-        if (!await db.Bikes.AnyAsync(x => x.OwnerId == ownerId && x.Id == bikeId, ct))
-        {
-            throw ApiInput.Missing();
-        }
+        var bike =
+            await db
+                .Bikes.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.OwnerId == ownerId && x.Id == bikeId, ct)
+            ?? throw ApiInput.Missing();
         var rule = await db
             .ChainLubricationRules.AsNoTracking()
             .SingleOrDefaultAsync(x => x.OwnerId == ownerId && x.BikeId == bikeId, ct);
@@ -43,6 +45,14 @@ public sealed class ReminderReader(BikeLogDbContext db, IReminderCalculator calc
                 x.OwnerId == ownerId && x.BikeId == bikeId && x.PerformedUtc <= evaluatedAtUtc
             )
             .ToListAsync(ct);
-        return calculator.Calculate(rule, chain, rides, maintenance, evaluatedAtUtc);
+        var evaluation = calculator.Calculate(rule, chain, rides, maintenance, evaluatedAtUtc);
+        // A retired bike keeps its rule but is never due until reactivated (research D5).
+        return bike.Status == BikeStatus.Retired
+            ? evaluation with
+            {
+                State = "paused",
+                Due = false,
+            }
+            : evaluation;
     }
 }

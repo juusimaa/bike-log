@@ -11,7 +11,10 @@ export function readSelection(search: URLSearchParams): {
                 ? id
                 : null,
         view:
-            view === 'components' || view === 'rides' || view === 'maintenance'
+            view === 'components' ||
+            view === 'rides' ||
+            view === 'maintenance' ||
+            view === 'all-rides'
                 ? view
                 : 'overview',
     };

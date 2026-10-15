@@ -9,8 +9,10 @@ public static class ProjectionUpgrade
     {
         using var discovery = services.CreateScope();
         var db = discovery.ServiceProvider.GetRequiredService<BikeLogDbContext>();
+        // An owner whose bikes are all deleted still has rides to rebuild (research D3).
         var owners = await db
-            .Bikes.Select(x => x.OwnerId)
+            .Bikes.IgnoreQueryFilters()
+            .Select(x => x.OwnerId)
             .Union(db.Components.Select(x => x.OwnerId))
             .Distinct()
             .OrderBy(x => x)

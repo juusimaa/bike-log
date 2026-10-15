@@ -21,7 +21,12 @@ import { Overview } from '../overview/Overview';
 import { useBike, useBikes } from './queries';
 import { readSelection, selectionUrl } from './navigation';
 export type GarageAction =
-    'create-bike' | 'edit-bike' | 'log-ride' | 'log-maintenance';
+    | 'create-bike'
+    | 'edit-bike'
+    | 'log-ride'
+    | 'log-maintenance'
+    | 'set-bike-status'
+    | 'delete-bike';
 export type GarageIntegration = {
     bikeId: Uuid | null;
     bike: Validated<BikeResponse> | undefined;
@@ -120,7 +125,10 @@ export function Garage({
             pages?.pages.flatMap((p) => p.items).map((b) => [b.id, b]),
         ).values(),
     );
-    const bikeId = selection.bikeId ?? (supplied ? null : (all[0]?.id ?? null));
+    const active = all.filter((b) => b.status === 'active');
+    const bikeId =
+        selection.bikeId ??
+        (supplied ? null : ((active[0] ?? all[0])?.id ?? null));
     const bike = useBike(bikeId);
     const [lastBike, setLastBike] = useState(bike.data);
     if (bike.data && bike.data !== lastBike) setLastBike(bike.data);
@@ -128,6 +136,15 @@ export function Garage({
         bike.data ??
         (!bike.error && lastBike?.id === bikeId ? lastBike : undefined);
     const view = selection.view;
+    // Rides go to an active bike: the viewed one, else the first active bike loaded.
+    const rideBikeId =
+        !bikeData || bike.error
+            ? null
+            : bikeData.status === 'active'
+              ? bikeId
+              : (active[0]?.id ?? null);
+    const noActiveBike =
+        !!pages && !bikes.hasNextPage && all.length > 0 && active.length === 0;
     function action(kind: GarageAction, id: Uuid | null) {
         if (onAction) request(() => onAction(kind, id));
         else
@@ -227,6 +244,7 @@ export function Garage({
                                 components: 'Every part has a story.',
                                 rides: 'Miles worth remembering.',
                                 maintenance: 'Care that goes the distance.',
+                                'all-rides': 'Every ride, every bike.',
                             }[view]
                         }
                     </h1>
@@ -240,6 +258,8 @@ export function Garage({
                                 rides: 'Your rides, and the components that came along.',
                                 maintenance:
                                     'A useful history of the little things that keep you rolling.',
+                                'all-rides':
+                                    'Your whole ride log in one place, newest first.',
                             }[view]
                         }
                     </p>
@@ -254,8 +274,8 @@ export function Garage({
                     </button>
                     <button
                         className="button primary"
-                        disabled={!usable || navigationLocked}
-                        onClick={() => action('log-ride', bikeId)}
+                        disabled={!rideBikeId || navigationLocked}
+                        onClick={() => action('log-ride', rideBikeId)}
                     >
                         <span aria-hidden="true">＋</span> Add a ride
                     </button>
@@ -264,6 +284,11 @@ export function Garage({
             {notice && (
                 <p className="gap-notice" role="status">
                     {notice}
+                </p>
+            )}
+            {noActiveBike && (
+                <p className="gap-notice" role="note">
+                    Reactivate a bike or add one to log rides.
                 </p>
             )}
             <BikeSwitcher
@@ -287,7 +312,9 @@ export function Garage({
                     onRetry={() => void bikes.refetch()}
                 />
             )}{' '}
-            {missing ? (
+            {view === 'all-rides' ? (
+                (renderView?.(context) ?? null)
+            ) : missing ? (
                 <EmptyState title="Missing bike">
                     <p>
                         This bike is unavailable. Select another bike or create
@@ -322,6 +349,16 @@ export function Garage({
                         navigationLocked
                             ? undefined
                             : () => action('edit-bike', bikeId)
+                    }
+                    onSetStatus={
+                        navigationLocked
+                            ? undefined
+                            : () => action('set-bike-status', bikeId)
+                    }
+                    onDeleteBike={
+                        navigationLocked
+                            ? undefined
+                            : () => action('delete-bike', bikeId)
                     }
                     onViewComponents={
                         navigationLocked

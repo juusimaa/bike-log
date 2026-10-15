@@ -105,33 +105,6 @@ public static class CollectionEndpoints
         );
     }
 
-    private static async Task<Dictionary<Guid, ComponentResponse>> Components(
-        BikeLogDbContext db,
-        Guid owner,
-        IReadOnlyList<Component> rows,
-        CancellationToken ct
-    )
-    {
-        var ids = rows.Select(x => x.Id).ToArray();
-        var history = await db
-            .Installations.AsNoTracking()
-            .Where(x => x.OwnerId == owner && ids.Contains(x.ComponentId))
-            .OrderBy(x => x.StartUtc)
-            .ThenBy(x => x.Id)
-            .ToListAsync(ct);
-        return rows.ToDictionary(
-            x => x.Id,
-            x =>
-                ComponentResponse.From(
-                    x,
-                    history
-                        .Where(i => i.ComponentId == x.Id)
-                        .Select(InstallationResponse.From)
-                        .ToArray()
-                )
-        );
-    }
-
     public static void MapCollections(this RouteGroupBuilder api)
     {
         api.MapGet(
@@ -198,7 +171,12 @@ public static class CollectionEndpoints
                     }
 
                     var rows = await q.OrderBy(x => x.Id).Take(size + 1).ToListAsync(ct);
-                    var responses = await Components(db, owner.OwnerId, rows, ct);
+                    var responses = await ComponentReader.ResponsesAsync(
+                        db,
+                        owner.OwnerId,
+                        rows,
+                        ct
+                    );
                     return Page(rows, size, scope, x => responses[x.Id], _ => null);
                 }
             )
@@ -249,6 +227,55 @@ public static class CollectionEndpoints
                 }
             )
             .Produces<PageResponse<RideResponse>>();
+        api.MapGet(
+                "/rides",
+                async (
+                    int? pageSize,
+                    string? cursor,
+                    BikeLogDbContext db,
+                    ICurrentOwner owner,
+                    CancellationToken ct
+                ) =>
+                {
+                    var scope = OwnerScope("rides", owner.OwnerId);
+                    var (size, p) = Parse(pageSize, cursor, scope, true);
+                    await using var snapshot = await db.Database.BeginTransactionAsync(
+                        IsolationLevel.RepeatableRead,
+                        ct
+                    );
+                    var q = db.Rides.AsNoTracking().Where(x => x.OwnerId == owner.OwnerId);
+                    if (p != null)
+                    {
+                        q = q.Where(x =>
+                            x.StartUtc < p.Instant
+                            || (x.StartUtc == p.Instant && x.Id.CompareTo(p.Id) < 0)
+                        );
+                    }
+
+                    var rows = await q.OrderByDescending(x => x.StartUtc)
+                        .ThenByDescending(x => x.Id)
+                        .Take(size + 1)
+                        .ToListAsync(ct);
+                    var ids = rows.Select(x => x.BikeId).Distinct().ToArray();
+                    // Rides of deleted bikes stay listed under the bike's kept name (research D3).
+                    var bikes = await db
+                        .Bikes.IgnoreQueryFilters()
+                        .AsNoTracking()
+                        .Where(x => x.OwnerId == owner.OwnerId && ids.Contains(x.Id))
+                        .ToDictionaryAsync(x => x.Id, BikeRef.From, ct);
+                    return Page(
+                        rows,
+                        size,
+                        scope,
+                        x => RideListItem.From(x, bikes[x.BikeId]),
+                        x => x.StartUtc
+                    );
+                }
+            )
+            .Produces<PageResponse<RideListItem>>()
+            .WithDescription(
+                "All of the owner's rides across bikes, deleted bikes included, newest first."
+            );
         api.MapGet(
                 "/components/{id:guid}/maintenance",
                 async (
@@ -355,7 +382,12 @@ public static class CollectionEndpoints
                         .Components.AsNoTracking()
                         .Where(x => x.OwnerId == owner.OwnerId && ids.Contains(x.Id))
                         .ToListAsync(ct);
-                    var responses = await Components(db, owner.OwnerId, components, ct);
+                    var responses = await ComponentReader.ResponsesAsync(
+                        db,
+                        owner.OwnerId,
+                        components,
+                        ct
+                    );
                     return Page(
                         rows,
                         size,

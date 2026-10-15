@@ -185,3 +185,57 @@ Automated gates on branch `002-component-groups-weight`: CSharpier and `dotnet b
 | 20 | Pass | `missingPositions` on bike, list and overview; ride still saves with a saddle gap; web badge and non-blocking ride warning |
 
 Defect found and fixed during verification: the Next.js API proxy allowlist did not include the new routes, so the live board could not load the catalog. A proxy test now checks every client-callable OpenAPI operation is forwarded.
+
+## Bike lifecycle and ride bike choice (2026-10)
+
+Feature `006-bike-lifecycle`; decisions D1–D11 are in `specs/006-bike-lifecycle/research.md`.
+
+A bike has a `status` (`active` or `retired`) and, once deleted, a `DeletedUtc` tombstone that keeps only its display name. An EF Core global query filter hides deleted bikes from every bike lookup, so existing bike routes answer `404 not_found` for them without route-specific checks. These reads opt out with `IgnoreQueryFilters()`: the All rides list and component histories (to name the bike), the synthetic-owner purge, and owner discovery for `rebuild-usage`. Ride reads and usage rebuilds never query bikes, so they keep working for a deleted bike's rides.
+
+### Contract additions
+
+| Route | Change |
+| --- | --- |
+| `GET /rides?pageSize&cursor` | New. All of the owner's rides across bikes, deleted bikes included, newest first (`startUtc` desc, then `id` desc). Items are `RideListItem`: the ride fields plus `bike: BikeRef`. Cursor scope `rides:owner:{owner}`. |
+| `PUT /bikes/{id}/status` | New. `{ status: "active" \| "retired", expectedVersion }`; returns `BikeResponse`. Same status again is a no-op after the version check. |
+| `GET /bikes/{id}/deletion-preview` | New. Bike version, currently fitted parts (installation, component, type, make, model, position), rides kept and maintenance records deleted. |
+| `POST /bikes/{id}/delete` | New. `{ expectedVersion, fittedInstallationIds, keepComponentIds }`; `204`. One transaction with a usage rebuild: kept parts' fittings end at the request time, other fitted parts are deleted, the bike's maintenance, reminder rule and exemptions are deleted, then the bike becomes a tombstone (or is removed when nothing references it). |
+| `DELETE /components/{id}?expectedVersion=` | New. `204`. Deletes the part and its fittings, keeps its maintenance records with `componentId: null`, rebuilds usage. |
+| `BikeResponse` | Gains `status`. |
+| `ComponentResponse` | Gains `bikes: BikeRef[]`, one per bike in its installations, deleted bikes included. |
+| `BikeRef` | `{ id, displayName, state: "active" \| "retired" \| "deleted" }`. |
+| Reminder evaluation | `state: "paused"`, `due: false` while the bike is retired; the rule is kept. |
+| `POST /rides`, `PUT /rides/{id}` | The destination must be an active bike when creating or moving (`409 bike_retired`; `404` when deleted). Keeping a ride on its own bike is always allowed, whatever that bike's state. |
+| Fit, pair, move, replacement, replacement-with-service | `409 bike_retired` when the destination bike is retired. Ending a fitting (`PUT /installations/{id}`), ride corrections and deletions, and maintenance stay allowed. |
+
+New domain error codes, both `409`: `bike_retired` and `bike_parts_changed`. The latter carries a fresh `preview` member in the problem body.
+
+### Explicit compatible upgrade (bike lifecycle)
+
+Run `./scripts/dev.sh migrate`. The `BikeLifecycle` migration only adds `Bikes.Status` (non-null, default `'Active'`, check `CK_Bike_Status`), `Bikes.DeletedUtc` (nullable) and the rides index `(OwnerId, StartUtc, Id)` for the All rides ordering. No data is rewritten and no `rebuild-usage` is needed: `BikeLifecycleUpgradeTests` shows every bike active and every bike, component and installation total identical before and after. Rollback is compatible application code, not a schema downgrade: older builds ignore the columns, so retired bikes look active and tombstones show as bikes with only a name. Deletions cannot be undone in the app; server backups are the only recovery.
+
+### Local verification on 2026-10-15
+
+Automated gates on branch `006-bike-lifecycle`: CSharpier and `dotnet build --warnaserror` lint with 0 warnings and 0 errors; 77 domain and 247 PostgreSQL/API tests passed (324, up from 300); Vitest 249 web and 30 api-client tests passed; web lint and typecheck clean; `npm run web:build` succeeded; `npm run api:check` matched the local API; `git diff --check` clean. `migrate` applied `BikeLifecycle` once and nothing on the second run. Playwright: 39 visual checks passed (desktop, tablet, mobile), including the ride bike field, All rides, the retired switcher group and the delete-bike dialog with no horizontal page scroll. Live workflows: all 12 Chromium checks passed, including the new lifecycle workflow; in WebKit the new lifecycle workflow and the error checks passed, while 5 existing checks timed out waiting for the Create bike dialog. That WebKit failure also occurs with this branch's web source changes stashed, so it predates this feature; it is recorded here and not fixed in this branch.
+
+| # | Result | Evidence |
+| --- | --- | --- |
+| 1 | Pass | Web test `logRideOffersActiveBikesPreselectedToTheViewedBike`; visual `ride-bike-field` |
+| 2 | Pass | Live lifecycle workflow (Chromium, WebKit): viewing A, a 30 km ride logged on B gives B's chain 30 km and A's 0 |
+| 3 | Pass | Live workflow: corrected back onto A, A's chain 30 km, B's 0; `RideMoveTests` also checks a move with a new start |
+| 4 | Pass | `RideMoveTests` stale move `409 stale_version`, nothing changed; web `staleCorrectionShowsSeparateCurrentAndExplicitFreshVersionReapply` |
+| 5 | Pass | `AllRidesApiTests` ordering, paging and states; web `all-rides.test.tsx` links |
+| 6 | Pass | Live workflow: B retired, shown with the Retired pill in the switcher, not offered in Log ride; `BikeStatusTests` history unchanged |
+| 7 | Pass | Web `logRideWithOneActiveBikeShowsNoBikeField` |
+| 8 | Pass | `BikeStatusTests`: fit, pair, move, both replacements `409 bike_retired`; ending a fitting `200` |
+| 9 | Pass | `BikeStatusTests`: overview identical before retiring and after reactivating; reminder paused then ready again |
+| 10 | Pass | `ComponentDeletionTests`: spare with a September fitting removed, gap reported for that ride |
+| 11 | Pass | `ComponentDeletionTests` fitted saddle; web dialog names the bike and position |
+| 12 | Pass | Live workflow: B deleted keeping both rims; rims are spares with unchanged 20 km lifetime, chain `404`, B `404` |
+| 13 | Pass | Live workflow: All rides shows B's ride by name with a Deleted tag and no link |
+| 14 | Pass | `BikeDeletionTests` and live workflow: kept rim's `bikes` names B as deleted; web passport shows "‹name› (deleted)" |
+| 15 | Pass | `BikeDeletionTests` `409 bike_parts_changed` with a fresh preview, nothing changed; web dialog refresh keeps ticks |
+| 16 | Pass | `BikeDeletionTests`: moving a deleted bike's ride to A moves usage from the kept parts to A's chain |
+| 17 | Pass | `AuthenticatedOwnershipTests.LifecycleRoutesAreOwnerScoped`: every new route `404` for another owner, `401` without a session |
+
+Scenarios were exercised through automated runs against the real API and PostgreSQL, not by hand in a browser.

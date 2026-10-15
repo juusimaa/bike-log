@@ -3,6 +3,7 @@ import { errorText } from '../../lib/errors';
 import { useEffect, useId, useState } from 'react';
 import {
     ApiError,
+    type BikeRef,
     type RideResponse,
     type Validated,
     type PageResponseOfRideResponse,
@@ -10,6 +11,7 @@ import {
 } from '@bikelog/api-client';
 import { Dialog } from '../../components/Dialog';
 import { FormError } from '../../components/FormError';
+import { Field } from '../../components/Field';
 import {
     formatLocal,
     validOffsets,
@@ -21,19 +23,23 @@ import { useRideMutations, type RideSave } from './mutations';
 import { RideSummary } from './RideSummary';
 import { RideRecovery } from './RideRecovery';
 import { RideFields } from './RideFields';
-import { useBike } from '../garage/queries';
+import { useAllBikes, useBike } from '../garage/queries';
 import { useComponentCatalog, positionLabel } from '../components/catalog';
 export type RideFormProps = {
     bikeId: string;
     ride?: Validated<RideResponse>;
+    /** The ride's bike as All rides names it, so a deleted bike keeps its name here. */
+    rideBike?: Validated<BikeRef>;
     onSaved: (ride: Validated<RideResponse>) => void;
     onCancel: () => void;
     onDirtyChange?: (dirty: boolean) => void;
     onBusyChange?: (busy: boolean) => void;
 };
+type BikeOption = { id: string; name: string; tag?: 'Retired' | 'Deleted' };
 export function RideForm({
     bikeId,
     ride,
+    rideBike,
     onSaved,
     onCancel,
     onDirtyChange,
@@ -61,13 +67,45 @@ export function RideForm({
     const [attemptCount, setAttemptCount] = useState(0);
     const prefix = useId();
     const { save } = useRideMutations(original.bikeId);
-    const bike = useBike(original.bikeId).data;
+    const ownBikeId = original.ride?.bikeId ?? original.bikeId;
+    const [selectedBikeId, setSelectedBikeId] = useState(ownBikeId);
+    const pages = useAllBikes().data?.pages;
+    const listed = [
+        ...new Map(
+            pages?.flatMap((p) => p.items).map((b) => [b.id, b]) ?? [],
+        ).values(),
+    ];
+    // Rides go to active bikes; a correction may also keep its own retired or deleted bike.
+    const options: BikeOption[] = listed
+        .filter((b) => b.status === 'active')
+        .map((b) => ({ id: b.id, name: b.displayName }));
+    if (!options.some((o) => o.id === ownBikeId)) {
+        const own = listed.find((b) => b.id === ownBikeId);
+        if (own)
+            options.push({
+                id: own.id,
+                name: own.displayName,
+                tag: own.status === 'retired' ? 'Retired' : undefined,
+            });
+        else if (rideBike?.state === 'deleted')
+            options.push({
+                id: rideBike.id,
+                name: rideBike.displayName,
+                tag: 'Deleted',
+            });
+    }
+    const selected = options.find((o) => o.id === selectedBikeId);
+    const bike = useBike(
+        selected?.tag === 'Deleted' ? null : selectedBikeId,
+    ).data;
+    const selectedName = selected?.name ?? bike?.displayName;
     const catalog = useComponentCatalog().data;
     const missing = bike?.missingPositions ?? [];
     const busy = save.state.phase === 'saving' || save.state.refreshing;
     const recovery = ['conflict', 'uncertain'].includes(save.state.phase);
     const dirty =
         JSON.stringify(values) !== JSON.stringify(initial) ||
+        selectedBikeId !== ownBikeId ||
         durationEdited ||
         recovery;
     useEffect(() => {
@@ -114,7 +152,7 @@ export function RideForm({
                     ? original.ride.durationSeconds
                     : parseMinutes(values.duration);
             const input: CreateRide = {
-                bikeId: original.bikeId,
+                bikeId: selectedBikeId,
                 startUtc,
                 distanceMetres,
                 durationSeconds,
@@ -126,6 +164,8 @@ export function RideForm({
                 input: original.ride
                     ? { ...input, expectedVersion: original.ride.version }
                     : input,
+                // A move changes two bikes' totals; refresh both.
+                affectedBikeIds: [...new Set([ownBikeId, selectedBikeId])],
             };
         } catch (error) {
             setFieldErrors({
@@ -143,7 +183,7 @@ export function RideForm({
         await save.refreshCurrent(async () => {
             if (!original.ride)
                 return {
-                    page: await getApi().listRides(original.bikeId, {
+                    page: await getApi().listRides(selectedBikeId, {
                         pageSize: 50,
                     }),
                 };
@@ -160,7 +200,7 @@ export function RideForm({
         const page = current?.page;
         if (!page?.nextCursor) return;
         await save.refreshCurrent(async () => {
-            const next = await getApi().listRides(original.bikeId, {
+            const next = await getApi().listRides(selectedBikeId, {
                 pageSize: 50,
                 cursor: page.nextCursor!,
             });
@@ -201,7 +241,12 @@ export function RideForm({
             ? {
                   ...attempt,
                   input: { ...attempt.input, expectedVersion: fresh.version },
-                  affectedBikeIds: [fresh.bikeId],
+                  affectedBikeIds: [
+                      ...new Set([
+                          fresh.bikeId,
+                          ...(attempt.affectedBikeIds ?? []),
+                      ]),
+                  ],
               }
             : attempt;
         const result = await (save.state.phase === 'conflict'
@@ -237,7 +282,7 @@ export function RideForm({
     return (
         <Dialog
             open
-            title={original.ride ? 'Correct ride' : 'Log ride'}
+            title={`${original.ride ? 'Correct ride' : 'Log ride'}${selectedName ? ` on ${selectedName}` : ''}`}
             onCancel={cancel}
         >
             <form
@@ -278,6 +323,25 @@ export function RideForm({
                     </div>
                 )}
                 <fieldset disabled={busy || recovery}>
+                    {options.length > 1 && (
+                        <Field id={`${prefix}-bike`} label="Bike">
+                            <select
+                                id={`${prefix}-bike`}
+                                value={selectedBikeId}
+                                onChange={(event) =>
+                                    setSelectedBikeId(event.target.value)
+                                }
+                            >
+                                {options.map((o) => (
+                                    <option key={o.id} value={o.id}>
+                                        {o.tag
+                                            ? `${o.name} (${o.tag})`
+                                            : o.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                    )}
                     <RideFields
                         prefix={prefix}
                         errors={fieldErrors}

@@ -26,6 +26,8 @@ public static class ApiContractSchema
                         or "ReplaceWithService"
                         or "MoveInstallation"
                         or "FitPair"
+                        or "SetBikeStatus"
+                        or "DeleteBike"
             )
         )
         {
@@ -77,6 +79,12 @@ public static class ApiContractSchema
                         "not-recorded",
                     ],
                     "method" => ["oil", "wax"],
+                    "status" when type.Name is "BikeResponse" or "SetBikeStatus" =>
+                    [
+                        "active",
+                        "retired",
+                    ],
+                    "state" when type.Name == "BikeRef" => ["active", "retired", "deleted"],
                     _ => null,
                 };
                 if (values is not null)

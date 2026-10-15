@@ -44,7 +44,7 @@ public static class ComponentEndpoints
                     );
                     return Results.Created(
                         $"/api/components/{c.Id}",
-                        ComponentResponse.From(c, [])
+                        ComponentResponse.From(c, [], [])
                     );
                 }
             )
@@ -82,20 +82,49 @@ public static class ComponentEndpoints
                         false,
                         ct
                     );
-                    var history = await db
-                        .Installations.AsNoTracking()
-                        .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
-                        .OrderBy(x => x.StartUtc)
-                        .ToListAsync(ct);
-                    return ComponentResponse.From(
-                        c,
-                        history.Select(InstallationResponse.From).ToArray()
-                    );
+                    return await ComponentReader.ResponseAsync(db, owner.OwnerId, c, ct);
                 }
             )
             .Produces<ComponentResponse>()
             .WithDescription(
                 "Edit make, model and weight with expectedVersion. Type, installations and usage never change."
+            );
+        api.MapDelete(
+                "/components/{id:guid}",
+                async (
+                    Guid id,
+                    long expectedVersion,
+                    BikeLogDbContext db,
+                    OwnerMutation mutation,
+                    ICurrentOwner owner,
+                    CancellationToken ct
+                ) =>
+                {
+                    await mutation.ExecuteAsync(
+                        owner.OwnerId,
+                        async token =>
+                        {
+                            var c =
+                                await db
+                                    .Components.AsNoTracking()
+                                    .SingleOrDefaultAsync(
+                                        x => x.OwnerId == owner.OwnerId && x.Id == id,
+                                        token
+                                    )
+                                ?? throw ApiInput.Missing();
+                            ApiInput.Version(expectedVersion, c.Version);
+                            await ComponentDeletion.DeleteAsync(db, owner.OwnerId, id, token);
+                            return 0;
+                        },
+                        true,
+                        ct
+                    );
+                    return Results.NoContent();
+                }
+            )
+            .Produces(204)
+            .WithDescription(
+                "Permanently delete a spare or fitted part with expectedVersion. Its fittings go, leaving gaps; its maintenance records stay unlinked."
             );
         api.MapGet(
             "/components/{id:guid}",
@@ -110,15 +139,7 @@ public static class ComponentEndpoints
                         .Components.AsNoTracking()
                         .SingleOrDefaultAsync(x => x.OwnerId == owner.OwnerId && x.Id == id, ct)
                     ?? throw ApiInput.Missing();
-                var history = await db
-                    .Installations.AsNoTracking()
-                    .Where(x => x.OwnerId == owner.OwnerId && x.ComponentId == id)
-                    .OrderBy(x => x.StartUtc)
-                    .ToListAsync(ct);
-                return ComponentResponse.From(
-                    c,
-                    history.Select(InstallationResponse.From).ToArray()
-                );
+                return await ComponentReader.ResponseAsync(db, owner.OwnerId, c, ct);
             }
         );
     }

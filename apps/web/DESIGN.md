@@ -204,6 +204,22 @@ The mark is a b whose bowl is a wheel: a white stem and rim with a lime hub on a
 
 One row shows the current bike, whatever the size of the garage (V4): its drawing, name, make, model, kind and year, the amber missing-parts pill when it is incomplete, and "Change bike". The selected-bike outline and sage fill carry over from the V1 card row. A count line beside it reads "N bikes in your garage · K incomplete". "Change bike" opens a non-modal panel under the row with search focused: recently viewed bikes (this browser tab), then all bikes A–Z; ↑ ↓ move, Enter picks the first match, Esc closes and returns focus. Create bike and loading further pages live at the panel's foot. On phones the row fills the width, the pill drops under the name and the "Change bike" text is hidden visually only.
 
+### Ride bike field
+
+Log ride and Correct ride open with a "Bike" select above the ride fields, preselected to the bike being viewed (logging) or the ride's own bike (correcting). It lists active bikes only; a correction also keeps the ride's own bike when it is retired or deleted, labelled "(Retired)" or "(Deleted)", so saving without moving is always possible. With one choice the select is hidden. The dialog title names the chosen bike: "Log ride on ‹name›", "Correct ride on ‹name›". When every bike is retired, Add a ride is disabled and a notice reads "Reactivate a bike or add one to log rides."
+
+### All rides
+
+A garage-level view (`?view=all-rides`, last in the main navigation) lists every ride newest first in the same table card as a bike's ride log, with a Bike column instead of Allocation. A bike that exists is an underlined green link to its overview; a retired one adds the grey "Retired" pill; a deleted one shows its kept name with a grey "Deleted" pill and no link. Correct and Delete open the existing ride dialogs; "Load more" pages on.
+
+### Retired bikes
+
+A retired bike keeps its overview, with a grey "Retired" pill beside the name. The overview's hero actions are Edit bike, "Retire…" or "Reactivate…", and "Delete bike…"; Retire and Reactivate confirm in a small dialog that says what changes and is never destructive. In the switcher panel, once any bike is retired, the list splits into "Active · N" then "Retired · N" headings, and retired rows carry the "Retired" pill; search still finds them. The trigger row does not repeat the pill, so "Change bike" stays on one line. The chain reminder of a retired bike reads "Paused while retired".
+
+### Delete dialogs
+
+Permanent deletes use the destructive colour (#a34b33, the existing form-error rust): a filled "Delete …" confirm button, a "This cannot be undone." line, and rust text for the entry action ("Delete bike…" in the hero, "Delete part…" in the passport). Delete part names the bike and position when the part is fitted. Delete bike is a wide dialog: the rides kept and maintenance records deleted as a sentence, then every fitted part as a bordered row with an unticked box (type, make, model, position). Ticked parts are kept as spares and the button says how many ("Delete bike, keep 2 parts"). If the bike changed since the dialog opened, the list refreshes, ticks follow the parts still fitted, and an inline notice asks for a fresh confirmation. In a part's history, a deleted bike reads "‹name› (deleted)" without a link.
+
 ## Do's and Don'ts
 
 ### Do:
@@ -214,6 +230,7 @@ One row shows the current bike, whatever the size of the garage (V4): its drawin
 - Do render groups, positions and labels from the API catalog; never list them in screen code.
 - Do use amber only for "needs attention" states that never block an action.
 - Do draw the brand mark and app icons from `brandGeometry.ts`; regenerate the icons after changing it.
+- Do reserve the rust destructive colour for permanent deletes, and always pair it with "This cannot be undone."
 
 ### Don't:
 - Don't use reminder colors or progress bars to imply measured physical wear or guaranteed safety.

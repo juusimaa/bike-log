@@ -9,7 +9,7 @@ const uuid = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}';
 const routes: [RegExp, string[]][] = [
     [/^me$/, ['GET']],
     [/^(bikes|components)$/, ['GET', 'POST']],
-    [/^rides$/, ['POST']],
+    [/^rides$/, ['GET', 'POST']],
     [/^(installations|maintenance)$/, ['POST']],
     [new RegExp(`^bikes/${uuid}$`, 'i'), ['GET', 'PUT']],
     [
@@ -20,10 +20,13 @@ const routes: [RegExp, string[]][] = [
         ['GET'],
     ],
     [new RegExp(`^bikes/${uuid}/reminder$`, 'i'), ['GET', 'PUT']],
+    [new RegExp(`^bikes/${uuid}/status$`, 'i'), ['PUT']],
+    [new RegExp(`^bikes/${uuid}/deletion-preview$`, 'i'), ['GET']],
+    [new RegExp(`^bikes/${uuid}/delete$`, 'i'), ['POST']],
     [new RegExp(`^bikes/${uuid}/position-exemptions$`, 'i'), ['GET', 'POST']],
     [/^component-catalog$/, ['GET']],
     [/^installations\/pair$/, ['POST']],
-    [new RegExp(`^components/${uuid}$`, 'i'), ['GET', 'PUT']],
+    [new RegExp(`^components/${uuid}$`, 'i'), ['GET', 'PUT', 'DELETE']],
     [new RegExp(`^components/${uuid}/(usage|maintenance)$`, 'i'), ['GET']],
     [new RegExp(`^components/${uuid}/estimate$`, 'i'), ['PUT']],
     [

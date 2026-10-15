@@ -4,7 +4,14 @@ import type {
     RideResponse,
 } from '@bikelog/api-client';
 import { test, expect, type Page } from '@playwright/test';
-import { apiRead, discoverBike, positions, startCreateBike } from './fixtures';
+import {
+    apiRead,
+    apiWrite,
+    discoverBike,
+    openSwitcher,
+    positions,
+    startCreateBike,
+} from './fixtures';
 test.beforeAll(async ({ browser }, info) => {
     console.log(`Browser ${info.project.name}: ${browser.version()}`);
 });
@@ -473,4 +480,156 @@ test('full positions: weighed saddle, none-fitted front derailleur, brake pair a
         (await apiRead(request, `components/${state('saddle').componentId}`))
             .weightGrams,
     ).toBe(215);
+});
+test('bike lifecycle: log on another bike, move back, retire, delete keeping wheels, rides keep the name', async ({
+    page,
+    request,
+}, info) => {
+    const marker = `${process.env.BIKELOG_E2E_RUN ?? 'lifecycle'}-${info.project.name}-${Date.now()}`;
+    const bike = async (name: string) =>
+        (
+            await apiWrite(request, 'post', 'bikes', {
+                name,
+                make: 'Synthetic',
+                model: 'Lifecycle',
+                kind: 'gravel',
+                year: 2026,
+            })
+        ).id as string;
+    const fit = async (bikeId: string, type: string, position: string) => {
+        const part = await apiWrite(request, 'post', 'components', {
+            type,
+            make: 'Synthetic',
+            model: `${marker}-${position}`,
+        });
+        await apiWrite(request, 'post', 'installations', {
+            bikeId,
+            componentId: part.id,
+            position,
+            startUtc: '2026-09-01T00:00:00Z',
+        });
+        return part.id as string;
+    };
+    const lifetime = async (id: string) =>
+        (await apiRead(request, `components/${id}/usage`)).lifetimeMetres;
+    const a = await bike(`${marker}-A`);
+    const b = await bike(`${marker}-B`);
+    const chainA = await fit(a, 'chain', 'chain');
+    const chainB = await fit(b, 'chain', 'chain');
+    const front = await fit(b, 'rim', 'front-rim');
+    const rear = await fit(b, 'rim', 'rear-rim');
+
+    // Scenario 2: viewing A, log a ride on B.
+    await page.goto(`/?bike=${a}&view=overview`);
+    await page.getByRole('button', { name: 'Add a ride', exact: true }).click();
+    const log = page.getByRole('dialog', { name: `Log ride on ${marker}-A` });
+    await expect(log.getByLabel('Bike', { exact: true })).toHaveValue(a);
+    await log.getByLabel('Bike', { exact: true }).selectOption(b);
+    await expect(
+        page.getByRole('dialog', { name: `Log ride on ${marker}-B` }),
+    ).toBeVisible();
+    await page.getByLabel('Ride name', { exact: true }).fill(`${marker}-moved`);
+    await page
+        .getByLabel('Start time', { exact: true })
+        .fill('2026-09-10T08:00');
+    await page.getByLabel('Distance (km)', { exact: true }).fill('30');
+    await page.getByRole('button', { name: 'Save ride' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await lifetime(chainB)).toBe(30000);
+    expect(await lifetime(chainA)).toBe(0);
+
+    // Scenario 3: correct it back onto A from B's ride log.
+    await page.goto(`/?bike=${b}&view=rides`);
+    await page
+        .getByRole('button', { name: `Correct ${marker}-moved` })
+        .click();
+    await page.getByLabel('Bike', { exact: true }).selectOption(a);
+    await page.getByRole('button', { name: 'Save ride' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(await lifetime(chainA)).toBe(30000);
+    expect(await lifetime(chainB)).toBe(0);
+    expect(await lifetime(front)).toBe(0);
+
+    // A ride that stays on B, then Scenario 6: retire B.
+    await apiWrite(request, 'post', 'rides', {
+        bikeId: b,
+        startUtc: '2026-09-12T08:00:00Z',
+        distanceMetres: 20000,
+        name: `${marker}-on-B`,
+    });
+    expect(await lifetime(front)).toBe(20000);
+    await page.goto(`/?bike=${b}&view=overview`);
+    await page.getByRole('button', { name: 'Retire…' }).click();
+    await page.getByRole('button', { name: 'Retire bike' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect((await apiRead(request, `bikes/${b}`)).status).toBe('retired');
+    await page.goto(`/?bike=${b}&view=overview`);
+    const switcher = await openSwitcher(page);
+    await switcher.getByRole('searchbox').fill(`${marker}-B`);
+    await expect(
+        switcher.getByRole('button', { name: new RegExp(`${marker}-B.*Retired`) }),
+    ).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.goto(`/?bike=${a}&view=overview`);
+    await page.getByRole('button', { name: 'Add a ride', exact: true }).click();
+    const options = page
+        .getByRole('dialog')
+        .getByLabel('Bike', { exact: true })
+        .locator('option');
+    if (await options.count())
+        await expect(
+            options.filter({ hasText: `${marker}-B` }),
+        ).toHaveCount(0);
+    await close(page);
+
+    // Scenario 12: delete B, keeping its wheels.
+    await page.goto(`/?bike=${b}&view=overview`);
+    await page.getByRole('button', { name: 'Delete bike…' }).click();
+    const dialog = page.getByRole('dialog', { name: `Delete ${marker}-B?` });
+    await expect(dialog.getByRole('checkbox')).toHaveCount(3);
+    await dialog
+        .getByRole('checkbox', { name: new RegExp(`${marker}-front-rim`) })
+        .check();
+    await dialog
+        .getByRole('checkbox', { name: new RegExp(`${marker}-rear-rim`) })
+        .check();
+    await dialog
+        .getByRole('button', { name: 'Delete bike, keep 2 parts' })
+        .click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(
+        (await request.get(`/api/bikes/${b}`)).status(),
+        'deleted bike is gone',
+    ).toBe(404);
+    expect((await request.get(`/api/components/${chainB}`)).status()).toBe(404);
+    for (const kept of [front, rear]) {
+        const part = await apiRead(request, `components/${kept}`);
+        expect(part.installations[0].endUtc).not.toBeNull();
+        expect(part.bikes[0]).toMatchObject({
+            displayName: `${marker}-B`,
+            state: 'deleted',
+        });
+        expect(await lifetime(kept)).toBe(20000);
+    }
+
+    // Scenario 13: All rides keeps B's ride under its name, tagged and unlinked.
+    await page.goto(`/?bike=${a}&view=all-rides`);
+    const row = page.getByRole('row', { name: new RegExp(`${marker}-on-B`) });
+    // Earlier runs leave synthetic rides in the dev database; page until both rides show.
+    await expect(page.getByRole('table')).toBeVisible();
+    const moved = page.getByRole('row', {
+        name: new RegExp(`${marker}-moved`),
+    });
+    for (
+        let i = 0;
+        i < 50 && (!(await row.count()) || !(await moved.count()));
+        i++
+    ) {
+        await page.getByRole('button', { name: 'Load more' }).click();
+        await page.waitForLoadState('networkidle');
+    }
+    await expect(row.getByText(`${marker}-B`)).toBeVisible();
+    await expect(row.getByText('Deleted', { exact: true })).toBeVisible();
+    await expect(row.getByRole('link')).toHaveCount(0);
+    await expect(moved.getByRole('link', { name: `${marker}-A` })).toBeVisible();
 });

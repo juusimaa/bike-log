@@ -2,9 +2,12 @@
 import { errorText } from '../../lib/errors';
 import { ReadError } from '../../components/EmptyState';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type InfiniteData } from '@tanstack/react-query';
 import type {
+    BikeRef,
     BikeResponse,
+    PageResponseOfBikeResponse,
+    View,
     RideResponse,
     ComponentResponse,
     Validated,
@@ -24,6 +27,11 @@ import { DirtyFormGuard } from '../../components/DirtyFormGuard';
 import { RideForm } from '../rides/RideForm';
 import { DeleteRideDialog } from '../rides/DeleteRideDialog';
 import { Rides } from '../rides/Rides';
+import { AllRides } from '../rides/AllRides';
+import { RetireBikeDialog } from '../bikes/RetireBikeDialog';
+import { DeleteBikeDialog } from '../bikes/DeleteBikeDialog';
+import { forgetDeletedBike } from '../bikes/mutations';
+import { DeleteComponentDialog } from '../components/DeleteComponentDialog';
 import {
     Components,
     type BoardRequest,
@@ -54,20 +62,23 @@ function ConnectedStats({ bikeId }: { bikeId: string }) {
     const query = useOverview(bikeId);
     return query.data ? <Stats snapshot={query.data} /> : null;
 }
+/** Where to go once a dialog has closed and navigation is unlocked again. */
+type NavigationTarget = { bikeId: string | null; view?: View; after?: () => void };
 /** Composition seam for the later ride, component, maintenance and reminder screens. */
 function SavedNavigation({
-    id,
+    target,
     context,
     onDone,
 }: {
-    id: string;
+    target: NavigationTarget;
     context: GarageIntegration;
     onDone: () => void;
 }) {
     useEffect(() => {
-        context.requestNavigation(id, context.view);
+        context.requestNavigation(target.bikeId, target.view ?? context.view);
         onDone();
-    }, [id, context, onDone]);
+        target.after?.();
+    }, [target, context, onDone]);
     return null;
 }
 function ConnectedReminder({
@@ -205,6 +216,17 @@ export function Workspace(
               kind: 'ride';
               bikeId: string;
               ride?: Validated<RideResponse>;
+              rideBike?: Validated<BikeRef>;
+              key: number;
+          }
+        | {
+              kind: 'bike-status' | 'delete-bike';
+              bike: Validated<BikeResponse>;
+              key: number;
+          }
+        | {
+              kind: 'delete-component';
+              component: Validated<ComponentResponse>;
               key: number;
           }
         | { kind: 'delete-ride'; ride: Validated<RideResponse>; key: number }
@@ -250,8 +272,10 @@ export function Workspace(
         if (editor && dirty) setConfirmSignOut(true);
         else leave();
     }, [busy, editor, dirty, leave]);
-    const [savedId, setSavedId] = useState<string | null>(null);
-    const clearSaved = useCallback(() => setSavedId(null), []);
+    const [savedTarget, setSavedTarget] = useState<NavigationTarget | null>(
+        null,
+    );
+    const clearSaved = useCallback(() => setSavedTarget(null), []);
     const [notice, setNoticeState] = useState<{
         text: string;
         seq: number;
@@ -273,6 +297,39 @@ export function Workspace(
     const saved = (message: string) => {
         close();
         setNotice(message);
+    };
+    /** Loaded bikes, active first by list order, leaving one out. */
+    const otherBikes = (leaving: string) => {
+        const pages = client.getQueryData<
+            InfiniteData<Validated<PageResponseOfBikeResponse>>
+        >(queryKeys.bikes());
+        const all = (pages?.pages.flatMap((p) => p.items) ?? []).filter(
+            (b) => b.id !== leaving,
+        );
+        return [
+            ...all.filter((b) => b.status === 'active'),
+            ...all.filter((b) => b.status !== 'active'),
+        ];
+    };
+    const openBikeEditor = (
+        action: 'edit-bike' | 'set-bike-status' | 'delete-bike',
+        id: string,
+    ) => {
+        const bike = client.getQueryData<Validated<BikeResponse>>(
+            queryKeys.bike(id),
+        );
+        if (!bike) {
+            setNotice('This bike is still loading. Try again in a moment.');
+            return;
+        }
+        const key = ++editorSequence.current;
+        if (action === 'edit-bike') setEditor({ kind: 'bike', bike, key });
+        else
+            setEditor({
+                kind: action === 'delete-bike' ? 'delete-bike' : 'bike-status',
+                bike,
+                key,
+            });
     };
     const reminderFor = (bikeId: string, context: GarageIntegration) =>
         props.renderReminder?.(bikeId, context) ?? (
@@ -355,20 +412,13 @@ export function Workspace(
                                 kind: 'bike',
                                 key: ++editorSequence.current,
                             });
-                        else if (action === 'edit-bike' && id) {
-                            const bike = client.getQueryData<
-                                Validated<BikeResponse>
-                            >(queryKeys.bike(id));
-                            if (bike)
-                                setEditor({
-                                    kind: 'bike',
-                                    bike,
-                                    key: ++editorSequence.current,
-                                });
-                            else
-                                setNotice(
-                                    'This bike is still loading. Try Edit bike again in a moment.',
-                                );
+                        else if (
+                            (action === 'edit-bike' ||
+                                action === 'set-bike-status' ||
+                                action === 'delete-bike') &&
+                            id
+                        ) {
+                            openBikeEditor(action, id);
                         } else if (action === 'log-ride' && id) {
                             setEditor({
                                 kind: 'ride',
@@ -385,7 +435,35 @@ export function Workspace(
                             setNotice('Select a bike first, then try again.');
                     }}
                     renderView={(context) =>
-                        props.renderView?.(context) ?? (
+                        props.renderView?.(context) ??
+                        (context.view === 'all-rides' ? (
+                            <AllRides
+                                disabled={busy}
+                                onOpenBike={(id) =>
+                                    context.requestNavigation(id, 'overview')
+                                }
+                                onEdit={(ride) =>
+                                    context.requestCancel(() =>
+                                        setEditor({
+                                            kind: 'ride',
+                                            bikeId: ride.bikeId,
+                                            ride,
+                                            rideBike: ride.bike,
+                                            key: ++editorSequence.current,
+                                        }),
+                                    )
+                                }
+                                onDelete={(ride) =>
+                                    context.requestCancel(() =>
+                                        setEditor({
+                                            kind: 'delete-ride',
+                                            ride,
+                                            key: ++editorSequence.current,
+                                        }),
+                                    )
+                                }
+                            />
+                        ) : (
                             <>
                                 <ConnectedStats bikeId={context.bikeId!} />
                                 {context.view === 'maintenance' &&
@@ -484,12 +562,12 @@ export function Workspace(
                                     />
                                 ) : null}
                             </>
-                        )
+                        ))
                     }
                     renderOverlay={(context) =>
-                        savedId ? (
+                        savedTarget ? (
                             <SavedNavigation
-                                id={savedId}
+                                target={savedTarget}
                                 context={context}
                                 onDone={clearSaved}
                             />
@@ -633,6 +711,94 @@ export function Workspace(
                                             key: ++editorSequence.current,
                                         })
                                     }
+                                    onDelete={(component) =>
+                                        setEditor({
+                                            kind: 'delete-component',
+                                            component,
+                                            key: ++editorSequence.current,
+                                        })
+                                    }
+                                    onOpenBike={(id) =>
+                                        context.requestNavigation(
+                                            id,
+                                            'overview',
+                                        )
+                                    }
+                                />
+                            ) : editor.kind === 'delete-component' ? (
+                                <DeleteComponentDialog
+                                    key={editor.key}
+                                    component={editor.component}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onDeleted={() =>
+                                        saved(
+                                            `${editor.component.make} ${editor.component.model} deleted.`,
+                                        )
+                                    }
+                                />
+                            ) : editor.kind === 'bike-status' ? (
+                                <RetireBikeDialog
+                                    key={editor.key}
+                                    bike={editor.bike}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onSaved={(bike) => {
+                                        saved(
+                                            `${bike.displayName} ${bike.status === 'retired' ? 'retired' : 'reactivated'}.`,
+                                        );
+                                        // Leave a bike the owner just retired, if another is active.
+                                        const next = otherBikes(bike.id)[0];
+                                        if (
+                                            bike.status === 'retired' &&
+                                            context.bikeId === bike.id &&
+                                            next?.status === 'active'
+                                        )
+                                            setSavedTarget({ bikeId: next.id });
+                                    }}
+                                />
+                            ) : editor.kind === 'delete-bike' ? (
+                                <DeleteBikeDialog
+                                    key={editor.key}
+                                    bike={editor.bike}
+                                    onDirtyChange={setDirty}
+                                    onBusyChange={setBusy}
+                                    onCancel={() =>
+                                        context.requestCancel(close)
+                                    }
+                                    onDeleted={(id) => {
+                                        saved(
+                                            `${editor.bike.displayName} deleted.`,
+                                        );
+                                        const next = otherBikes(id)[0];
+                                        // Move away first so no view reads the deleted bike.
+                                        if (next)
+                                            setSavedTarget({
+                                                bikeId: next.id,
+                                                view: 'overview',
+                                                after: () =>
+                                                    void forgetDeletedBike(
+                                                        client,
+                                                        id,
+                                                    ),
+                                            });
+                                        else
+                                            void forgetDeletedBike(
+                                                client,
+                                                id,
+                                            ).then(() =>
+                                                setSavedTarget({
+                                                    bikeId: null,
+                                                    view: 'overview',
+                                                }),
+                                            );
+                                    }}
                                 />
                             ) : editor.kind === 'edit-part' ? (
                                 <EditPartDialog
@@ -684,6 +850,7 @@ export function Workspace(
                                     key={editor.key}
                                     bikeId={editor.bikeId}
                                     ride={editor.ride}
+                                    rideBike={editor.rideBike}
                                     onDirtyChange={setDirty}
                                     onBusyChange={setBusy}
                                     onCancel={() =>
@@ -720,7 +887,7 @@ export function Workspace(
                                     onSaved={(bike) => {
                                         close();
                                         setNotice(`${bike.displayName} saved.`);
-                                        setSavedId(bike.id);
+                                        setSavedTarget({ bikeId: bike.id });
                                     }}
                                 />
                             ))

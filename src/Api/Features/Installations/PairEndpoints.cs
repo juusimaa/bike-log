@@ -1,6 +1,8 @@
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
+using BikeLog.Domain.Bikes;
 using BikeLog.Domain.Components;
 using BikeLog.Domain.Installations;
 using BikeLog.Infrastructure.Persistence;
@@ -33,15 +35,12 @@ public static class PairEndpoints
                         owner.OwnerId,
                         async token =>
                         {
-                            if (
-                                !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == request.BikeId,
-                                    token
-                                )
-                            )
-                            {
-                                throw ApiInput.Missing();
-                            }
+                            var bike = await BikeGuards.RequireActiveAsync(
+                                db,
+                                owner.OwnerId,
+                                request.BikeId,
+                                token
+                            );
                             (Component, Installation) Part(InstallationPosition position)
                             {
                                 var c = new Component
@@ -81,7 +80,7 @@ public static class PairEndpoints
                             );
                             db.Components.AddRange(front.Item1, rear.Item1);
                             db.Installations.AddRange(front.Item2, rear.Item2);
-                            return new FitPairResponse(Fitted(front), Fitted(rear));
+                            return new FitPairResponse(Fitted(front, bike), Fitted(rear, bike));
                         },
                         true,
                         ct
@@ -97,9 +96,15 @@ public static class PairEndpoints
                 "Create two parts of one front/rear type and fit them to both ends from startUtc, all or nothing."
             );
 
-    private static FittedPart Fitted((Component Component, Installation Installation) part)
+    private static FittedPart Fitted(
+        (Component Component, Installation Installation) part,
+        Bike bike
+    )
     {
         var installation = InstallationResponse.From(part.Installation);
-        return new(ComponentResponse.From(part.Component, [installation]), installation);
+        return new(
+            ComponentResponse.From(part.Component, [installation], [BikeRef.From(bike)]),
+            installation
+        );
     }
 }

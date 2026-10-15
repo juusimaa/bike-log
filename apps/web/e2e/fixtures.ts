@@ -15,6 +15,7 @@ export const bike = {
     version: 1,
     frameWeightGrams: 1180 as number | null,
     missingPositions: [] as string[],
+    status: 'active' as const,
 };
 export const second = {
     ...bike,
@@ -63,6 +64,13 @@ export const rows = positions.map((position, i) => {
             installations: [installation],
             group: i > 1 ? 'wheels' : 'groupset',
             weightGrams: [252, 345, 475, null][i] as number | null,
+            bikes: [
+                {
+                    id: bikeId,
+                    displayName: bike.displayName,
+                    state: 'active' as 'active' | 'retired' | 'deleted',
+                },
+            ],
         },
     };
 });
@@ -248,6 +256,37 @@ const baselineRides = [
     distanceMetres,
     durationSeconds,
 }));
+export const deletedId = '77777777-7777-7777-7777-777777777777';
+/** All rides across bikes: the second bike's rides and a deleted bike's ride, by name. */
+export const allRides = (retiredSecond = false) =>
+    baselineRides.map((r, index) => ({
+        ...r,
+        ...(index % 4 === 1
+            ? {
+                  bikeId: secondId,
+                  bike: {
+                      id: secondId,
+                      displayName: 'Specialized Allez',
+                      state: retiredSecond ? 'retired' : 'active',
+                  },
+              }
+            : index % 4 === 3
+              ? {
+                    bikeId: deletedId,
+                    bike: {
+                        id: deletedId,
+                        displayName: 'Old commuter',
+                        state: 'deleted',
+                    },
+                }
+              : {
+                    bike: {
+                        id: bikeId,
+                        displayName: bike.displayName,
+                        state: 'active',
+                    },
+                }),
+    }));
 export const maintenance = {
     id: '66666666-6666-6666-6666-666666666666',
     bikeId,
@@ -260,17 +299,42 @@ export const maintenance = {
     taskKey: null,
     version: 1,
 };
-export async function mockVisual(page: Page) {
+export async function mockVisual(
+    page: Page,
+    { retiredSecond = false }: { retiredSecond?: boolean } = {},
+) {
+    const secondBike = {
+        ...second,
+        status: retiredSecond ? ('retired' as const) : ('active' as const),
+    };
     await page.route('**/api/**', async (route) => {
         const path = new URL(route.request().url()).pathname;
         let body: unknown;
         if (path === '/api/bikes')
-            body = { items: [bike, second], nextCursor: null };
+            body = { items: [bike, secondBike], nextCursor: null };
+        else if (path === '/api/rides')
+            body = { items: allRides(retiredSecond), nextCursor: null };
+        else if (path.endsWith('/deletion-preview'))
+            body = {
+                bikeVersion: 1,
+                fittedParts: rows.map((r) => ({
+                    installationId: r.installation.id,
+                    componentId: r.component.id,
+                    type: r.component.type,
+                    make: r.component.make,
+                    model: r.component.model,
+                    position: r.installation.position,
+                })),
+                rideCount: 13,
+                maintenanceCount: 3,
+            };
         else if (path === '/api/component-catalog') body = catalog;
         else if (path.endsWith('/position-exemptions'))
             body = path.includes(secondId) ? [] : exemptions;
         else if (path.endsWith('/overview'))
-            body = overview(path.includes(secondId) ? secondId : bikeId);
+            body = path.includes(secondId)
+                ? { ...overview(secondId), bike: secondBike }
+                : overview(bikeId);
         else if (path.endsWith('/installations'))
             body = { items: rows, nextCursor: null };
         else if (path.endsWith('/usage')) {
@@ -321,7 +385,7 @@ export async function mockVisual(page: Page) {
         else if (path === '/api/components')
             body = { items: rows.map((r) => r.component), nextCursor: null };
         else if (path.startsWith('/api/bikes/'))
-            body = path.endsWith(secondId) ? second : bike;
+            body = path.endsWith(secondId) ? secondBike : bike;
         else body = rows.find((r) => path.endsWith(r.component.id))?.component;
         await route.fulfill({
             status: body ? 200 : 404,
@@ -334,6 +398,20 @@ export async function mockVisual(page: Page) {
 }
 export async function apiRead(request: APIRequestContext, path: string) {
     const response = await request.get(`/api/${path}`);
+    expect(response.ok(), `${path}: ${response.status()}`).toBeTruthy();
+    return response.json();
+}
+/** Seeds synthetic records through the web relay, which requires the local origin for writes. */
+export async function apiWrite(
+    request: APIRequestContext,
+    method: 'post' | 'put',
+    path: string,
+    data: unknown,
+) {
+    const response = await request[method](`/api/${path}`, {
+        data,
+        headers: { origin: 'http://127.0.0.1:3000' },
+    });
     expect(response.ok(), `${path}: ${response.status()}`).toBeTruthy();
     return response.json();
 }

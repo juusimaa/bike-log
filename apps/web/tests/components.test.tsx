@@ -1,9 +1,12 @@
+import type { BikeRef } from '@bikelog/api-client';
 import { beforeEach, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Components } from '../src/features/components/Components';
 import { ComponentPassport } from '../src/features/components/ComponentPassport';
 import { EstimateForm } from '../src/features/components/EstimateForm';
+import { DeleteComponentDialog } from '../src/features/components/DeleteComponentDialog';
+import { queryKeys } from '../src/lib/query';
 import { catalog, overviewExtras, status } from './catalog-fixture';
 const api = vi.hoisted(() => ({
     getComponentCatalog: vi.fn(),
@@ -17,6 +20,7 @@ const api = vi.hoisted(() => ({
     listBikes: vi.fn(),
     editEstimate: vi.fn(),
     getReminder: vi.fn(),
+    deleteComponent: vi.fn(),
 }));
 vi.mock('../src/lib/api', () => ({ getApi: () => api }));
 const chapter = {
@@ -38,6 +42,7 @@ const component = {
     installations: [chapter],
     group: 'groupset',
     weightGrams: null,
+    bikes: [] as BikeRef[],
 };
 function mount(node: React.ReactNode) {
     return render(
@@ -142,12 +147,7 @@ it('historicalRowsRetainIdentityAcrossPages', async () => {
     expect(screen.queryByText('Fitted')).not.toBeInTheDocument();
 });
 it('passportUsesOwnerWideHistory', async () => {
-    mount(
-        <ComponentPassport
-            componentId="c1"
-            onClose={() => {}}
-        />,
-    );
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
     expect(await screen.findByText('Wax on other bike')).toBeInTheDocument();
     expect(await screen.findByText('Gravel')).toBeInTheDocument();
 });
@@ -175,12 +175,7 @@ it('estimateSeparatesThreeMileageValues', async () => {
     );
 });
 it('incompleteDurationAndUnfittedPartAreExplainable', async () => {
-    mount(
-        <ComponentPassport
-            componentId="c1"
-            onClose={() => {}}
-        />,
-    );
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
     expect(
         await screen.findByText(
             'At least 1 min 1 sec ridden; some rides have no duration',
@@ -192,9 +187,7 @@ it('incompleteDurationAndUnfittedPartAreExplainable', async () => {
     ).toBeInTheDocument();
     expect(screen.getByText('65 km')).toBeInTheDocument();
     expect(screen.getByText('at least 1 min 1 sec')).toBeInTheDocument();
-    expect(
-        await screen.findByText('Not currently fitted'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Not currently fitted')).toBeInTheDocument();
 });
 it('passportSaysWhenLubricationIsDueForThisPart', async () => {
     api.listInstallations.mockResolvedValue({
@@ -350,12 +343,7 @@ it('unresolvedBikeShowsUuidAndNeverSelectedBikeName', async () => {
         items: [{ id: 'b1', displayName: 'Road' }],
         nextCursor: null,
     });
-    mount(
-        <ComponentPassport
-            componentId="c1"
-            onClose={() => {}}
-        />,
-    );
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
     expect(await screen.findByText(/Unresolved bike b2/)).toBeInTheDocument();
     expect((await screen.findAllByText('Road')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Retry bike lookup').length).toBeGreaterThan(0);
@@ -612,12 +600,7 @@ it('passport displays make and model alongside prose durations', async () => {
         installations: [],
         calculatedAtUtc: null,
     });
-    mount(
-        <ComponentPassport
-            componentId="c1"
-            onClose={() => {}}
-        />,
-    );
+    mount(<ComponentPassport componentId="c1" onClose={() => {}} />);
     expect(
         await screen.findByRole('dialog', {
             name: 'Synthetic Retained chain',
@@ -636,4 +619,88 @@ it('passport names an empty service history instead of showing a bike id', async
         await screen.findByText('No service recorded for this part yet.'),
     ).toBeVisible();
     expect(screen.queryByText(/b1/)).not.toBeInTheDocument();
+});
+it('passportOffersDeleteAndNamesDeletedBikesWithoutALink', async () => {
+    api.getComponent.mockResolvedValue({
+        ...component,
+        installations: [
+            {
+                ...chapter,
+                id: 'i0',
+                bikeId: 'gone',
+                endUtc: '2025-01-01T00:00:00Z',
+                startUtc: '2024-06-01T00:00:00Z',
+            },
+            chapter,
+        ],
+        bikes: [
+            { id: 'gone', displayName: 'Canyon', state: 'deleted' },
+            { id: 'b1', displayName: 'Road', state: 'active' },
+        ],
+    });
+    const onDelete = vi.fn();
+    const onOpenBike = vi.fn();
+    mount(
+        <ComponentPassport
+            componentId="c1"
+            onClose={() => {}}
+            onDelete={onDelete}
+            onOpenBike={onOpenBike}
+        />,
+    );
+    expect(await screen.findByText('Canyon (deleted)')).toBeVisible();
+    expect(
+        screen.queryByRole('link', { name: /Canyon/ }),
+    ).not.toBeInTheDocument();
+    const road = screen.getAllByRole('link', { name: 'Road' });
+    expect(road[0]).toHaveAttribute('href', '/?bike=b1&view=overview');
+    fireEvent.click(road.at(-1)!);
+    expect(onOpenBike).toHaveBeenCalledWith('b1');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete part…' }));
+    expect(onDelete).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'c1', version: 7 }),
+    );
+});
+it('deletingAFittedPartNamesItsPlaceWarnsAndRefreshesItsBike', async () => {
+    api.deleteComponent.mockResolvedValue(undefined);
+    const client = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+    const reset = vi.spyOn(client, 'resetQueries');
+    const deleted = vi.fn();
+    render(
+        <QueryClientProvider client={client}>
+            <DeleteComponentDialog
+                component={{
+                    ...component,
+                    bikes: [{ id: 'b1', displayName: 'Road', state: 'active' }],
+                }}
+                onDeleted={deleted}
+                onCancel={() => {}}
+            />
+        </QueryClientProvider>,
+    );
+    const dialog = screen.getByRole('dialog', {
+        name: 'Delete Synthetic Retained chain?',
+    });
+    expect(dialog).toHaveTextContent('It is fitted to Road as the chain.');
+    expect(dialog).toHaveTextContent('This cannot be undone.');
+    fireEvent.click(screen.getByRole('button', { name: 'Delete part' }));
+    await waitFor(() => expect(deleted).toHaveBeenCalledOnce());
+    expect(api.deleteComponent).toHaveBeenCalledWith('c1', 7);
+    const keys = reset.mock.calls.map((c) => JSON.stringify(c[0]?.queryKey));
+    expect(keys).toContain(JSON.stringify(queryKeys.components()));
+    expect(keys).toContain(JSON.stringify(queryKeys.overview('b1')));
+});
+it('deletingASpareSaysSoWithoutNamingABike', async () => {
+    mount(
+        <DeleteComponentDialog
+            component={{ ...component, installations: [] }}
+            onDeleted={() => {}}
+            onCancel={() => {}}
+        />,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).not.toHaveTextContent('It is fitted to');
+    expect(dialog).toHaveTextContent('This cannot be undone.');
 });

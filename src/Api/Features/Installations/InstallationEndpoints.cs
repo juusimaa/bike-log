@@ -1,4 +1,5 @@
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Installations;
@@ -27,11 +28,7 @@ public static class InstallationEndpoints
                         async token =>
                         {
                             if (
-                                !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == request.BikeId,
-                                    token
-                                )
-                                || !await db.Components.AnyAsync(
+                                !await db.Components.AnyAsync(
                                     x => x.OwnerId == owner.OwnerId && x.Id == request.ComponentId,
                                     token
                                 )
@@ -39,6 +36,12 @@ public static class InstallationEndpoints
                             {
                                 throw ApiInput.Missing();
                             }
+                            await BikeGuards.RequireActiveAsync(
+                                db,
+                                owner.OwnerId,
+                                request.BikeId,
+                                token
+                            );
 
                             var component = await db.Components.SingleAsync(
                                 x => x.OwnerId == owner.OwnerId && x.Id == request.ComponentId,
@@ -149,6 +152,7 @@ public static class InstallationEndpoints
                                 token
                             ) ?? throw ApiInput.Missing();
                         ApiInput.Version(request.ExpectedInstallationVersion, old.Version);
+                        await BikeGuards.RequireActiveAsync(db, owner.OwnerId, old.BikeId, token);
                         if (
                             !await db.Components.AnyAsync(
                                 x => x.OwnerId == owner.OwnerId && x.Id == request.NewComponentId,

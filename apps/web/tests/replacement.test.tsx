@@ -1,3 +1,4 @@
+import type { BikeRef } from '@bikelog/api-client';
 import { beforeEach, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -38,6 +39,7 @@ const component = {
     installations: [installation],
     group: 'wheels',
     weightGrams: null,
+    bikes: [] as BikeRef[],
 };
 function seeded() {
     const client = new QueryClient({

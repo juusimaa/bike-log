@@ -460,6 +460,7 @@ it('workspaceConnectsMaintenanceAndReminderThroughDirtyGuard', async () => {
         name: 'Bike',
         displayName: 'Bike',
         missingPositions: [] as string[],
+        status: 'active' as const,
         make: null,
         model: null,
         kind: 'road',
@@ -664,6 +665,7 @@ it('workspaceReminderWriteLocksNavigationAndCapturesOriginalBike', async () => {
         name: 'Bike',
         displayName: 'Bike',
         missingPositions: [] as string[],
+        status: 'active' as const,
         make: null,
         model: null,
         kind: 'road',
@@ -820,4 +822,16 @@ it('reminder threshold errors identify oil then wax', () => {
         'aria-invalid',
         'true',
     );
+});
+it('retiredBikeReminderReadsPausedNotDue', () => {
+    render(
+        <ReminderCard
+            evaluation={{ ...evaluation, state: 'paused', due: false }}
+            onConfigure={() => {}}
+            onLubricate={() => {}}
+        />,
+    );
+    expect(screen.getByText('Paused while retired')).toBeVisible();
+    expect(screen.queryByText('Lubrication due')).toBeNull();
+    expect(screen.queryByText(/Ready/)).toBeNull();
 });
