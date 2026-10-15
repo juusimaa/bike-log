@@ -137,3 +137,8 @@ Quickstart U1–U14. Pending.
   `db-connections` waits until the backup ends (about 6 s). The FR-010 peak is therefore shown by the pool
   caps (API 3, backup 2, other jobs locked out) plus a count taken straight after a backup with the app in
   use, instead of a count during the backup.
+- **2026-10-15, row count drop between backups is the owner's test (006).** The 04:42 UTC backup has 91 rows
+  against 198 at 02:38: `Components`, `Installations`, `ComponentUsages` and `InstallationUsages` went from
+  27 to 0, with bikes, rides and users unchanged and the 006 migration applied (additive only). The owner
+  deleted the test bike without keeping parts while trying 006's delete action. The parts remain in
+  `2026-10-15/bikelog-20261015T023806Z.dump`.
