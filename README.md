@@ -10,7 +10,7 @@
 
 Bike Log tracks bicycle component history, ride-based mileage and service
 records. It has a .NET API, a connected web UI, invite-only sign-in through Auth0
-and a minimal hosted deployment on Azure Container Apps with Aiven PostgreSQL
+and a hosted deployment on the owner's UpCloud server with Aiven PostgreSQL
 (see [Hosted deployment](#hosted-deployment)). The React Native app comes later.
 
 An interactive, predefined-data [UI design preview](docs/ui-design/index.html)
@@ -91,8 +91,9 @@ GitHub Container Registry from `main` and `v*` tags. Run the same images locally
 with `./scripts/dev.sh app-up` (see [container images](docs/containers.md)).
 
 [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deploys each
-commit that Containers publishes from `main` to the hosted environment, running
-migrations first. Run it by hand with a previous image tag to roll back.
+commit that Containers publishes from `main` to the UpCloud server over a
+restricted SSH deploy key, running migrations first. Run it by hand with
+`rollback=true` to go back to the previous release.
 [`.github/workflows/backup-pins.yml`](.github/workflows/backup-pins.yml) checks
 weekly for newer Debian package versions for the backup image and opens an issue
 when there are some.
@@ -103,14 +104,18 @@ and force pushes are blocked, including for admins.
 
 ## Hosted deployment
 
-The hosted environment runs the published images on Azure Container Apps with
-Aiven PostgreSQL. Riders sign in with an Auth0 email one-time code, and only
-invited riders can sign in.
+The hosted environment runs the published images with Docker Compose behind
+Caddy on the owner's UpCloud server, with Aiven PostgreSQL. Daily backups go to
+write-only Azure storage. Riders sign in with an Auth0 email one-time code, and
+only invited riders can sign in.
 
-- [Setup](docs/hosting/setup.md) and [setup results](docs/hosting/setup-results.md)
-  cover creating the environment, gated on the [cost estimate](docs/hosting/cost-estimate.md).
-- [Operations](docs/hosting/operations.md) covers deploy, rollback, backups and
-  `scripts/hosted/hosted.sh`.
+- [Bike Log on UpCloud](docs/hosting/upcloud.md) covers setup, deploy, rollback,
+  secrets, backups, restore and the `bikelog-deploy` operator commands; results
+  are recorded in [upcloud-results.md](docs/hosting/upcloud-results.md).
+- [`deploy/upcloud/`](deploy/upcloud/) holds the server's Compose, Caddy and
+  systemd files.
+- The earlier Azure Container Apps deployment ([setup](docs/hosting/setup.md),
+  [operations](docs/hosting/operations.md)) is kept for reference.
 - [Auth0 pilot setup](docs/auth/auth0-pilot-setup.md) covers adding and removing riders.
 - [Decision records](docs/decisions/) explain the identity, hosting and import choices.
 

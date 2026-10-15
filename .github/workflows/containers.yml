@@ -1,7 +1,7 @@
 name: Containers
 
-# Builds the api, migrations, web and backup images for linux/amd64 (Azure Container
-# Apps) and linux/arm64 (Apple silicon). Pull requests only build; pushes to
+# Builds the api, migrations, web and backup images for linux/amd64 (the UpCloud
+# server) and linux/arm64 (Apple silicon). Pull requests only build; pushes to
 # main and v* tags publish to GitHub Container Registry.
 on:
   pull_request:

@@ -80,7 +80,7 @@ Quickstart U1–U14. Pending.
 | U10 | | | |
 | U11 | 2026-10-14 | Passed | TCP to the Aiven host from the owner's machine refused or timed out; the server connects (B5, B6) |
 | U12 | | | |
-| U13 | | | |
+| U13 | 2026-10-15 | Partly passed | Repository, published images and deploy workflow logs done (see Findings); `docker logs` of `web`, `api` and one `backup` run on the server are still to search, for the secrets and for the test bike's name and a ride note |
 | U14 | | | |
 
 ## Restore rehearsals
@@ -120,4 +120,16 @@ Quickstart U1–U14. Pending.
   by hand: `systemctl start bikelog-backup.service` at 13:11:51 UTC ran `bikelog-deploy backup` as the timer
   caller and wrote `2026-10-14/bikelog-20261014T131152Z.dump` (54,352 bytes, 196 rows). The first scheduled
   run is 2026-10-15 at about 02:33 UTC.
-
+- **2026-10-15, secret scan of the repository and published images (U13, first part).** `gitleaks detect
+  --redact` v8.24.3 (Docker, `sha256:e1b35e12…`) over 75 commits: no leaks after adding the squash-merged
+  commit of the two public Key Vault role IDs in `infra/bootstrap.bicep` to `.gitleaksignore` (004 ignored
+  only the branch commit). `gitleaks detect --no-git` over the exported amd64 filesystems of the published
+  `sha-8557aa8` images: `api` (`sha256:b6ae12a9…`) and `migrations` (`sha256:22a9f559…`) clean. `web`
+  (`sha256:c91f57b8…`): the Next.js Server Actions encryption key and Draft Mode preview keys found in 004,
+  plus a false positive in Node's `v8-internal.h`. The build registers no Server Actions and the source uses
+  neither `"use server"` nor `draftMode`, so the keys still protect nothing. `backup` (`sha256:98b3e1a2…`):
+  Debian's unused `ssl-cert-snakeoil.key` and the Perl `cop.h` false positive, as in 004.
+  Deploy workflow logs: the last 16 runs (2026-10-14 04:19 to 2026-10-15 04:31 UTC, `gh run view --log`)
+  have no `Password=`, JWT, `sig=`, private key, `client_secret`, bearer token or email address; `gitleaks`
+  finds only `AUTH0_CLIENT_ID` in seven Azure-era runs, which the 004 workflow printed as a job variable. A
+  client ID is public (every browser sign-in sends it), and the current workflow does not print it.
