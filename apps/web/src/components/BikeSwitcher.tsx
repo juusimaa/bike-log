@@ -35,6 +35,9 @@ function details(b: Bike) {
             .join(' · ') || 'Metadata not provided'
     );
 }
+function RetiredPill() {
+    return <span className="pill quiet">Retired</span>;
+}
 function MissingPill({ count }: { count: number }) {
     return (
         <span className="pill missing">
@@ -127,9 +130,14 @@ export function BikeSwitcher({
             all[0].click();
         }
     }
-    const byName = [...bikes].sort((x, y) =>
-        x.displayName.localeCompare(y.displayName),
+    // Active bikes first; retired bikes follow under their own heading.
+    const byName = [...bikes].sort(
+        (x, y) =>
+            Number(x.status === 'retired') - Number(y.status === 'retired') ||
+            x.displayName.localeCompare(y.displayName),
     );
+    const activeByName = byName.filter((b) => b.status !== 'retired');
+    const retiredByName = byName.filter((b) => b.status === 'retired');
     const needle = query.trim().toLowerCase();
     const matches = needle
         ? byName.filter((b) =>
@@ -164,6 +172,7 @@ export function BikeSwitcher({
                     <small>{details(b)}</small>
                 </span>
                 <span className="option-meta">
+                    {b.status === 'retired' && <RetiredPill />}
                     {b.missingPositions.length > 0 && (
                         <MissingPill count={b.missingPositions.length} />
                     )}
@@ -289,10 +298,25 @@ export function BikeSwitcher({
                                         {recentBikes.map(option)}
                                     </>
                                 )}
-                                <p className="list-heading">
-                                    All bikes · {total}
-                                </p>
-                                {byName.map(option)}
+                                {retiredByName.length > 0 ? (
+                                    <>
+                                        <p className="list-heading">
+                                            Active · {activeByName.length}
+                                        </p>
+                                        {activeByName.map(option)}
+                                        <p className="list-heading">
+                                            Retired · {retiredByName.length}
+                                        </p>
+                                        {retiredByName.map(option)}
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="list-heading">
+                                            All bikes · {total}
+                                        </p>
+                                        {byName.map(option)}
+                                    </>
+                                )}
                             </>
                         )}
                         {hasMore && (

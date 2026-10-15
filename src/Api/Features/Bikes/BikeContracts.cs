@@ -35,7 +35,8 @@ public sealed record BikeResponse(
     string? Color,
     string DisplayName,
     int? FrameWeightGrams,
-    IReadOnlyList<string> MissingPositions
+    IReadOnlyList<string> MissingPositions,
+    string Status
 )
 {
     /// <param name="missing">Positions currently missing a part; empty means the bike is complete.</param>
@@ -59,6 +60,45 @@ public sealed record BikeResponse(
             b.Color,
             BikeNaming.DisplayName(b),
             b.FrameWeightGrams,
-            missing
+            missing,
+            BikeRef.StatusValue(b.Status)
         );
 }
+
+/// <summary>Names a bike whatever its state: active, retired or deleted.</summary>
+public sealed record BikeRef(Guid Id, string DisplayName, string State)
+{
+    public static BikeRef From(Bike b) =>
+        new(b.Id, BikeNaming.DisplayName(b), b.IsDeleted ? "deleted" : StatusValue(b.Status));
+
+    public static string StatusValue(BikeStatus status) =>
+        status == BikeStatus.Retired ? "retired" : "active";
+}
+
+public sealed record SetBikeStatus(
+    [property: JsonRequired] string? Status,
+    [property: JsonRequired] long ExpectedVersion
+);
+
+public sealed record FittedPartPreview(
+    Guid InstallationId,
+    Guid ComponentId,
+    string Type,
+    string Make,
+    string Model,
+    string Position
+);
+
+/// <summary>What deleting a bike removes and keeps; the fitted parts are the conflict check.</summary>
+public sealed record BikeDeletionPreview(
+    long BikeVersion,
+    IReadOnlyList<FittedPartPreview> FittedParts,
+    int RideCount,
+    int MaintenanceCount
+);
+
+public sealed record DeleteBike(
+    [property: JsonRequired] long ExpectedVersion,
+    [property: JsonRequired] IReadOnlyList<Guid> FittedInstallationIds,
+    [property: JsonRequired] IReadOnlyList<Guid> KeepComponentIds
+);

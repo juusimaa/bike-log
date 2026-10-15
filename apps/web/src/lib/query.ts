@@ -7,6 +7,7 @@ export const queryKeys = {
     bike: (id: Uuid) => ['bike', id] as const,
     overview: (id: Uuid) => ['overview', id] as const,
     rides: (id: Uuid) => ['rides', id] as const,
+    allRides: () => ['allRides'] as const,
     installations: (id: Uuid, status: 'current' | 'all') =>
         ['installations', id, status] as const,
     components: () => ['components'] as const,
@@ -17,6 +18,7 @@ export const queryKeys = {
     reminder: (id: Uuid) => ['reminder', id] as const,
     catalog: () => ['catalog'] as const,
     exemptions: (id: Uuid) => ['exemptions', id] as const,
+    deletionPreview: (id: Uuid) => ['deletionPreview', id] as const,
 };
 function accessIssue(error: unknown): AccessIssue | null {
     if (!(error instanceof ApiError)) return null;
@@ -73,6 +75,7 @@ export async function invalidateBikes(
     const all = [
         queryKeys.bikes(),
         queryKeys.components(),
+        queryKeys.allRides(),
         ...bikeIds.flatMap((bikeId) => [
             queryKeys.bike(bikeId),
             queryKeys.overview(bikeId),

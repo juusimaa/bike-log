@@ -368,6 +368,33 @@ export function createApiClient(
                 '/api/bikes/{id}/rides',
                 { id: bikeId, query: page, signal },
             ),
+        listAllRides: (page: Dto.PageOptions = {}, signal?: AbortSignal) =>
+            request<Dto.PageResponseOfRideListItem>('get', '/api/rides', {
+                query: page,
+                signal,
+            }),
+        setBikeStatus: (
+            id: string,
+            input: Dto.SetBikeStatus,
+            signal?: AbortSignal,
+        ) =>
+            request<Dto.BikeResponse>('put', '/api/bikes/{id}/status', {
+                id,
+                body: input,
+                signal,
+            }),
+        getBikeDeletionPreview: (id: string, signal?: AbortSignal) =>
+            request<Dto.BikeDeletionPreview>(
+                'get',
+                '/api/bikes/{id}/deletion-preview',
+                { id, signal },
+            ),
+        deleteBike: (id: string, input: Dto.DeleteBike, signal?: AbortSignal) =>
+            request<void>('post', '/api/bikes/{id}/delete', {
+                id,
+                body: input,
+                signal,
+            }),
         getRide: (id: string, signal?: AbortSignal) =>
             request<Dto.RideResponse>('get', '/api/rides/{id}', { id, signal }),
         createRide: (input: Dto.CreateRide, signal?: AbortSignal) =>
@@ -433,6 +460,16 @@ export function createApiClient(
                 '/api/components/{id}/maintenance',
                 { id, query: page, signal },
             ),
+        deleteComponent: (
+            id: string,
+            expectedVersion: number,
+            signal?: AbortSignal,
+        ) =>
+            request<void>('delete', '/api/components/{id}', {
+                id,
+                query: { expectedVersion },
+                signal,
+            }),
         createComponent: (input: Dto.CreateComponent, signal?: AbortSignal) =>
             request<Dto.ComponentResponse>('post', '/api/components', {
                 body: input,

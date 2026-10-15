@@ -1639,6 +1639,36 @@ dialog button[type='submit'] {
     background: var(--v3-quiet-bg);
     color: var(--v3-quiet-text);
 }
+/* Bike names in tables link to that bike. */
+.full-table td a {
+    color: var(--v3-ok-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+/* A state tag beside a bike name, such as Retired or Deleted. */
+.title-tag {
+    margin-left: 8px;
+    vertical-align: middle;
+}
+/* Destructive actions: permanent deletes. Text links and confirm buttons. */
+.text-button.danger {
+    color: #a34b33;
+}
+.button.danger {
+    background: #a34b33;
+    border-color: #a34b33;
+    color: #fff;
+}
+.button.danger:hover:not(:disabled) {
+    background: #8a3d29;
+}
+.button.danger-outline {
+    color: #a34b33;
+}
+.danger-note {
+    color: #a34b33;
+    font-weight: 600;
+}
 .notice {
     display: flex;
     gap: 12px;
@@ -2738,4 +2768,39 @@ dialog.wide {
         order: -1;
         flex-basis: 100%;
     }
+}
+/* Delete bike: one row per fitted part, ticked to keep it as a spare. */
+.keep-parts {
+    border: 0;
+    margin: 16px 0 12px;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+}
+.keep-parts legend {
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    padding: 0;
+}
+.keep-parts label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.keep-parts input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex: none;
+    accent-color: var(--ink);
+}
+.keep-parts small {
+    display: block;
+    color: var(--muted);
 }

@@ -4,6 +4,7 @@ import {
     mockVisual,
     bikeId,
     secondId,
+    deletedId,
     chooseBike,
     openSwitcher,
     startCreateBike,
@@ -609,4 +610,61 @@ test('grouped position board, wheel setup and part dialogs fit every viewport', 
             fullPage: true,
         });
     }
+});
+test('bike lifecycle: ride bike field, all rides, retired group and delete dialog fit every viewport', async ({
+    page,
+}, info) => {
+    const noSideScroll = async () =>
+        expect(
+            await page.evaluate(() => document.documentElement.scrollWidth),
+        ).toBeLessThanOrEqual(page.viewportSize()!.width);
+    await mockVisual(page);
+    await page.goto(`/?bike=${bikeId}&view=overview`);
+    await page.getByRole('button', { name: 'Add a ride', exact: true }).click();
+    const rideDialog = page.getByRole('dialog', {
+        name: 'Log ride on The everyday escape',
+    });
+    await expect(rideDialog).toBeVisible();
+    await expect(rideDialog.getByLabel('Bike', { exact: true })).toHaveValue(
+        bikeId,
+    );
+    await noSideScroll();
+    await page.screenshot({ path: info.outputPath('ride-bike-field.png') });
+    await page.keyboard.press('Escape');
+
+    await page.goto(`/?bike=${bikeId}&view=all-rides`);
+    await expect(
+        page.getByRole('heading', { name: 'Every ride, every bike.' }),
+    ).toBeVisible();
+    await expect(
+        page.getByRole('link', { name: 'Specialized Allez' }).first(),
+    ).toBeVisible();
+    await expect(page.getByText('Deleted', { exact: true }).first()).toBeVisible();
+    await expect(page.locator(`a[href*="${deletedId}"]`)).toHaveCount(0);
+    await noSideScroll();
+    await page.screenshot({
+        path: info.outputPath('all-rides.png'),
+        fullPage: true,
+    });
+
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await mockVisual(page, { retiredSecond: true });
+    await page.goto(`/?bike=${secondId}&view=overview`);
+    await expect(
+        page.getByRole('button', { name: 'Reactivate…' }),
+    ).toBeVisible();
+    const panel = await openSwitcher(page);
+    await expect(panel.getByText('Retired · 1')).toBeVisible();
+    await noSideScroll();
+    await page.screenshot({ path: info.outputPath('retired-switcher.png') });
+    await page.keyboard.press('Escape');
+
+    await page.getByRole('button', { name: 'Delete bike…' }).click();
+    const deleteDialog = page.getByRole('dialog', {
+        name: 'Delete Specialized Allez?',
+    });
+    await expect(deleteDialog.getByRole('checkbox')).toHaveCount(4);
+    await expect(deleteDialog.getByText('This cannot be undone.')).toBeVisible();
+    await noSideScroll();
+    await page.screenshot({ path: info.outputPath('delete-bike-dialog.png') });
 });

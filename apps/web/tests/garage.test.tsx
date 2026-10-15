@@ -26,6 +26,7 @@ const bike = (id: string) => ({
     version: 1,
     frameWeightGrams: null,
     missingPositions: [] as string[],
+    status: 'active' as const,
 });
 /** Opens the V4 bike switcher and picks a bike from its panel. */
 function chooseBike(name: RegExp) {
@@ -320,5 +321,81 @@ describe('garage', () => {
                 name: 'Miles worth remembering.',
             }),
         ).toBeVisible();
+    });
+    it('switcherListsRetiredBikesUnderTheirOwnHeading', async () => {
+        reset();
+        api.listBikes.mockResolvedValue({
+            items: [
+                { ...bike(a), displayName: 'Zeta' },
+                { ...bike(b), displayName: 'Alpha', status: 'retired' },
+            ],
+            nextCursor: null,
+        });
+        api.getBike.mockImplementation(async (id) =>
+            id === a
+                ? { ...bike(a), displayName: 'Zeta' }
+                : { ...bike(b), displayName: 'Alpha', status: 'retired' },
+        );
+        mount();
+        await screen.findByRole('button', { name: /Change bike/ });
+        // The default selection is the active bike, not the first by id or name.
+        await waitFor(() => expect(window.location.search).toContain(a));
+        fireEvent.click(screen.getByRole('button', { name: /Change bike/ }));
+        const panel = screen.getByRole('dialog', { name: 'Choose a bike' });
+        const order = within(panel)
+            .getAllByText(/^(Active · 1|Retired · 1|Zeta|Alpha)$/)
+            .map((x) => x.textContent);
+        expect(order).toEqual(['Active · 1', 'Zeta', 'Retired · 1', 'Alpha']);
+        expect(
+            within(panel).getByRole('button', { name: /Alpha.*Retired/ }),
+        ).toBeVisible();
+        fireEvent.change(within(panel).getByRole('searchbox'), {
+            target: { value: 'alp' },
+        });
+        expect(
+            within(panel).getByRole('button', { name: /Alpha/ }),
+        ).toBeVisible();
+    });
+    it('withEveryBikeRetiredRidesCannotBeLogged', async () => {
+        reset();
+        const retired = (id: string) => ({ ...bike(id), status: 'retired' });
+        api.listBikes.mockResolvedValue({
+            items: [retired(a), retired(b)],
+            nextCursor: null,
+        });
+        api.getBike.mockImplementation(async (id) => retired(id));
+        api.getOverview.mockImplementation(async (id) => ({
+            ...snapshot(id),
+            bike: retired(id),
+        }));
+        const onAction = vi.fn();
+        mount({ onAction });
+        expect(
+            await screen.findByText(
+                'Reactivate a bike or add one to log rides.',
+            ),
+        ).toBeVisible();
+        expect(screen.getByRole('button', { name: 'Add a ride' })).toBeDisabled();
+        expect(
+            await screen.findByText('Retired', { selector: '.hero h2 .pill' }),
+        ).toBeVisible();
+        fireEvent.click(screen.getByRole('button', { name: 'Reactivate…' }));
+        expect(onAction).toHaveBeenCalledWith('set-bike-status', a);
+    });
+    it('ridesFromARetiredViewGoToTheFirstActiveBike', async () => {
+        reset();
+        api.listBikes.mockResolvedValue({
+            items: [bike(a), { ...bike(b), status: 'retired' }],
+            nextCursor: null,
+        });
+        api.getBike.mockImplementation(async (id) =>
+            id === b ? { ...bike(b), status: 'retired' } : bike(a),
+        );
+        window.history.replaceState(null, '', `/?bike=${b}`);
+        const onAction = vi.fn();
+        mount({ onAction });
+        await screen.findByRole('heading', { name: 'Bike B' });
+        fireEvent.click(screen.getByRole('button', { name: 'Add a ride' }));
+        expect(onAction).toHaveBeenCalledWith('log-ride', a);
     });
 });

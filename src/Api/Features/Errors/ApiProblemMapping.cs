@@ -8,12 +8,16 @@ public sealed class ApiException(
     int status,
     string code,
     string message,
-    long? currentVersion = null
+    long? currentVersion = null,
+    IReadOnlyDictionary<string, object?>? extensions = null
 ) : Exception(message)
 {
     public int Status { get; } = status;
     public string Code { get; } = code;
     public long? CurrentVersion { get; } = currentVersion;
+
+    /// <summary>Extra problem members, such as the fresh state a conflict was checked against.</summary>
+    public IReadOnlyDictionary<string, object?>? Extensions { get; } = extensions;
 }
 
 public sealed class ApiProblemMapping : IEndpointFilter
@@ -29,12 +33,18 @@ public sealed class ApiProblemMapping : IEndpointFilter
         }
         catch (ApiException e)
         {
-            return Problem(e.Status, e.Code, e.Message, e.CurrentVersion);
+            return Problem(e.Status, e.Code, e.Message, e.CurrentVersion, e.Extensions);
         }
         catch (DomainValidationException e)
         {
             return Problem(
-                e.Code is "installation_overlap" or "maintenance_history_conflict" ? 409 : 400,
+                e.Code
+                    is "installation_overlap"
+                        or "maintenance_history_conflict"
+                        or "bike_retired"
+                        or "bike_parts_changed"
+                    ? 409
+                    : 400,
                 e.Code,
                 e.Message
             );
@@ -81,12 +91,22 @@ public sealed class ApiProblemMapping : IEndpointFilter
         }
     }
 
-    private static IResult Problem(int status, string code, string detail, long? version = null)
+    private static IResult Problem(
+        int status,
+        string code,
+        string detail,
+        long? version = null,
+        IReadOnlyDictionary<string, object?>? extra = null
+    )
     {
         var extensions = new Dictionary<string, object?> { { "code", code } };
         if (version.HasValue)
         {
             extensions["currentVersion"] = version;
+        }
+        foreach (var (key, value) in extra ?? new Dictionary<string, object?>())
+        {
+            extensions[key] = value;
         }
 
         return Results.Problem(

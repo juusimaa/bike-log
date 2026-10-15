@@ -33,6 +33,7 @@ const bike = {
     name: 'Bike',
     displayName: 'Bike',
     missingPositions: [] as string[],
+    status: 'active' as const,
     make: 'Trek',
     model: 'Domane',
     kind: 'road',
@@ -500,7 +501,7 @@ it('workspaceRidesViewConnectsCorrectionAndDeletion', async () => {
         await screen.findByRole('button', { name: 'Correct Morning' }),
     );
     expect(
-        await screen.findByRole('dialog', { name: 'Correct ride' }),
+        await screen.findByRole('dialog', { name: 'Correct ride on Bike' }),
     ).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete Morning' }));
@@ -645,4 +646,127 @@ it('quantity and date validation identify real ride controls', () => {
         'aria-invalid',
         'true',
     );
+});
+const secondId = '33333333-3333-3333-3333-333333333333';
+const second = { ...bike, id: secondId, name: 'Gravel', displayName: 'Gravel' };
+it('logRideOffersActiveBikesPreselectedToTheViewedBike', async () => {
+    api.listBikes.mockResolvedValue({
+        items: [
+            bike,
+            second,
+            {
+                ...bike,
+                id: '44444444-4444-4444-4444-444444444444',
+                displayName: 'Old',
+                status: 'retired',
+            },
+        ],
+        nextCursor: null,
+    });
+    mount(<RideForm bikeId={bikeId} onSaved={() => {}} onCancel={() => {}} />);
+    const field = (await screen.findByLabelText('Bike')) as HTMLSelectElement;
+    expect(field.value).toBe(bikeId);
+    expect(
+        within(field)
+            .getAllByRole('option')
+            .map((o) => o.textContent),
+    ).toEqual(['Bike', 'Gravel']);
+    expect(
+        screen.getByRole('dialog', { name: 'Log ride on Bike' }),
+    ).toBeVisible();
+    change('Bike', secondId);
+    expect(
+        screen.getByRole('dialog', { name: 'Log ride on Gravel' }),
+    ).toBeVisible();
+    change('Distance (km)', '30');
+    save();
+    await waitFor(() =>
+        expect(api.createRide).toHaveBeenCalledWith(
+            expect.objectContaining({ bikeId: secondId, distanceMetres: 30000 }),
+        ),
+    );
+});
+it('logRideWithOneActiveBikeShowsNoBikeField', async () => {
+    mount(<RideForm bikeId={bikeId} onSaved={() => {}} onCancel={() => {}} />);
+    expect(
+        await screen.findByRole('dialog', { name: 'Log ride on Bike' }),
+    ).toBeVisible();
+    expect(screen.queryByLabelText('Bike')).not.toBeInTheDocument();
+});
+it('correctingARideOntoAnotherBikeRefreshesBothBikes', async () => {
+    api.listBikes.mockResolvedValue({ items: [bike, second], nextCursor: null });
+    api.correctRide.mockResolvedValue({
+        ...ride,
+        bikeId: secondId,
+        version: 8,
+    });
+    const client = mount(
+        <RideForm
+            bikeId={bikeId}
+            ride={ride}
+            onSaved={() => {}}
+            onCancel={() => {}}
+        />,
+    );
+    const reset = vi.spyOn(client, 'resetQueries');
+    await screen.findByLabelText('Bike');
+    change('Bike', secondId);
+    expect(
+        screen.getByRole('dialog', { name: 'Correct ride on Gravel' }),
+    ).toBeVisible();
+    save();
+    await waitFor(() =>
+        expect(api.correctRide).toHaveBeenCalledWith(
+            ride.id,
+            expect.objectContaining({ bikeId: secondId, expectedVersion: 7 }),
+        ),
+    );
+    await waitFor(() => {
+        const keys = reset.mock.calls.map((call) =>
+            JSON.stringify(call[0]?.queryKey),
+        );
+        for (const id of [bikeId, secondId])
+            expect(keys).toContain(JSON.stringify(queryKeys.overview(id)));
+        expect(keys).toContain(JSON.stringify(queryKeys.allRides()));
+    });
+});
+it('correctingARideKeepsItsRetiredOrDeletedBikeSelectable', async () => {
+    api.listBikes.mockResolvedValue({
+        items: [{ ...bike, status: 'retired' }, second],
+        nextCursor: null,
+    });
+    mount(
+        <RideForm
+            bikeId={bikeId}
+            ride={ride}
+            onSaved={() => {}}
+            onCancel={() => {}}
+        />,
+    );
+    const field = (await screen.findByLabelText('Bike')) as HTMLSelectElement;
+    expect(field.value).toBe(bikeId);
+    expect(
+        within(field)
+            .getAllByRole('option')
+            .map((o) => o.textContent),
+    ).toEqual(['Gravel', 'Bike (Retired)']);
+});
+it('correctingARideOfADeletedBikeNamesItFromTheRide', async () => {
+    const gone = '55555555-5555-5555-5555-555555555555';
+    api.listBikes.mockResolvedValue({ items: [second], nextCursor: null });
+    mount(
+        <RideForm
+            bikeId={gone}
+            ride={{ ...ride, bikeId: gone }}
+            rideBike={{ id: gone, displayName: 'Canyon', state: 'deleted' }}
+            onSaved={() => {}}
+            onCancel={() => {}}
+        />,
+    );
+    const field = (await screen.findByLabelText('Bike')) as HTMLSelectElement;
+    expect(field.value).toBe(gone);
+    expect(
+        screen.getByRole('dialog', { name: 'Correct ride on Canyon' }),
+    ).toBeVisible();
+    expect(api.getBike).not.toHaveBeenCalledWith(gone, expect.anything());
 });

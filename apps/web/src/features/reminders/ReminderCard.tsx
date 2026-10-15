@@ -22,7 +22,9 @@ export function ReminderCard({
     const status =
         e.state === 'disabled'
             ? 'Reminder disabled'
-            : e.state === 'no-current-chain'
+            : e.state === 'paused'
+              ? 'Paused while retired'
+              : e.state === 'no-current-chain'
               ? 'No fitted chain'
               : ready && e.due === true
                 ? 'Lubrication due'

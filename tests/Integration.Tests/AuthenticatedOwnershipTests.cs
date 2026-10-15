@@ -67,6 +67,8 @@ public class AuthenticatedOwnershipTests
             return s;
         }
 
+        public HttpClient CreateAnonymousClient() => app.CreateClient();
+
         public async ValueTask DisposeAsync()
         {
             A?.Dispose();
@@ -462,5 +464,89 @@ public class AuthenticatedOwnershipTests
             (await verify.Bikes.SingleAsync(x => x.Id == bike.Id)).Name
         );
         Assert.Equal(1, (await verify.Rides.SingleAsync(x => x.Id == ride.Id)).Version);
+    }
+
+    [Fact]
+    public async Task LifecycleRoutesAreOwnerScoped()
+    {
+        await using var s = await Scenario.Open();
+        var bike = new Bike { OwnerId = s.OwnerA, Name = "Owner A secret bike" };
+        var component = new Component { OwnerId = s.OwnerA, Model = "Owner A secret chain" };
+        var installation = new Installation
+        {
+            OwnerId = s.OwnerA,
+            BikeId = bike.Id,
+            ComponentId = component.Id,
+            StartUtc = ApiScenario.Start,
+        };
+        var ride = new Ride
+        {
+            OwnerId = s.OwnerA,
+            BikeId = bike.Id,
+            StartUtc = ApiScenario.Start,
+            DistanceMetres = 10000,
+        };
+        await using (var db = TestDatabase.Open(s.ConnectionString))
+        {
+            db.AddRange(bike, component, installation, ride);
+            await db.SaveChangesAsync();
+            await new UsageRebuilder(db, new UsageCalculator()).RebuildAsync(
+                s.OwnerA,
+                CancellationToken.None
+            );
+        }
+
+        var own = await s.A.GetFromJsonAsync<JsonElement>("/api/rides");
+        Assert.Equal(ride.Id, own.GetProperty("items")[0].GetProperty("id").GetGuid());
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await s.A.GetAsync($"/api/bikes/{bike.Id}/deletion-preview")).StatusCode
+        );
+        var foreignList = await s.B.GetStringAsync("/api/rides");
+        Assert.DoesNotContain("Owner A secret", foreignList);
+        Assert.DoesNotContain(ride.Id.ToString(), foreignList);
+
+        Func<HttpClient, Task<HttpResponseMessage>>[] routes =
+        [
+            c => c.GetAsync($"/api/bikes/{bike.Id}/deletion-preview"),
+            c =>
+                c.PutAsJsonAsync(
+                    $"/api/bikes/{bike.Id}/status",
+                    new { status = "retired", expectedVersion = 1 }
+                ),
+            c =>
+                c.PostAsJsonAsync(
+                    $"/api/bikes/{bike.Id}/delete",
+                    new
+                    {
+                        expectedVersion = 1,
+                        fittedInstallationIds = new[] { installation.Id },
+                        keepComponentIds = Array.Empty<Guid>(),
+                    }
+                ),
+            c => c.DeleteAsync($"/api/components/{component.Id}?expectedVersion=1"),
+        ];
+        foreach (var send in routes)
+        {
+            var foreign = await send(s.B);
+            Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+            var body = await foreign.Content.ReadAsStringAsync();
+            Assert.DoesNotContain("Owner A secret", body);
+            Assert.DoesNotContain("currentVersion", body);
+        }
+
+        using var anonymous = s.CreateAnonymousClient();
+        foreach (var send in routes.Append(c => c.GetAsync("/api/rides")))
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, (await send(anonymous)).StatusCode);
+        }
+
+        await using var verify = TestDatabase.Open(s.ConnectionString);
+        var stored = await verify.Bikes.IgnoreQueryFilters().SingleAsync(x => x.Id == bike.Id);
+        Assert.Equal(BikeStatus.Active, stored.Status);
+        Assert.False(stored.IsDeleted);
+        Assert.Equal(1, stored.Version);
+        Assert.True(await verify.Components.AnyAsync(x => x.Id == component.Id));
+        Assert.True(await verify.Installations.AnyAsync(x => x.Id == installation.Id));
     }
 }

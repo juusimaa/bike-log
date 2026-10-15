@@ -141,6 +141,7 @@ api.MapGet(
     )
     .Produces<MeResponse>(200);
 api.MapBikes();
+api.MapBikeLifecycle();
 api.MapBikeOverview();
 api.MapComponents();
 api.MapComponentCatalog();

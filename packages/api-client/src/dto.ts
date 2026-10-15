@@ -9,7 +9,8 @@ export type ComponentType = string;
 export type ComponentGroup = string;
 export type ExemptionReason = 'none-fitted' | 'tubeless';
 export type PositionState = 'fitted' | 'exempt' | 'missing' | 'not-recorded';
-export type View = 'overview' | 'components' | 'rides' | 'maintenance';
+export type View =
+    'overview' | 'components' | 'rides' | 'maintenance' | 'all-rides';
 export type AllocationGapResponse =
     components['schemas']['AllocationGapResponse'];
 export type AnonymousTypeOfInstallationResponseAndInstallationResponse =
@@ -17,6 +18,13 @@ export type AnonymousTypeOfInstallationResponseAndInstallationResponse =
 export type BikeOverviewResponse =
     components['schemas']['BikeOverviewResponse'];
 export type BikeResponse = components['schemas']['BikeResponse'];
+export type BikeStatus = BikeResponse['status'];
+export type BikeRef = components['schemas']['BikeRef'];
+export type BikeState = BikeRef['state'];
+export type SetBikeStatus = components['schemas']['SetBikeStatus'];
+export type BikeDeletionPreview = components['schemas']['BikeDeletionPreview'];
+export type FittedPartPreview = components['schemas']['FittedPartPreview'];
+export type DeleteBike = components['schemas']['DeleteBike'];
 export type BikeUsageResponse = components['schemas']['BikeUsageResponse'];
 export type ComponentEstimateResponse =
     components['schemas']['ComponentEstimateResponse'];
@@ -63,6 +71,9 @@ export type ReplacementWithServiceResponse =
     components['schemas']['ReplacementWithServiceResponse'];
 export type ReplaceWithService = components['schemas']['ReplaceWithService'];
 export type RideResponse = components['schemas']['RideResponse'];
+export type RideListItem = components['schemas']['RideListItem'];
+export type PageResponseOfRideListItem =
+    components['schemas']['PageResponseOfRideListItem'];
 export type CatalogPositionResponse =
     components['schemas']['CatalogPositionResponse'];
 export type ComponentCatalogResponse =

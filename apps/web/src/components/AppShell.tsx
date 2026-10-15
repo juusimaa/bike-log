@@ -7,6 +7,7 @@ export const viewTitles = {
     components: 'Components',
     rides: 'Rides',
     maintenance: 'Maintenance',
+    'all-rides': 'All rides',
 };
 export function AppShell({
     view,
@@ -69,7 +70,7 @@ export function AppShell({
                             }}
                         >
                             <span className="nav-icon" aria-hidden="true">
-                                {['▦', '⚙', '↗', '⌁'][i]}
+                                {['▦', '⚙', '↗', '⌁', '☰'][i]}
                             </span>
                             {viewTitles[v]}
                         </a>

@@ -1,4 +1,5 @@
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Domain.Installations;
@@ -35,15 +36,12 @@ public static class MoveEndpoints
                             var old =
                                 all.SingleOrDefault(x => x.Id == id) ?? throw ApiInput.Missing();
                             ApiInput.Version(request.ExpectedInstallationVersion, old.Version);
-                            if (
-                                !await db.Bikes.AnyAsync(
-                                    x => x.OwnerId == owner.OwnerId && x.Id == request.ToBikeId,
-                                    token
-                                )
-                            )
-                            {
-                                throw ApiInput.Missing();
-                            }
+                            await BikeGuards.RequireActiveAsync(
+                                db,
+                                owner.OwnerId,
+                                request.ToBikeId,
+                                token
+                            );
                             var position = requested ?? old.Position;
                             var component = await db.Components.SingleAsync(
                                 x => x.OwnerId == owner.OwnerId && x.Id == old.ComponentId,

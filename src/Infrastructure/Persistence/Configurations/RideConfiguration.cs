@@ -21,6 +21,13 @@ internal sealed class RideConfiguration : IEntityTypeConfiguration<Ride>
             x.BikeId,
             x.StartUtc,
         });
+        // All rides lists the owner's rides across bikes, newest first.
+        b.HasIndex(x => new
+        {
+            x.OwnerId,
+            x.StartUtc,
+            x.Id,
+        });
         b.ToTable(
             "Rides",
             t =>

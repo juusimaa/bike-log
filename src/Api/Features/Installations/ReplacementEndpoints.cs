@@ -1,4 +1,5 @@
 using BikeLog.Api.Auth;
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Components;
 using BikeLog.Api.Features.Errors;
 using BikeLog.Api.Features.Maintenance;
@@ -34,6 +35,12 @@ public static class ReplacementEndpoints
                                     token
                                 ) ?? throw ApiInput.Missing();
                             ApiInput.Version(request.ExpectedInstallationVersion, old.Version);
+                            var bike = await BikeGuards.RequireActiveAsync(
+                                db,
+                                owner.OwnerId,
+                                old.BikeId,
+                                token
+                            );
                             var make = ComponentValues.IdentityText(request.NewMake, "newMake");
                             var model = ComponentValues.IdentityText(request.NewModel, "newModel");
                             var weight = ComponentValues.Weight(request.NewWeightGrams);
@@ -94,7 +101,11 @@ public static class ReplacementEndpoints
                             db.MaintenanceRecords.Add(maintenance);
                             var nextResponse = InstallationResponse.From(next);
                             return new ReplacementWithServiceResponse(
-                                ComponentResponse.From(component, [nextResponse]),
+                                ComponentResponse.From(
+                                    component,
+                                    [nextResponse],
+                                    [BikeRef.From(bike)]
+                                ),
                                 InstallationResponse.From(old),
                                 nextResponse,
                                 MaintenanceResponse.From(maintenance)

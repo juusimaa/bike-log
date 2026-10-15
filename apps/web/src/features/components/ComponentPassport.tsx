@@ -1,6 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import type {
+    BikeRef,
     ComponentResponse,
     InstallationResponse,
     MaintenanceResponse,
@@ -10,6 +11,7 @@ import { Dialog } from '../../components/Dialog';
 import { usePassport, useInstallationPages } from './queries';
 import { useReminder } from '../reminders/queries';
 import { BikeIdentity } from './BikeIdentity';
+import { selectionUrl } from '../garage/navigation';
 import { formatDate } from '../../lib/dates';
 import {
     formatKilometres,
@@ -120,6 +122,31 @@ function ReminderStatus({
         </>
     );
 }
+/** A history bike by the name the API returns: linked while it exists, "(deleted)" after. */
+function HistoryBike({
+    bike,
+    bikeId,
+    onOpen,
+}: {
+    bike: Validated<BikeRef> | undefined;
+    bikeId: string;
+    onOpen?: (bikeId: string) => void;
+}) {
+    if (!bike) return <BikeIdentity bikeId={bikeId} />;
+    if (bike.state === 'deleted') return <span>{bike.displayName} (deleted)</span>;
+    return (
+        <a
+            href={selectionUrl(bike.id, 'overview')}
+            onClick={(event) => {
+                if (!onOpen) return;
+                event.preventDefault();
+                onOpen(bike.id);
+            }}
+        >
+            {bike.displayName}
+        </a>
+    );
+}
 function plural(n: number, word: string) {
     return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
@@ -130,9 +157,13 @@ export function ComponentPassport({
     onEditDetails,
     onMove,
     onRemove,
+    onDelete,
+    onOpenBike,
 }: {
     componentId: string;
     onClose: () => void;
+    onDelete?: (component: Validated<ComponentResponse>) => void;
+    onOpenBike?: (bikeId: string) => void;
     onEditEstimate?: (component: Validated<ComponentResponse>) => void;
     onEditDetails?: (component: Validated<ComponentResponse>) => void;
     onMove?: (
@@ -164,6 +195,7 @@ export function ComponentPassport({
           )
         : [];
     const bikes = new Set(history.map((i) => i.bikeId)).size;
+    const named = new Map(c?.bikes.map((b) => [b.id, b]));
     const type = c ? capitalised(typeLabel(catalog, c.type)) : '';
     const openPosition = open ? positionLabel(catalog, open.position) : '';
     return (
@@ -180,7 +212,12 @@ export function ComponentPassport({
                                 {openPosition.toLowerCase() !==
                                     type.toLowerCase() &&
                                     `${openPosition.toLowerCase()} `}
-                                on <BikeIdentity bikeId={open.bikeId} /> since{' '}
+                                on{' '}
+                                <HistoryBike
+                                    bike={named.get(open.bikeId)}
+                                    bikeId={open.bikeId}
+                                />{' '}
+                                since{' '}
                                 {formatDate(open.startUtc)}
                             </>
                         ) : (
@@ -305,7 +342,11 @@ export function ComponentPassport({
                                 <li key={i.id}>
                                     <span>
                                         <strong>
-                                            <BikeIdentity bikeId={i.bikeId} />
+                                            <HistoryBike
+                                                bike={named.get(i.bikeId)}
+                                                bikeId={i.bikeId}
+                                                onOpen={onOpenBike}
+                                            />
                                         </strong>{' '}
                                         ·{' '}
                                         {positionLabel(
@@ -450,6 +491,15 @@ export function ComponentPassport({
                                 onClick={() => onRemove(open, c)}
                             >
                                 Remove from bike
+                            </button>
+                        )}
+                        {onDelete && (
+                            <button
+                                type="button"
+                                className="button small secondary danger-outline"
+                                onClick={() => onDelete(c)}
+                            >
+                                Delete part…
                             </button>
                         )}
                     </div>

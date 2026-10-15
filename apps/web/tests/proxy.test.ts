@@ -371,3 +371,53 @@ it('authenticated proxy refuses a mismatched Host, forwarded http and a foreign 
     }
     expect(calls()).toBe(0);
 });
+it('forwards the bike lifecycle routes with exactly their documented verbs', async () => {
+    const forwarded: string[] = [];
+    vi.stubGlobal(
+        'fetch',
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+            const request = new Request(input, init);
+            forwarded.push(
+                `${request.method} ${new URL(request.url).pathname}`,
+            );
+            return Response.json({});
+        },
+    );
+    const send = (method: string, path: string[]) =>
+        forwardApi(
+            new Request(`http://127.0.0.1:3000/api/${path.join('/')}`, {
+                method,
+                headers:
+                    method === 'GET'
+                        ? undefined
+                        : {
+                              origin: 'http://127.0.0.1:3000',
+                              'content-type': 'application/json',
+                          },
+                body: ['POST', 'PUT'].includes(method) ? '{}' : undefined,
+            }),
+            path,
+        );
+    const allowed: [string, string[]][] = [
+        ['GET', ['rides']],
+        ['PUT', ['bikes', id, 'status']],
+        ['GET', ['bikes', id, 'deletion-preview']],
+        ['POST', ['bikes', id, 'delete']],
+        ['DELETE', ['components', id]],
+    ];
+    for (const [method, path] of allowed)
+        expect((await send(method, path)).status).toBe(200);
+    expect(forwarded).toEqual(
+        allowed.map(([method, path]) => `${method} /api/${path.join('/')}`),
+    );
+    const refused: [string, string[]][] = [
+        ['DELETE', ['rides']],
+        ['GET', ['bikes', id, 'status']],
+        ['POST', ['bikes', id, 'deletion-preview']],
+        ['DELETE', ['bikes', id]],
+        ['GET', ['bikes', id, 'delete']],
+    ];
+    for (const [method, path] of refused)
+        expect([404, 405]).toContain((await send(method, path)).status);
+    expect(forwarded).toHaveLength(allowed.length);
+});

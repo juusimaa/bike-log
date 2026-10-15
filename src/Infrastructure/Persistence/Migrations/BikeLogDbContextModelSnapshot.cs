@@ -30,6 +30,9 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.Property<string>("Color")
                         .HasColumnType("text");
 
+                    b.Property<DateTimeOffset?>("DeletedUtc")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int?>("FrameWeightGrams")
                         .HasColumnType("integer");
 
@@ -48,6 +51,12 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasDefaultValue("Active");
+
                     b.Property<long>("Version")
                         .IsConcurrencyToken()
                         .HasColumnType("bigint");
@@ -62,6 +71,8 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.ToTable("Bikes", null, t =>
                         {
                             t.HasCheckConstraint("CK_Bike_FrameWeight", "\"FrameWeightGrams\" IS NULL OR \"FrameWeightGrams\" BETWEEN 1 AND 20000");
+
+                            t.HasCheckConstraint("CK_Bike_Status", "\"Status\" IN ('Active', 'Retired')");
                         });
                 });
 
@@ -334,6 +345,8 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                     b.HasIndex("OwnerId");
 
                     b.HasIndex("OwnerId", "BikeId", "StartUtc");
+
+                    b.HasIndex("OwnerId", "StartUtc", "Id");
 
                     b.ToTable("Rides", null, t =>
                         {

@@ -1,3 +1,4 @@
+import type { BikeRef } from '@bikelog/api-client';
 import { beforeEach, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -54,6 +55,7 @@ const bike = (id: string, name: string, missing: string[] = []) => ({
     version: 1,
     frameWeightGrams: null,
     missingPositions: missing,
+    status: 'active' as const,
 });
 const installation = (
     id: string,
@@ -84,6 +86,7 @@ const part = (
     initialUsageEstimateMetres: 0,
     group: 'build',
     weightGrams: null as number | null,
+    bikes: [] as BikeRef[],
 });
 function overview(
     bikeId = 'b1',

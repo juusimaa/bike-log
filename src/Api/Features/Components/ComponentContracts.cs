@@ -1,3 +1,4 @@
+using BikeLog.Api.Features.Bikes;
 using BikeLog.Api.Features.Installations;
 using BikeLog.Domain.Components;
 
@@ -26,12 +27,15 @@ public sealed record ComponentResponse(
     IReadOnlyList<InstallationResponse> Installations,
     long InitialUsageEstimateMetres,
     string Group,
-    int? WeightGrams
+    int? WeightGrams,
+    IReadOnlyList<BikeRef> Bikes
 )
 {
+    /// <param name="bikes">One entry per bike its installations reference, deleted bikes included.</param>
     public static ComponentResponse From(
         Component c,
-        IReadOnlyList<InstallationResponse> installations
+        IReadOnlyList<InstallationResponse> installations,
+        IReadOnlyList<BikeRef> bikes
     ) =>
         new(
             c.Id,
@@ -42,7 +46,8 @@ public sealed record ComponentResponse(
             installations,
             c.InitialUsageEstimateMetres,
             ComponentValues.Group(c.Group),
-            c.WeightGrams
+            c.WeightGrams,
+            bikes
         );
 }
 
