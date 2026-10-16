@@ -1,3 +1,5 @@
 # Azure built-in role definition IDs (public, documented GUIDs), not secrets.
 ea9f2da3d19f63596be280ad99c4a9489101cc28:infra/bootstrap.bicep:generic-api-key:28
 ea9f2da3d19f63596be280ad99c4a9489101cc28:infra/bootstrap.bicep:generic-api-key:29
+e15d0b745b333cdba280abbb294ec3bd520fd9b9:infra/bootstrap.bicep:generic-api-key:28
+e15d0b745b333cdba280abbb294ec3bd520fd9b9:infra/bootstrap.bicep:generic-api-key:29

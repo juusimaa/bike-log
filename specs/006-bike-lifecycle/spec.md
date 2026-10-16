@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-14
 
-**Status**: Draft
+**Status**: Done, 2026-10-15. Implemented in PR #34; every task in tasks.md is complete.
 
 ## Clarifications
 

@@ -75,12 +75,12 @@ Quickstart U1–U14. Pending.
 | U5 | 2026-10-14 | Passed | `sudo reboot` at about 13:04 UTC. Probe from the owner's address: unavailable 13:03:47–13:05:23, about 1.5 minutes, for all three apps; Bike Log came back without manual steps (`status`: current `sha-1b3d51b`, web healthy; every container of the three apps up; backup timer still scheduled) |
 | U6 | 2026-10-14 | Passed | Merge of PR #29 at 12:38:56 UTC; Containers built by 12:40:03; Deploy ran on the server through the deploy key, `result=ok tag=sha-421369a previous=sha-8a4144b`, live at 12:41:05: about 2 minutes (target 15). The public log masks the server address and shows no key |
 | U7 | 2026-10-14 | Passed (second attempt) | After the fix (PR #30) and `install.sh`: redeploy with an unreachable database host gave `container bikelog-web-1 is unhealthy`, the previous release restored by itself, `result=failed`, exit 1, rollback target kept. Probe from the owner's address: unavailable 13:00:37–13:01:15, **38 s** (target 60). `gh workflow run deploy.yml -f rollback=true`: `result=ok tag=sha-421369a previous=sha-1b3d51b` in 28 s, about 6 s unavailable; rolled forward the same way in 24 s. First attempt: see Findings |
-| U8 | | | |
+| U8 | 2026-10-16 | Passed | First scheduled run: the timer started `bikelog-backup.service` at 02:38:05 UTC and it finished at 02:38:12; `backups/2026-10-15/bikelog-20261015T023806Z.dump` (54,468 bytes, 198 rows), database round trip median 56 ms; next run 2026-10-16 02:37 UTC. Manual backup, `backup-verify-permissions` and listing: see D2. Connections (FR-010, at most 15): straight after a manual backup at 04:42:35 UTC (51,157 bytes, 91 rows) with the app in use, `db-connections` showed the server 3 (the API pool, capped at `Maximum Pool Size=3`) and 1 Aiven-internal session; the backup adds at most 2 (snapshot session and `pg_dump`) and the lock keeps other jobs out, so the peak is at most 5. Missed-backup alert (T032): with the timer stopped by the owner, no run at 2026-10-16 02:37 UTC and no storage transactions that day; `alert-backup-missing-blobs` fired at 05:37 UTC (Sev2) and the email arrived. A manual backup at 05:42:17 UTC (`backups/2026-10-16/bikelog-20261016T054217Z.dump`, 57,070 bytes) closed the gap. Timer re-enabled at 05:44:21 UTC; with `Persistent=true` it caught up at once (`backups/2026-10-16/bikelog-20261016T054422Z.dump`, 57,070 bytes). See Findings for when the alert fires |
 | U9 | 2026-10-14 | Passed | Restore rehearsal of the first post-move backup; see "Restore rehearsals" |
 | U10 | | | |
 | U11 | 2026-10-14 | Passed | TCP to the Aiven host from the owner's machine refused or timed out; the server connects (B5, B6) |
 | U12 | | | |
-| U13 | | | |
+| U13 | 2026-10-15 | Partly passed | Repository, published images and deploy workflow logs done (see Findings); `docker logs` of `web`, `api` and one `backup` run on the server are still to search, for the secrets and for the test bike's name and a ride note |
 | U14 | | | |
 
 ## Restore rehearsals
@@ -120,4 +120,31 @@ Quickstart U1–U14. Pending.
   by hand: `systemctl start bikelog-backup.service` at 13:11:51 UTC ran `bikelog-deploy backup` as the timer
   caller and wrote `2026-10-14/bikelog-20261014T131152Z.dump` (54,352 bytes, 196 rows). The first scheduled
   run is 2026-10-15 at about 02:33 UTC.
-
+- **2026-10-15, secret scan of the repository and published images (U13, first part).** `gitleaks detect
+  --redact` v8.24.3 (Docker, `sha256:e1b35e12…`) over 75 commits: no leaks after adding the squash-merged
+  commit of the two public Key Vault role IDs in `infra/bootstrap.bicep` to `.gitleaksignore` (004 ignored
+  only the branch commit). `gitleaks detect --no-git` over the exported amd64 filesystems of the published
+  `sha-8557aa8` images: `api` (`sha256:b6ae12a9…`) and `migrations` (`sha256:22a9f559…`) clean. `web`
+  (`sha256:c91f57b8…`): the Next.js Server Actions encryption key and Draft Mode preview keys found in 004,
+  plus a false positive in Node's `v8-internal.h`. The build registers no Server Actions and the source uses
+  neither `"use server"` nor `draftMode`, so the keys still protect nothing. `backup` (`sha256:98b3e1a2…`):
+  Debian's unused `ssl-cert-snakeoil.key` and the Perl `cop.h` false positive, as in 004.
+  Deploy workflow logs: the last 16 runs (2026-10-14 04:19 to 2026-10-15 04:31 UTC, `gh run view --log`)
+  have no `Password=`, JWT, `sig=`, private key, `client_secret`, bearer token or email address; `gitleaks`
+  finds only `AUTH0_CLIENT_ID` in seven Azure-era runs, which the 004 workflow printed as a job variable. A
+  client ID is public (every browser sign-in sends it), and the current workflow does not print it.
+- **2026-10-15, `db-connections` cannot run during a backup (T030).** Both commands take `deploy.lock`, so
+  `db-connections` waits until the backup ends (about 6 s). The FR-010 peak is therefore shown by the pool
+  caps (API 3, backup 2, other jobs locked out) plus a count taken straight after a backup with the app in
+  use, instead of a count during the backup.
+- **2026-10-15, row count drop between backups is the owner's test (006).** The 04:42 UTC backup has 91 rows
+  against 198 at 02:38: `Components`, `Installations`, `ComponentUsages` and `InstallationUsages` went from
+  27 to 0, with bikes, rides and users unchanged and the 006 migration applied (additive only). The owner
+  deleted the test bike without keeping parts while trying 006's delete action. The parts remain in
+  `2026-10-15/bikelog-20261015T023806Z.dump`.
+- **2026-10-16, the missed-backup alert fires about a day after the last complete backup, not after the
+  missed run (T032).** The rule counts successful puts over the past 24 hours, checked hourly. The last
+  puts before the stopped timer were the manual backup at 04:42 UTC on 2026-10-15, so the alert fired at
+  05:37 UTC the next day, three hours after the missed 02:37 run. In normal operation (one run a day at
+  about 02:37) a missed run is reported within about an hour of when it was due; a manual backup pushes
+  that later. Azure did evaluate a day with no `PutBlob` series as below the threshold.

@@ -1,3 +1,5 @@
+> **Historical (spec 004, Azure Container Apps).** Bike Log now runs on UpCloud: see [upcloud.md](upcloud.md) and [decision 0007](../decisions/0007-upcloud-hosting.md).
+
 # Hosted setup guide
 
 How the owner creates the hosted environment, in the order of
