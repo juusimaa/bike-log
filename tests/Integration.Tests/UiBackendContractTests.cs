@@ -295,9 +295,9 @@ public class UiBackendContractTests
                 .Select(x => x.GetString()!)
                 .Order()
                 .ToArray();
-        Assert.Equal(20, Enum("CreateComponent", "type").Length);
-        Assert.Equal(27, Enum("CreateInstallation", "position").Length);
-        Assert.Equal(27, Enum("PositionStatusResponse", "position").Length);
+        Assert.Equal(21, Enum("CreateComponent", "type").Length);
+        Assert.Equal(28, Enum("CreateInstallation", "position").Length);
+        Assert.Equal(28, Enum("PositionStatusResponse", "position").Length);
         Assert.Equal(new[] { "build", "groupset", "wheels" }, Enum("ComponentResponse", "group"));
         Assert.Equal(
             new string?[] { "none-fitted", "tubeless" },

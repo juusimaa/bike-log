@@ -78,7 +78,12 @@ public static class ComponentCatalog
             ComponentType.RearDerailleur,
             "Rear derailleur"
         ),
-        Groupset(InstallationPosition.Shifters, ComponentType.Shifters, "Shifters"),
+        Groupset(
+            InstallationPosition.Shifters,
+            ComponentType.Shifters,
+            "Shifters",
+            exemption: ExemptionReason.NoneFitted
+        ),
         Groupset(InstallationPosition.Cassette, ComponentType.Cassette, "Cassette"),
         Groupset(InstallationPosition.Chain, ComponentType.Chain, "Chain"),
         Groupset(
@@ -101,6 +106,7 @@ public static class ComponentCatalog
             WheelEnd.Rear
         ),
         Groupset(InstallationPosition.Crankset, ComponentType.Crankset, "Crankset"),
+        Groupset(InstallationPosition.Chainring, ComponentType.Chainring, "Chainring"),
         Wheels(InstallationPosition.FrontRim, ComponentType.Rim, "Front rim", WheelEnd.Front),
         Wheels(InstallationPosition.RearRim, ComponentType.Rim, "Rear rim", WheelEnd.Rear),
         Wheels(InstallationPosition.FrontTyre, ComponentType.Tyre, "Front tyre", WheelEnd.Front),

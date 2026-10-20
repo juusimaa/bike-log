@@ -310,7 +310,7 @@ public class MultiComponentApiTests
                 .ToArray()
         );
         // Every catalog position except the fitted front tyre is explained.
-        Assert.Equal(26, gaps.Length);
+        Assert.Equal(27, gaps.Length);
         Assert.Equal(
             65000,
             (await s.Read($"/api/components/{tyre}/usage")).GetProperty("lifetimeMetres").GetInt64()

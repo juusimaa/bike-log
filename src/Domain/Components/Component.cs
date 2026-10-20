@@ -28,6 +28,7 @@ public enum ComponentType
     Brake,
     BrakeLever,
     Crankset,
+    Chainring,
     Rim,
     Tyre,
     DiscRotor,

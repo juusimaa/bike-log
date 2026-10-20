@@ -146,8 +146,8 @@ export function RemoveDialog({
     );
 }
 /**
- * Declares a position intentionally empty from a date (front derailleur none fitted, or a
- * tubeless wheel). A fitted part there is ended by the API with the version shown here.
+ * Declares a position intentionally empty from a date (front derailleur or shifters none
+ * fitted, or a tubeless wheel). A fitted part there is ended by the API with the version shown here.
  */
 export function ExemptionDialog({
     bikeId,

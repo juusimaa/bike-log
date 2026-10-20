@@ -81,6 +81,7 @@ public class ComponentCatalogTests
             WheelEnd.Rear
         ),
         (InstallationPosition.Crankset, ComponentType.Crankset, ComponentGroup.Groupset, null),
+        (InstallationPosition.Chainring, ComponentType.Chainring, ComponentGroup.Groupset, null),
         (InstallationPosition.FrontRim, ComponentType.Rim, ComponentGroup.Wheels, WheelEnd.Front),
         (InstallationPosition.RearRim, ComponentType.Rim, ComponentGroup.Wheels, WheelEnd.Rear),
         (InstallationPosition.FrontTyre, ComponentType.Tyre, ComponentGroup.Wheels, WheelEnd.Front),
@@ -112,12 +113,12 @@ public class ComponentCatalogTests
     ];
 
     [Fact]
-    public void CatalogHas27PositionsAnd20Types()
+    public void CatalogHas28PositionsAnd21Types()
     {
-        Assert.Equal(27, ComponentCatalog.Entries.Count);
-        Assert.Equal(27, Enum.GetValues<InstallationPosition>().Length);
-        Assert.Equal(20, Enum.GetValues<ComponentType>().Length);
-        Assert.Equal(20, ComponentCatalog.Entries.Select(x => x.Type).Distinct().Count());
+        Assert.Equal(28, ComponentCatalog.Entries.Count);
+        Assert.Equal(28, Enum.GetValues<InstallationPosition>().Length);
+        Assert.Equal(21, Enum.GetValues<ComponentType>().Length);
+        Assert.Equal(21, ComponentCatalog.Entries.Select(x => x.Type).Distinct().Count());
     }
 
     [Fact]
@@ -136,7 +137,7 @@ public class ComponentCatalogTests
     }
 
     [Fact]
-    public void OnlyFrontDerailleurAndInnerTubesCanBeEmpty()
+    public void OnlyFrontDerailleurShiftersAndInnerTubesCanBeEmpty()
     {
         var exempt = ComponentCatalog
             .Entries.Where(x => x.Exemption.HasValue)
@@ -145,6 +146,7 @@ public class ComponentCatalogTests
         Assert.Equal(
             [
                 (InstallationPosition.FrontDerailleur, ExemptionReason.NoneFitted),
+                (InstallationPosition.Shifters, ExemptionReason.NoneFitted),
                 (InstallationPosition.FrontInnerTube, ExemptionReason.Tubeless),
                 (InstallationPosition.RearInnerTube, ExemptionReason.Tubeless),
             ],

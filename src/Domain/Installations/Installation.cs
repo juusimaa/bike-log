@@ -30,6 +30,7 @@ public enum InstallationPosition
     FrontBrakeLever,
     RearBrakeLever,
     Crankset,
+    Chainring,
     FrontRim,
     RearRim,
     FrontTyre,

@@ -212,7 +212,7 @@ public class UsageCalculatorTests
             [Fit(InstallationPosition.Chain)]
         );
         Assert.DoesNotContain(r.PositionGaps, x => x.Position == InstallationPosition.Chain);
-        Assert.Equal(26, r.PositionGaps.Count);
+        Assert.Equal(27, r.PositionGaps.Count);
         var saddle = r.PositionGaps.Single(x => x.Position == InstallationPosition.Saddle);
         Assert.Equal(
             new PositionGap(Bike, InstallationPosition.Saddle, 3, first.StartUtc, last.StartUtc),
