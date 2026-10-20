@@ -332,7 +332,7 @@ it('manyGapsShowOneCountNotOneLabelPerPosition', async () => {
     api.getOverview.mockResolvedValue({ ...overview, allocationGaps: gaps });
     mount(<Rides bikeId={bikeId} />);
     expect(
-        await screen.findByText('26 positions not recorded'),
+        await screen.findByText('27 positions not recorded'),
     ).toBeInTheDocument();
     expect(screen.getAllByRole('group').length).toBe(1);
 });

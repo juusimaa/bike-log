@@ -1704,7 +1704,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** @description Declare a position intentionally empty from startUtc (front derailleur none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion. */
+        /** @description Declare a position intentionally empty from startUtc (front derailleur or shifters none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion. */
         post: {
             parameters: {
                 query?: never;

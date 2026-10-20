@@ -116,7 +116,7 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Component_InitialUsageEstimate", "\"InitialUsageEstimateMetres\" >= 0");
 
-                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'ThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'Brake', 'BrakeLever', 'Crankset', 'Rim', 'Tyre', 'DiscRotor', 'InnerTube')");
+                            t.HasCheckConstraint("CK_Component_Type", "\"Type\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'ThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'Brake', 'BrakeLever', 'Crankset', 'Chainring', 'Rim', 'Tyre', 'DiscRotor', 'InnerTube')");
 
                             t.HasCheckConstraint("CK_Component_Weight", "\"WeightGrams\" IS NULL OR \"WeightGrams\" BETWEEN 1 AND 20000");
                         });
@@ -162,7 +162,7 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_Installation_Interval", "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\"");
 
-                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'FrontThroughAxle', 'RearThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'FrontBrake', 'RearBrake', 'FrontBrakeLever', 'RearBrakeLever', 'Crankset', 'FrontRim', 'RearRim', 'FrontTyre', 'RearTyre', 'FrontDiscRotor', 'RearDiscRotor', 'FrontInnerTube', 'RearInnerTube')");
+                            t.HasCheckConstraint("CK_Installation_Position", "\"Position\" IN ('Fork', 'BottomBracket', 'Handlebar', 'HandlebarTape', 'Saddle', 'Seatpost', 'Pedals', 'FrontThroughAxle', 'RearThroughAxle', 'FrontDerailleur', 'RearDerailleur', 'Shifters', 'Cassette', 'Chain', 'FrontBrake', 'RearBrake', 'FrontBrakeLever', 'RearBrakeLever', 'Crankset', 'Chainring', 'FrontRim', 'RearRim', 'FrontTyre', 'RearTyre', 'FrontDiscRotor', 'RearDiscRotor', 'FrontInnerTube', 'RearInnerTube')");
                         });
                 });
 
@@ -207,7 +207,7 @@ namespace BikeLog.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("CK_PositionExemption_Interval", "\"EndUtc\" IS NULL OR \"EndUtc\" > \"StartUtc\"");
 
-                            t.HasCheckConstraint("CK_PositionExemption_Reason", "(\"Position\", \"Reason\") IN (('FrontDerailleur', 'NoneFitted'), ('FrontInnerTube', 'Tubeless'), ('RearInnerTube', 'Tubeless'))");
+                            t.HasCheckConstraint("CK_PositionExemption_Reason", "(\"Position\", \"Reason\") IN (('FrontDerailleur', 'NoneFitted'), ('Shifters', 'NoneFitted'), ('FrontInnerTube', 'Tubeless'), ('RearInnerTube', 'Tubeless'))");
                         });
                 });
 

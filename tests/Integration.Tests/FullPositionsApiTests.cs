@@ -24,6 +24,7 @@ public class FullPositionsApiTests
         "brake",
         "brake-lever",
         "crankset",
+        "chainring",
         "rim",
         "tyre",
         "disc-rotor",
@@ -116,7 +117,7 @@ public class FullPositionsApiTests
     {
         await using var s = await ApiScenario.Open();
         var catalog = await s.Read("/api/component-catalog");
-        Assert.Equal(27, catalog.GetProperty("positions").GetArrayLength());
+        Assert.Equal(28, catalog.GetProperty("positions").GetArrayLength());
         Assert.Equal(
             new[] { "build", "groupset", "wheels" },
             catalog.GetProperty("groups").EnumerateArray().Select(x => x.GetString()).ToArray()
@@ -126,7 +127,7 @@ public class FullPositionsApiTests
         await s.Fit(bike, saddle, "saddle");
         var usage = await s.Read($"/api/bikes/{bike}/usage");
         var statuses = usage.GetProperty("positionStatuses");
-        Assert.Equal(27, statuses.GetArrayLength());
+        Assert.Equal(28, statuses.GetArrayLength());
         Assert.Equal(
             catalog
                 .GetProperty("positions")
@@ -143,13 +144,13 @@ public class FullPositionsApiTests
             ApiScenario.Status(usage, "saddle").GetProperty("componentId").GetGuid()
         );
         Assert.Equal(
-            26,
+            27,
             statuses
                 .EnumerateArray()
                 .Count(x => x.GetProperty("state").GetString() == "not-recorded")
         );
         var overview = await s.Read($"/api/bikes/{bike}/overview");
-        Assert.Equal(27, overview.GetProperty("positionStatuses").GetArrayLength());
+        Assert.Equal(28, overview.GetProperty("positionStatuses").GetArrayLength());
         Assert.True(overview.TryGetProperty("positionGaps", out _));
     }
 

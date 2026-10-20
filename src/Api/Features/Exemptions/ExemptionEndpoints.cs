@@ -104,7 +104,7 @@ public static class ExemptionEndpoints
             )
             .Produces<PositionExemptionResponse>(201)
             .WithDescription(
-                "Declare a position intentionally empty from startUtc (front derailleur none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion."
+                "Declare a position intentionally empty from startUtc (front derailleur or shifters none fitted, or a tubeless wheel). Any open part there is ended at startUtc and needs expectedInstallationVersion."
             );
         api.MapPut(
                 "/position-exemptions/{id:guid}",

@@ -413,7 +413,7 @@ it('boardRendersEveryCatalogPositionByGroupFromTheApi', async () => {
         expect(
             await screen.findByRole('heading', { name: group }),
         ).toBeInTheDocument();
-    expect(document.querySelectorAll('.pos-row')).toHaveLength(27);
+    expect(document.querySelectorAll('.pos-row')).toHaveLength(28);
     await waitFor(() =>
         expect(
             document.querySelector('.pos-row.state-fitted'),
@@ -453,7 +453,7 @@ it('boardFollowsAnExtendedCatalogWithoutCodeChanges', async () => {
     expect(
         await screen.findByRole('heading', { name: 'Accessories' }),
     ).toBeInTheDocument();
-    expect(document.querySelectorAll('.pos-row')).toHaveLength(28);
+    expect(document.querySelectorAll('.pos-row')).toHaveLength(29);
     expect(
         screen.getByRole('button', { name: 'Fit bottle cage' }),
     ).toBeInTheDocument();
