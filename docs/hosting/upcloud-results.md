@@ -148,3 +148,12 @@ Quickstart U1–U14. Pending.
   05:37 UTC the next day, three hours after the missed 02:37 run. In normal operation (one run a day at
   about 02:37) a missed run is reported within about an hour of when it was due; a manual backup pushes
   that later. Azure did evaluate a day with no `PutBlob` series as below the threshold.
+- **2026-10-20, `alert-backup-missing-blobs` fired on days the backup ran (false alarms).** Fired at
+  02:33 UTC on 2026-10-19 and 02:38:10 on 2026-10-20, resolved three hours later each time, while every day
+  had its dump and manifest. The rule's hourly check lands at about :33–:38, inside the timer's
+  02:30–02:40 band, and `RandomizedDelaySec` picks a new delay each day. When a run was later than the day
+  before, a check between them saw neither: on 2026-10-19 the window began at 02:33 after the 02:30:24 run of
+  2026-10-18, and that day's run came at 02:34:25; on 2026-10-20 the check came 24 s before the 02:38:34
+  upload. P1D is the longest metric-alert window, and a fixed run time would still race the metric delay.
+  Fixed by a second daily run at 14:30 UTC: every 24-hour window now holds at least one complete run. One
+  failed run no longer alerts on its own; the alert now means no backup for about a day.
