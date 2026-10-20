@@ -304,9 +304,10 @@ Revoke the deploy key at once by deleting its line in `/home/bikelog-deploy/.ssh
 
 ## Backups
 
-`bikelog-backup.timer` runs `bikelog-deploy backup` daily at 02:30 UTC (up to 10 minutes later), and at
-boot if a run was missed. Each run writes a dump and a manifest to the `backups` container as create-only
-blobs; the lifecycle rule deletes them after 35 days. Format and restore are unchanged from spec 004.
+`bikelog-backup.timer` runs `bikelog-deploy backup` twice a day, at 02:30 and 14:30 UTC (each up to 10
+minutes later), and at boot if a run was missed. Each run writes a dump and a manifest to the `backups`
+container as create-only blobs; the lifecycle rule deletes them after 35 days. Format and restore are
+unchanged from spec 004.
 
 ```sh
 sudo /srv/bikelog/bin/bikelog-deploy backup                      # (server) run once now
@@ -315,10 +316,11 @@ systemctl list-timers bikelog-backup.timer; journalctl -u bikelog-backup -n 50  
 scripts/hosted/hosted.sh backups                                 # dumps and manifests, last 35 days
 ```
 
-`alert-backup-missing-blobs` emails you when a day has fewer than two successful uploads, whether the run
-failed or never happened. Start with `journalctl -u bikelog-backup`: a token error names the Entra error
-code (often an expired or replaced certificate); a connection error usually means Aiven's allow-list or the
-service is powered off.
+`alert-backup-missing-blobs` emails you when the past 24 hours have fewer than two successful uploads,
+whether the runs failed or never happened. One failed run does not alert, because the other run of the day
+still counts; the alert means no backup for about a day. Start with `journalctl -u bikelog-backup`: a token
+error names the Entra error code (often an expired or replaced certificate); a connection error usually
+means Aiven's allow-list or the service is powered off.
 
 Certificate renewal, before the expiry recorded in upcloud-results.md:
 
