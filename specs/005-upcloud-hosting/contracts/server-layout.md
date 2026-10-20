@@ -62,5 +62,7 @@ the global Caddy configuration.
 
 ## Systemd timer
 
-`bikelog-backup.timer`: `OnCalendar=*-*-* 02:30:00 UTC`, `Persistent=true`, `RandomizedDelaySec=10m`.
+`bikelog-backup.timer`: `OnCalendar=*-*-* 02:30:00 UTC` and `OnCalendar=*-*-* 14:30:00 UTC`, `Persistent=true`,
+`RandomizedDelaySec=10m`. Two runs a day keep a complete backup inside every 24-hour window of
+`alert-backup-missing-blobs` (amended 2026-10-20).
 `bikelog-backup.service`: `Type=oneshot`, `ExecStart=/srv/bikelog/bin/bikelog-deploy backup`.

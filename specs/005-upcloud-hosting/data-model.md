@@ -65,8 +65,8 @@ principal instead of the Azure app identity.
 | Field | Rule |
 | --- | --- |
 | Writer | App registration **Bike Log backup (UpCloud)**, role Bike Log Backup Writer on `backups` (add + read only) |
-| Schedule | Daily 02:30 UTC, `Persistent=true` (a missed run after a reboot runs at boot) |
-| Success signal | Two successful `PutBlob` transactions in a day; fewer raises `alert-backup-missing-blobs` |
+| Schedule | Twice a day, 02:30 and 14:30 UTC, `Persistent=true` (a missed run after a reboot runs at boot); twice since 2026-10-20 so that the alert's 24-hour window always holds a run |
+| Success signal | Two successful `PutBlob` transactions in the past 24 hours; fewer raises `alert-backup-missing-blobs` |
 
 ## Deploy credential
 

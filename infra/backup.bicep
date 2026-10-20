@@ -198,8 +198,9 @@ resource owner 'Microsoft.Insights/actionGroups@2023-01-01' = {
 
 // A complete backup is two successful Put Blob calls (dump and manifest); the refused
 // writes of `backup-verify-permissions` are not successes. Fires for missed and failed
-// runs alike. Whether Azure evaluates a day with no PutBlob series at all as zero is
-// proven by quickstart U8 (timer stopped for a day), not assumed.
+// runs alike. Azure evaluates a day with no PutBlob series as zero (quickstart U8). The
+// timer runs twice a day: with one run, an hourly check landing between yesterday's
+// run and today's later one counted zero (upcloud-results.md, Findings 2026-10-20).
 resource backupMissing 'Microsoft.Insights/metricAlerts@2026-01-01' = {
   name: 'alert-backup-missing-blobs'
   location: 'global'
