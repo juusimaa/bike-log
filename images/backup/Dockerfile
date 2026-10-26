@@ -10,7 +10,7 @@ FROM postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253e
 # scripts/hosted/update-backup-pins.sh and the monthly "Backup image pins" workflow.
 # Plain http is expected: apt verifies the snapshot's signed Release files with the
 # image's Debian keyring, and ca-certificates is not installed yet.
-ARG DEBIAN_SNAPSHOT=20261013T073402Z
+ARG DEBIAN_SNAPSHOT=20261025T035125Z
 RUN printf '%s\n' \
         'Types: deb' \
         "URIs: http://snapshot.debian.org/archive/debian/${DEBIAN_SNAPSHOT}" \
@@ -36,8 +36,8 @@ RUN printf '%s\n' \
         -o Dir::Etc::SourceParts=/tmp/snapshot.d \
         -o Acquire::Retries=5 \
         install -y --no-install-recommends \
-        ca-certificates=20250419 \
-        curl=8.14.1-2+deb13u5 \
+        ca-certificates=20250419+deb13u1 \
+        curl=8.14.1-2+deb13u7 \
         jq=1.7.1-6+deb13u4 \
     && rm -rf /var/lib/apt/lists/* /tmp/snapshot.d
 COPY --chmod=755 images/backup/backup.sh /usr/local/bin/backup.sh
